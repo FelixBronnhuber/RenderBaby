@@ -24,4 +24,4 @@ jobs:
         with:
           files: target/release/*
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RENDERBABY_CI_PAT }}
