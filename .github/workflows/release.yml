@@ -20,6 +20,7 @@ jobs:
         run: cargo build --release
 
       - name: Remove zero-byte files before upload
+        shell: bash
         run: find target/release -type f -size 0 -delete
 
       - name: Upload binaries to release
