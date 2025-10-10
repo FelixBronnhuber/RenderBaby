@@ -19,6 +19,9 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
+      - name: Remove zero-byte files before upload
+        run: find target/release -type f -size 0 -delete
+
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
