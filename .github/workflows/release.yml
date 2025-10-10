@@ -10,14 +10,35 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            name: linux
+            ext: ""
+          - os: windows-latest
+            name: windows
+            ext: ".exe"
+          - os: macos-latest
+            name: macos
+            ext: ""
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build release binary
         run: cargo build --release
+
+      - name: Rename binary for OS
+        shell: bash
+        run: |
+          BIN_NAME="renderbaby"
+          SRC="target/release/${BIN_NAME}${{ matrix.ext }}"
+          DEST="target/release/${BIN_NAME}-${{ matrix.name }}${{ matrix.ext }}"
+          echo "Renaming $SRC -> $DEST"
+          mv "$SRC" "$DEST"
 
       - name: Remove zero-byte files before upload
         shell: bash
@@ -26,6 +47,6 @@ jobs:
       - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          files: target/release/*
+          files: target/release/myapp-${{ matrix.name }}${{ matrix.ext }}
         env:
           GITHUB_TOKEN: ${{ secrets.RENDERBABY_CI_PAT }}
