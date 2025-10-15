@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+computational-plane = { path = "crates/computational-plane" }
+data-plane = { path = "crates/data-plane" }
+control-plane = { path = "crates/control-plane" }
