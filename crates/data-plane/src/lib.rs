@@ -1,5 +1,17 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+struct Sum {
+    l: u64,
+    r: u64
+}
+
+impl Sum {
+    fn new(l: u64, r: u64) -> Self {
+        Sum{l, r}
+    }
+
+    fn compute(&self) -> u64 {
+        computational_plane::add(self.r, self.l)
+    }
+    
 }
 
 #[cfg(test)]
