@@ -1,14 +1,14 @@
-struct Sum {
+pub struct Sum {
     l: u64,
     r: u64
 }
 
 impl Sum {
-    fn new(l: u64, r: u64) -> Self {
+    pub fn new(l: u64, r: u64) -> Self {
         Sum{l, r}
     }
 
-    fn compute(&self) -> u64 {
+    pub fn compute(&self) -> u64 {
         computational_plane::add(self.r, self.l)
     }
     
