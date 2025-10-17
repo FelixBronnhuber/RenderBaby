@@ -1,6 +1,6 @@
 use data_plane::Sum;
 
-fn run(){
+pub fn run(){
 
     let sum:Sum = Sum::new(1,2);
 

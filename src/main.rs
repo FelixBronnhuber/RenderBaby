@@ -1,3 +1,5 @@
+use control_plane::run;
+
 fn main() {
-    println!("Hello, world!");
+    let sum = run();
 }
