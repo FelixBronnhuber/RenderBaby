@@ -19,12 +19,3 @@ version = "0.1.0"
 dependencies = [
  "computational-plane",
 ]
-
-[[package]]
-name = "renderbaby"
-version = "0.1.0"
-dependencies = [
- "computational-plane",
- "control-plane",
- "data-plane",
-]
