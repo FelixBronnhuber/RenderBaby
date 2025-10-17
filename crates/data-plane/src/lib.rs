@@ -20,7 +20,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
+        let sum : Sum = Sum::new(1,3);
+        let result = sum.compute();
         assert_eq!(result, 4);
     }
 }
