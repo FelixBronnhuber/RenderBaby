@@ -7,3 +7,11 @@ edition = "2024"
 computational-plane = { path = "crates/computational-plane" }
 data-plane = { path = "crates/data-plane" }
 control-plane = { path = "crates/control-plane" }
+
+[workspace]
+members = [
+    "crates/computational-plane",
+    "crates/data-plane",
+    "crates/control-plane",
+    "."
+]
