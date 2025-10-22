@@ -1,17 +1,20 @@
-pub struct Sum {
-    l: u64,
-    r: u64
-}
+//! The scene plane holds all scene objects...
+//! 
+mod scene_geometry;
+mod scene_graph;
+mod action_stack;
 
-impl Sum {
-    pub fn new(l: u64, r: u64) -> Self {
-        Sum{l, r}
-    }
+pub mod scene {
+    use crate::{action_stack::ActionStack, scene_graph};
 
-    pub fn compute(&self) -> u64 {
-        computational_plane::add(self.r, self.l)
+    pub struct Scene<'a> {
+        // todo: new, Singleton, maybe with crate...
+        pub scene_graph: scene_graph::scene_graph::SceneGraph<'a>,
+        action_stack: ActionStack
     }
-    
+    impl <'a> Scene <'a> {
+        pub fn render() -> u8 {1} // todo type, call something...
+    }
 }
 
 #[cfg(test)]
@@ -20,8 +23,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let sum : Sum = Sum::new(1,3);
-        let result = sum.compute();
-        assert_eq!(result, 4);
+        assert_eq!(4, 4);
     }
 }
+
+
