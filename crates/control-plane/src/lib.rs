@@ -1,14 +1,28 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+use eframe::{egui};
+pub struct RaytraceApp {
+    texture: Option<egui::TextureHandle>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl Default for RaytraceApp {
+    fn default() -> Self {
+        Self { texture: None }
     }
+}
+
+impl eframe::App for RaytraceApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Renderbaby Raytracer");
+        });
+    }
+}
+
+pub fn start() -> eframe::Result<()> {
+    let native_options = eframe::NativeOptions::default();
+
+    eframe::run_native(
+        "RenderBaby Raytracer",
+        native_options,
+        Box::new(|_cc| Ok(Box::<RaytraceApp>::default())),
+    )
 }
