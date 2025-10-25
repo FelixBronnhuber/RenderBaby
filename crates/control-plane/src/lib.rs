@@ -184,7 +184,7 @@ impl eframe::App for RaytracerApp {
 
                 ui.vertical_centered(|ui| {
                     if ui.add_sized([180.0, 40.0], egui::Button::new("▶ Render")).clicked() {
-                        // Hier kannst du später deinen Render-Aufruf einbauen
+                        // Here the renderer should be started
                         println!("Render button clicked!");
                     }
                 });
@@ -210,7 +210,7 @@ impl eframe::App for RaytracerApp {
                         ui.add(egui::DragValue::new(&mut item.pos_z).speed(0.1).prefix("z: "));
                     });
 
-                    // Rotation nur für Camera und Objects
+                    // Rotation is not given for Lights
                     match item.category {
                         Category::Camera | Category::Objects => {
                             ui.add_space(10.0);
