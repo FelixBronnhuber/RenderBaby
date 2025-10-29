@@ -1,5 +1,5 @@
 use eframe::{
-    egui::{self, Color32, RichText},
+    egui::{self, Color32, RichText,ColorImage},
 };
 
 //Mockup enum for Categories of Objects
@@ -186,6 +186,23 @@ impl eframe::App for RaytracerApp {
                     if ui.add_sized([180.0, 40.0], egui::Button::new("▶ Render")).clicked() {
                         // Here the renderer should be started
                         println!("Render button clicked!");
+
+                        //example image
+                        let width = 512;
+                        let height = 512;
+                        let mut test_image = vec![0u8; width * height * 4];
+                        for y in 0..height {
+                            for x in 0..width {
+                                let i = (y * width + x) * 4;
+                                test_image[i] = (x as u8);
+                                test_image[i + 1] = (y as u8);
+                                test_image[i + 2] = 128;
+                                test_image[i + 3] = 255;
+                            }
+                        }
+
+                        let color_image = ColorImage::from_rgba_unmultiplied([width as usize, height as usize], &test_image);
+                        self.texture = Some(ui.ctx().load_texture("image", color_image, egui::TextureOptions::NEAREST,));
                     }
                 });
             });
@@ -240,11 +257,27 @@ impl eframe::App for RaytracerApp {
         //Placeholder for Main Render Area
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.centered_and_justified(|ui| {
-                ui.label(
-                    RichText::new("Render Output Area")
-                        .color(Color32::from_rgb(80, 80, 80))
-                        .size(20.0),
-                );
+
+                if let Some(texture) = &self.texture{
+
+                    let aspect = texture.size_vec2().x / texture.size_vec2().y;
+
+                    let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
+
+                        egui::vec2(ui.available_size().y * aspect, ui.available_size().y)
+                    } else {
+
+                        egui::vec2(ui.available_size().x, ui.available_size().x / aspect)
+                    };
+
+                    ui.image((texture.id(), size_scaled));
+                }else{
+                    ui.label(
+                        RichText::new("Render Output Area")
+                            .color(Color32::from_rgb(80, 80, 80))
+                            .size(20.0),
+                    );
+                }
             });
         });
     }
