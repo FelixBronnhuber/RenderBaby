@@ -5,13 +5,13 @@ edition = "2024"
 
 [dependencies]
 computational-plane = { path = "crates/computational-plane" }
-data-plane = { path = "crates/data-plane" }
+data-plane = { path = "crates/scene" }
 control-plane = { path = "crates/control-plane" }
 
 [workspace]
 members = [
     "crates/computational-plane",
-    "crates/data-plane",
+    "crates/scene",
     "crates/control-plane",
-    "."
+    ".",
 ]
