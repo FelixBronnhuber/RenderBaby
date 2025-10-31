@@ -1,4 +1,4 @@
-use glam
+use glam::Vec3;
 
 struct GeometricObject{
     //one or more triangles
@@ -10,11 +10,11 @@ struct Circle {
     material: Material
 }
 struct Triangle{
-    points: Vec<vec3>,
+    points: Vec<Vec3>,
     material: Material
 }
 struct Camera{
-    position: Position,
+    position: Vec3,
     rotation: Rotation
 }
 
@@ -30,5 +30,12 @@ impl Rotation{
     fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)}
 }
 struct LightSource{
-    position: Position
+    position: Vec3
+}
+
+struct Material{
+
+}
+struct Color{
+
 }
