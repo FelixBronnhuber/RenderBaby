@@ -1,6 +1,6 @@
 use std::path::Path;
 //use super::lib;
-use crate::Position;
+//use crate::Position;
 use glam::Vec3;
 pub fn parseobj() {
     let obj_path = Path::new("./test.obj");
