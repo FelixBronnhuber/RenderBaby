@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 computational-plane = {path = "../computational-plane"}
+log = "0.4"
+env_logger = "0.11"

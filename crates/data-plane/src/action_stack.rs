@@ -6,4 +6,7 @@ pub struct  ActionStack{
 impl ActionStack{
     pub fn push(&self, action: u8) {}
     pub fn undo(&self) {}
+    pub fn new(&self) -> Self {
+        ActionStack{done: 0, undone: 0}
+    }
 }
