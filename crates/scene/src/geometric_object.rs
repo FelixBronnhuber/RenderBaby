@@ -1,9 +1,8 @@
 use glam::{Vec3};
 
-pub struct GeometricObject{
-    //one or more triangles
-    triangles: Option<Vec<Triangle>>,
-    circle: Option<Circle>
+pub enum GeometricObject{
+    Triangles(Vec<Triangle>),
+    Circle(Circle)
 }
 pub struct Circle {
     center: Vec3,
