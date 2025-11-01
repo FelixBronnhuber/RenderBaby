@@ -33,10 +33,40 @@ impl Circle {
     pub fn rotate(&mut self) {}
 
 } 
-    
+pub struct TriGeometry {
+    triangles: Vec<Triangle>
+}  
+impl TriGeometry{
+    pub fn get_triangles(&self)-> &Vec<Triangle> {
+        &self.triangles
+    }
+}
 pub struct Triangle{
-    points: Vec<Vec3>,
+    points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Material
+}
+
+impl Triangle {
+    pub fn get_material(&self) -> &Material {
+        &self.material
+    }
+    pub fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
+    pub fn get_points(&self) -> &Vec<Vec3> {
+        &self.points
+    }
+    pub fn set_points(&mut self, points: Vec<Vec3>) {
+        self.points = points;
+        // todo: check for points length, otherwise error
+    }
+
+    pub fn translate(&mut self, vec: Vec3) -> &Vec<Vec3> {
+        for point in &mut self.points {
+            *point += vec;
+        }
+        self.get_points()
+    }
 }
 pub struct Camera{
     position: Vec3,
