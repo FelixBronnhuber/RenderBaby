@@ -18,6 +18,17 @@ impl Circle {
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
     }
+    pub fn get_radius(&self) -> f32 {
+        self.radius
+    }
+    
+    pub fn center(&self) -> Vec3 {
+        self.center
+    }
+
+    pub fn set_senter(&mut self, center: Vec3) {
+        self.center = center;
+    }
 
     pub fn translate(&mut self, vec: Vec3) -> Vec3 {
         self.center = self.center + vec;
