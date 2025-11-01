@@ -2,14 +2,14 @@ use glam::{Vec3};
 
 pub enum GeometricObject{
     Triangles(Vec<Triangle>),
-    Circle(Circle)
+    Sphere(Sphere)
 }
-pub struct Circle {
+pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material
 }
-impl Circle {
+impl Sphere {
     pub fn scale(&mut self, factor: f32) -> f32 {
         self.radius = self.radius * factor;
         self.radius
