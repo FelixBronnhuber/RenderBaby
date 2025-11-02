@@ -131,11 +131,38 @@ impl Rotation{
     fn get_yaw(&self) -> f32 {
         self.yaw
     }
+    fn new(pitch:f32, yaw:f32) -> Self {
+        Rotation { pitch, yaw }
+    }
 }
 pub struct LightSource{
-    position: Vec3
+    position: Vec3,
+    luminosity: f32
 }
 
+impl LightSource {
+    fn get_position(&self) -> Vec3 {
+        self.position
+    }
+
+    fn set_position(&mut self, position: Vec3) {
+        self.position = position
+    }
+
+    fn get_luminositoy(&self) -> f32 {
+        self.luminosity
+    }
+
+    fn set_luminosity(&mut self, luminosity: f32) {
+        self.luminosity = luminosity
+    }
+
+    fn new(position: Vec3, luminosity: f32) -> Self {
+        LightSource { position, luminosity }
+    }
+}
+
+// Maybe Material/Color/Texture as enum?
 pub struct Material{
 
 }
