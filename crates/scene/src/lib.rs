@@ -1,5 +1,6 @@
-mod Scene
-mod GeometricObject
+mod scene;
+mod geometric_object;
+
 #[cfg(test)]
 mod tests {
     use super::*;
