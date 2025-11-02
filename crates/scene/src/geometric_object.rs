@@ -1,4 +1,4 @@
-use glam
+use glam;
 
 struct GeometricObject{
     //one or more triangles
