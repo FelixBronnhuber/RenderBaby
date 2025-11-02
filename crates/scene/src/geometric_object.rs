@@ -109,7 +109,6 @@ impl Camera{
     pub fn get_rotation(&self) -> &Rotation {
         &self.rotation
     }
-
     pub fn new(position: Vec3, rotation: Rotation) -> Self {
         Camera { position, rotation }
     }
@@ -120,18 +119,18 @@ pub(crate) struct Rotation{
     yaw: f32,
 }
 impl Rotation{
-    fn set(&mut self,pitch:f32,yaw:f32){
+    pub fn set(&mut self,pitch:f32,yaw:f32){
         self.pitch = pitch;
         self.yaw = yaw;
     }
-    fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)} // maybe into (f32, f32)?
+    pub fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)} // maybe into (f32, f32)?
     fn get_pitch(&self) -> f32 {
         self.pitch
     }
-    fn get_yaw(&self) -> f32 {
+    pub fn get_yaw(&self) -> f32 {
         self.yaw
     }
-    fn new(pitch:f32, yaw:f32) -> Self {
+    pub fn new(pitch:f32, yaw:f32) -> Self {
         Rotation { pitch, yaw }
     }
 }
