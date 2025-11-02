@@ -36,7 +36,18 @@ impl Circle {
     
 pub struct Triangle{
     points: Vec<Vec3>,
-    material: Material
+    material: Option<Material>
+}
+impl Triangle{
+    pub fn new(points: Vec<Vec3>, material: Option<Material>) -> Triangle {
+        Triangle{points, material}
+    }
+    pub fn get_points(&self) -> &Vec<Vec3> {
+        &self.points
+    }
+    pub fn add_point(&mut self, point: Vec3) {
+        self.points.push(point);
+    }
 }
 pub struct Camera{
     position: Vec3,
@@ -49,6 +60,7 @@ impl Camera{
     pub fn set_rotation(&mut self, pitch: f32, yaw: f32){
         self.rotation = Rotation { pitch, yaw }
     }
+
     pub fn position(&self) -> Vec3 {
         self.position
     }
@@ -66,7 +78,7 @@ impl Rotation{
         self.pitch = pitch;
         self.yaw = yaw;
     }
-    fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)}
+    pub fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)}
 }
 pub struct LightSource{
     position: Vec3
