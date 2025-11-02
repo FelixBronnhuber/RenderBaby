@@ -11,7 +11,7 @@ pub struct Sphere {
 }
 impl Sphere {
     pub fn scale(&mut self, factor: f32) -> f32 {
-        self.radius = self.radius * factor;
+        self.radius *= factor;
         self.radius
     }
 
@@ -31,7 +31,7 @@ impl Sphere {
     }
 
     pub fn translate(&mut self, vec: Vec3) -> Vec3 {
-        self.center = self.center + vec;
+        self.center += vec;
         self.center
     }
 
@@ -43,6 +43,10 @@ impl Sphere {
     }
     pub fn rotate(&mut self) {}
 
+    pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
+        Sphere { center, radius, material }
+    }
+
 } 
 pub struct TriGeometry {
     triangles: Vec<Triangle>
@@ -50,6 +54,10 @@ pub struct TriGeometry {
 impl TriGeometry{
     pub fn get_triangles(&self)-> &Vec<Triangle> {
         &self.triangles
+    }
+
+    pub fn new(triangles: Vec<Triangle>) -> Self {
+        TriGeometry { triangles }
     }
 }
 pub struct Triangle{
@@ -78,6 +86,11 @@ impl Triangle {
         }
         self.get_points()
     }
+
+    pub fn new(points: Vec<Vec3>, material: Material) -> Self {
+        // todo: Check length of points, throw error...
+        Triangle { points, material }
+    }
 }
 pub struct Camera{
     position: Vec3,
@@ -90,11 +103,15 @@ impl Camera{
     pub fn set_rotation(&mut self, pitch: f32, yaw: f32){
         self.rotation = Rotation { pitch, yaw }
     }
-    pub fn position(&self) -> Vec3 {
+    pub fn get_position(&self) -> Vec3 {
         self.position
     }
-    pub fn rotation(&self) -> &Rotation {
+    pub fn get_rotation(&self) -> &Rotation {
         &self.rotation
+    }
+
+    pub fn new(position: Vec3, rotation: Rotation) -> Self {
+        Camera { position, rotation }
     }
 }
 
@@ -107,7 +124,13 @@ impl Rotation{
         self.pitch = pitch;
         self.yaw = yaw;
     }
-    fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)}
+    fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)} // maybe into (f32, f32)?
+    fn get_pitch(&self) -> f32 {
+        self.pitch
+    }
+    fn get_yaw(&self) -> f32 {
+        self.yaw
+    }
 }
 pub struct LightSource{
     position: Vec3
@@ -117,5 +140,6 @@ pub struct Material{
 
 }
 pub struct Color{
+    pub rgb: u8
 
 }
