@@ -30,5 +30,9 @@ impl Scene{
         self.camera = camera;
     }
 
+    pub fn new() -> Self {
+        Self { objects: Vec::new(), camera: Camera::new(Vec3 { x: 0.0, y: 0.0, z: 0.0 }, Rotation::new(0.0, 0.0)), light_sources: Vec::new() }
+    }
+
     
 }
