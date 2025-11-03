@@ -1,3 +1,1 @@
-pub mod model;
-pub mod view;
-pub mod controller;
+mod mvc;
