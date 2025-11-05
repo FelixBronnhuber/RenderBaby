@@ -95,6 +95,7 @@ impl Triangle {
 pub struct Camera{
     position: Vec3,
     rotation: Rotation
+    // fov: f32 ?
 }
 impl Camera{
     pub fn set_position(&mut self, position: Vec3) {
@@ -166,6 +167,8 @@ pub struct Material{
 
 }
 pub struct Color{
-    pub rgb: u8
+    pub r: u8,
+    pub g: u8,
+    pub b: u8
 
 }
