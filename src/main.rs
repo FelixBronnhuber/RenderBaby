@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui::output;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE */
@@ -45,13 +46,14 @@ impl eframe::App for App {
             if ui.button("Render").clicked() || self.dirty {
                 if let Some(renderer) = &mut self.renderer {
                     match renderer.render() {
-                        Ok(output) => {
-                            if let Err(e) = output.validate() {
+                        Ok(output) => match output.validate() {
+                            Err(e) => {
                                 log::error!("Invalid render output: {}", e);
-                            } else {
+                            }
+                            Ok(_) => {
                                 self.update_image_from_output(ctx, &output);
                             }
-                        }
+                        },
                         Err(e) => log::error!("Render failed: {}", e),
                     }
                 }
