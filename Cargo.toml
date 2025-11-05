@@ -4,14 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-computational-plane = { path = "crates/computational-plane" }
-data-plane = { path = "crates/data-plane" }
-control-plane = { path = "crates/control-plane" }
+eframe = "0.33.0"
+egui = "0.33.0"
+engine-wgpu-wrapper = { path = "crates/engine-wgpu-wrapper" }
+env_logger = "0.11.8"
+log = "0.4.28"
 
 [workspace]
 members = [
-    "crates/computational-plane",
-    "crates/data-plane",
-    "crates/control-plane",
-    "."
+    ".",
+    "crates/engine-pathtracer",
+    "crates/engine-raytracer",
+    "crates/engine-wgpu-wrapper"
 ]

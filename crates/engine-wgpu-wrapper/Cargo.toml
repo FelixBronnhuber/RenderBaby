@@ -1,0 +1,12 @@
+[package]
+name = "engine-wgpu-wrapper"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+wgpu = "27.0.1"
+engine-raytracer = { path = "../engine-raytracer" }
+engine-pathtracer = { path = "../engine-pathtracer" }
+bytemuck = "1.24.0"
+pollster = "0.4.0"
