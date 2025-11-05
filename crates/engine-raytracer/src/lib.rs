@@ -94,8 +94,6 @@ pub struct RenderState {
     pipeline: wgpu::ComputePipeline,
     output_buffer: wgpu::Buffer,
     staging_buffer: wgpu::Buffer,
-    dimensions_buffer: wgpu::Buffer,
-    spheres_buffer: wgpu::Buffer,
     main_bind_group: wgpu::BindGroup,
     width: usize,
     height: usize,
@@ -105,14 +103,11 @@ impl RenderState {
     pub fn new(
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
-        dimensions_buffer: wgpu::Buffer,
-        spheres_buffer: wgpu::Buffer,
         output_buffer: wgpu::Buffer,
         staging_buffer: wgpu::Buffer,
         bind_group_layout: wgpu::BindGroupLayout,
         bind_group: wgpu::BindGroup,
-        width: usize,
-        height: usize,
+        dimensions: (usize, usize),
     ) -> Self {
         let pipeline = ComputePipelineResources::new(&device, &bind_group_layout).pipeline;
 
@@ -122,11 +117,9 @@ impl RenderState {
             pipeline,
             output_buffer,
             staging_buffer,
-            dimensions_buffer,
-            spheres_buffer,
             main_bind_group: bind_group,
-            width,
-            height,
+            width: dimensions.0,
+            height: dimensions.1,
         }
     }
 
