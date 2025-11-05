@@ -1,4 +1,4 @@
-pub struct ActionStack {
+pub(crate) struct ActionStack {
     actions: Vec<SceneAction>,
     undone: Vec<SceneAction>
 }
@@ -6,6 +6,9 @@ pub struct ActionStack {
 impl ActionStack {
     pub fn undo(&mut self) {todo!()}
     pub fn redo(&mut self) {todo!()}
+    pub fn new() -> Self {
+        Self { actions: Vec::new(), undone: Vec::new() }
+    }
 }
 
 

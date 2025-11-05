@@ -2,7 +2,7 @@ use glam::Vec3;
 
 use crate::geometric_object::{Camera, GeometricObject, LightSource, Rotation};
 
-pub struct SceneGraph {
+pub(crate) struct SceneGraph {
     objects: Vec<GeometricObject>,
     light_sources: Vec<LightSource>,
     camera: Camera
@@ -32,8 +32,8 @@ impl SceneGraph {
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         &self.light_sources
     }
-    pub fn get_camera(&self) -> &Camera {
-        &self.camera
+    pub fn get_camera(&mut self) -> &mut Camera {
+        &mut self.camera
     }
 
     // todo return value
@@ -44,4 +44,5 @@ impl SceneGraph {
     pub fn remove_light_source(&mut self, index: usize) {
         self.light_sources.remove(index);
     }
+    
 }

@@ -2,7 +2,7 @@ mod scene;
 mod geometric_object;
 mod obj_parser;
 mod scene_graph;
-
+mod action_stack;
 #[cfg(test)]
 mod tests {
     use glam::Vec3;
