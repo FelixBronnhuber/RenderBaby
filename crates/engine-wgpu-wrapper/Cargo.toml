@@ -2,6 +2,8 @@
 name = "engine-wgpu-wrapper"
 version = "0.1.0"
 edition = "2024"
+description = "Provides a reusable wgpu setup base and delegates the rest to engine-raytracer/pathtracer."
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.100"

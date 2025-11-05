@@ -2,5 +2,7 @@
 name = "engine-pathtracer"
 version = "0.1.0"
 edition = "2024"
+description = "Provides a wgpu-based path tracing implementation, extending the engine-wgpu-wrapper crate"
+readme = "README.md"
 
 [dependencies]
