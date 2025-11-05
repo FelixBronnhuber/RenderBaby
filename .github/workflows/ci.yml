@@ -2,9 +2,13 @@ name: Rust CI
 
 on:
   push:
-    branches: [ master ]
+    branches: 
+      - master
+      - 'sprint-[0-9]*'
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - 'sprint-[0-9]*'
 
 jobs:
   build-test-lint:
