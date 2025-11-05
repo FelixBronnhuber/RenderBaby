@@ -1,5 +1,4 @@
 use eframe::egui;
-use egui::output;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE */
@@ -10,12 +9,11 @@ pub struct App {
     image: Option<egui::TextureHandle>,
     dirty: bool,
     renderer: Option<WgpuWrapper>,
-    init_error: Option<String>,
 }
 
 impl App {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        let (renderer, init_error) = match WgpuWrapper::new(EngineType::Raytracer, WIDTH, HEIGHT) {
+        let (renderer, _) = match WgpuWrapper::new(EngineType::Raytracer, WIDTH, HEIGHT) {
             Ok(r) => (Some(r), None),
             Err(e) => {
                 let msg = format!("Renderer initialization failed: {}", e);
@@ -27,12 +25,11 @@ impl App {
             image: None,
             dirty: true,
             renderer,
-            init_error,
         }
     }
 
     pub fn update_image_from_output(&mut self, ctx: &egui::Context, output: &RenderOutput) {
-        let size = [output.width as usize, output.height as usize];
+        let size = [output.width, output.height];
         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &output.pixels);
         self.image = Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
     }

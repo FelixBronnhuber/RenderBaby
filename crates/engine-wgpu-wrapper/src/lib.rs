@@ -69,7 +69,7 @@ impl BufferBundle {
 
         let spheres_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Spheres Buffer"),
-            contents: bytemuck::cast_slice(&SPHERES.to_vec()),
+            contents: bytemuck::cast_slice(SPHERES.as_ref()),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -208,14 +208,11 @@ impl WgpuWrapper {
             EngineType::Raytracer => RenderState::new(
                 Arc::clone(&ctx.gpu.device),
                 Arc::clone(&ctx.gpu.queue),
-                ctx.buffers.dimensions,
-                ctx.buffers.spheres,
                 ctx.buffers.output,
                 ctx.buffers.staging,
                 ctx.bind_groups.layout,
                 ctx.bind_groups.group,
-                width,
-                height,
+                (width, height),
             ),
             EngineType::Pathtracer => todo!("Implement PathTracer::new(...)"),
         };
