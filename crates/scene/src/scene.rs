@@ -15,15 +15,15 @@ impl Scene {
     pub fn get_camera(&mut self) -> &mut Camera {
         self.scene_graph.get_camera()
     }
-    pub fn set_camera_position(&mut self, pos: Vec<f32>) {
+    /*pub fn set_camera_position(&mut self, pos: Vec<f32>) {
         self.get_camera().set_position(Vec3::new(pos[0], pos[1], pos[2]));
     }
-    /*pub fn set_camera_rotation(&mut self, pitch: f32, yaw: f32) {
+    pub fn set_camera_rotation(&mut self, pitch: f32, yaw: f32) {
         self.get_camera().set_rotation(pitch, yaw);
-    }
+    }*/
     pub fn new() -> Self {
         Self {scene_graph: SceneGraph::new(), action_stack: ActionStack::new()}
-    }*/
+    }
 
     pub fn add_object(&mut self, obj: GeometricObject) {
         self.scene_graph.add_object(obj);
@@ -40,6 +40,14 @@ impl Scene {
     }
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         self.scene_graph.get_light_sources()
+    }
+
+    //action stack fns
+    pub fn undo(&mut self) {
+        self.action_stack.undo();
+    }
+    pub fn redo(&mut self) {
+        self.action_stack.redo();
     }
     
 }
