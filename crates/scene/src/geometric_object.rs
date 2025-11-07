@@ -1,14 +1,21 @@
 use glam::{Vec3};
 
-pub enum GeometricObject{
+/*pub enum GeometricObject{
     Triangles(Vec<Triangle>),
     Sphere(Sphere)
+}*/
+
+//marker for now
+pub trait GeometricObject {
+    //todo!();
+    fn something(&self){}
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material
 }
+impl GeometricObject for Sphere{ }
 impl Sphere {
     pub fn scale(&mut self, factor: f32) -> f32 {
         self.radius *= factor;
@@ -45,13 +52,14 @@ impl Sphere {
     pub fn rotate(&mut self) {}
 
     pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
-        Sphere { center, radius, material }
+        Self { center, radius, material }
     }
 
 } 
 pub struct TriGeometry {
     triangles: Vec<Triangle>
 }  
+impl GeometricObject for TriGeometry {}
 impl TriGeometry{
     pub fn get_triangles(&self)-> &Vec<Triangle> {
         &self.triangles
@@ -141,23 +149,23 @@ pub struct LightSource{
 }
 
 impl LightSource {
-    fn get_position(&self) -> Vec3 {
+    pub fn get_position(&self) -> Vec3 {
         self.position
     }
 
-    fn set_position(&mut self, position: Vec3) {
+    pub fn set_position(&mut self, position: Vec3) {
         self.position = position
     }
 
-    fn get_luminositoy(&self) -> f32 {
+    pub fn get_luminositoy(&self) -> f32 {
         self.luminosity
     }
 
-    fn set_luminosity(&mut self, luminosity: f32) {
+    pub fn set_luminosity(&mut self, luminosity: f32) {
         self.luminosity = luminosity
     }
 
-    fn new(position: Vec3, luminosity: f32) -> Self {
+    pub fn new(position: Vec3, luminosity: f32) -> Self {
         LightSource { position, luminosity }
     }
 }
