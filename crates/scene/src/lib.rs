@@ -33,7 +33,8 @@ mod tests {
         let obj = objects.get(0);
         let obj_unpacked = obj.unwrap();
         let obj_obj = obj_unpacked.as_ref();
-        obj_obj.something();
+        //obj_obj.something();
+        
     }
 
     #[test]

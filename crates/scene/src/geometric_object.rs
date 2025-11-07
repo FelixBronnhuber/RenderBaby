@@ -8,19 +8,18 @@ use glam::{Vec3};
 //marker for now
 pub trait GeometricObject {
     //todo!();
-    fn something(&self){}
+    fn scale(&mut self, factor: f32);
+    fn translate(&mut self, vec: Vec3);
+    fn rotate(&mut self, vec: Vec3);
+
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material
 }
-impl GeometricObject for Sphere{ }
 impl Sphere {
-    pub fn scale(&mut self, factor: f32) -> f32 {
-        self.radius *= factor;
-        self.radius
-    }
+    
 
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
@@ -30,7 +29,7 @@ impl Sphere {
         self.radius
     }
     
-    pub fn center(&self) -> Vec3 {
+    pub fn get_center(&self) -> Vec3 {
         self.center
     }
 
@@ -38,28 +37,50 @@ impl Sphere {
         self.center = center;
     }
 
-    pub fn translate(&mut self, vec: Vec3) -> Vec3 {
-        self.center += vec;
-        self.center
-    }
-
+    
     pub fn get_material(&self) -> &Material {
         &self.material
     }
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
-    pub fn rotate(&mut self) {}
 
     pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
         Self { center, radius, material }
     }
+}
+impl GeometricObject for Sphere{
+    fn scale(&mut self, factor: f32){
+        self.radius *= factor;
+        //self.radius
+    }
+    fn translate(&mut self, vec: Vec3){
+        self.center += vec;
+        //self.center
+    }
+    fn rotate(&mut self, vec: Vec3) {}
+}
 
-} 
 pub struct TriGeometry {
     triangles: Vec<Triangle>
 }  
-impl GeometricObject for TriGeometry {}
+impl GeometricObject for TriGeometry {
+    fn scale(&mut self, factor: f32) {
+        for tri in self.get_triangles(){
+            tri.scale(factor);
+        }
+    }
+
+    fn translate(&mut self, vec: Vec3) {
+        for tri in self.get_triangles() {
+            tri.translate(vec);
+        }
+    }
+
+    fn rotate(&mut self, vec: Vec3) {
+        todo!()
+    }
+}
 impl TriGeometry{
     pub fn get_triangles(&self)-> &Vec<Triangle> {
         &self.triangles
@@ -80,9 +101,9 @@ impl Triangle {
     pub fn get_points(&self) -> &Vec<Vec3> {
         &self.points
     }
-    pub fn add_point(&mut self, point: Vec3) {
+    /*pub fn add_point(&mut self, point: Vec3) {
         self.points.push(point);
-    }
+    }*/
     pub fn get_material(&self) -> &Option<Material> {
         &self.material
     }
@@ -93,13 +114,26 @@ impl Triangle {
         self.points = points;
         // todo: check for points length, otherwise error
     }
-    pub fn translate(&mut self, vec: Vec3) -> &Vec<Vec3> {
+    
+}
+impl GeometricObject for Triangle {
+    fn translate(&mut self, vec: Vec3)/* -> &Vec<Vec3>*/  {
         for point in &mut self.points {
             *point += vec;
         }
-        self.get_points()
+        //self.get_points()
     }
+    
+    fn scale(&mut self, factor: f32) {
+        todo!()
+    }
+    
+    fn rotate(&mut self, vec: Vec3) {
+        todo!()
+    }
+
 }
+
 pub struct Camera{
     position: Vec3,
     rotation: Rotation
