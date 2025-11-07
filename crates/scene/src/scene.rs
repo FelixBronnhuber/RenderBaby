@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-use crate::{action_stack::ActionStack, geometric_object::{Camera, GeometricObject, LightSource, Rotation}, scene_graph::SceneGraph};
+use crate::{action_stack::ActionStack, geometric_object::{Camera, GeometricObject, LightSource, Material, Rotation, Sphere}, scene_graph::SceneGraph};
 
 
 pub struct Scene{
@@ -12,6 +12,33 @@ pub struct Scene{
     action_stack: ActionStack
 }
 impl Scene {
+    pub fn image_buffer(&self) -> Vec<u8> {
+        todo!()
+        // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
+    }
+    pub fn render(&self) -> Vec<u8> {
+        todo!()
+    }
+
+    pub fn proto_init(&mut self) {
+        let sphere = Sphere::new(
+            Vec3::new(2.0, 0.0, 0.0),
+            1.0,
+            Material{}
+        );
+        let cam = Camera::new(
+            Vec3::new(2.0, 0.0, 0.0),
+            Rotation::new(0.0, 0.0)
+        );
+        let light = LightSource::new(
+            Vec3::new(0.0, 0.0, 3.0),
+            0.0
+        );
+        self.add_object(Box::new(sphere));
+        self.set_camera(cam);
+        self.add_lightsource(light);
+
+    }
     pub fn get_camera(&mut self) -> &mut Camera {
         self.scene_graph.get_camera()
     }
@@ -25,7 +52,7 @@ impl Scene {
         Self {scene_graph: SceneGraph::new(), action_stack: ActionStack::new()}
     }
 
-    pub fn add_object(&mut self, obj: GeometricObject) {
+    pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
         self.scene_graph.add_object(obj);
     }
     pub fn add_lightsource(&mut self, light: LightSource) {
@@ -35,14 +62,14 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
     
-    pub fn get_objects(&self) -> &Vec<GeometricObject> {
+    pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
         self.scene_graph.get_objects()
     }
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         self.scene_graph.get_light_sources()
     }
 
-    //action stack fns
+    //action stack fns: currently empty
     pub fn undo(&mut self) {
         self.action_stack.undo();
     }
