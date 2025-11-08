@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use glam::{Vec3};
 
 /*pub enum GeometricObject{
@@ -11,6 +13,7 @@ pub trait GeometricObject {
     fn scale(&mut self, factor: f32);
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
+    fn as_any(&self) -> &dyn Any;
 
 }
 pub struct Sphere {
@@ -59,6 +62,11 @@ impl GeometricObject for Sphere{
         //self.center
     }
     fn rotate(&mut self, vec: Vec3) {}
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 
 pub struct TriGeometry {
@@ -80,10 +88,17 @@ impl GeometricObject for TriGeometry {
     fn rotate(&mut self, vec: Vec3) {
         todo!()
     }
+    
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 }
 impl TriGeometry{
-    pub fn get_triangles(&self)-> &Vec<Triangle> {
-        &self.triangles
+    pub fn get_triangles(&mut self)-> &mut Vec<Triangle> {
+        &mut self.triangles
+        // maybe one fn for mut, one for immut?
     }
 
     pub fn new(triangles: Vec<Triangle>) -> Self {
@@ -131,6 +146,12 @@ impl GeometricObject for Triangle {
     fn rotate(&mut self, vec: Vec3) {
         todo!()
     }
+    
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
 
 }
 
