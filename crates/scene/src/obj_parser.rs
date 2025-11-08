@@ -1,6 +1,6 @@
 use std::path::Path;
 //use super::lib;
-use crate::geometric_object::{GeometricObject, Triangle};
+use crate::geometric_object::{GeometricObject, TriGeometry, Triangle};
 use glam::{Vec3};
 pub fn parseobj() {
     let obj_path = Path::new("./test.obj");
@@ -24,7 +24,7 @@ pub fn parseobj() {
     let mut z: usize = 0;
     models.iter().for_each(|model| {
         z = 0;
-        let triangles = GeometricObject::Triangles(Vec::new());
+        let triangles = TriGeometry::new(Vec::new());
         let mut vec:Vec<Vec3> = Vec::new();
         for i in 0..3 {
             while z < (model.mesh.positions.len() / 3) {
@@ -36,7 +36,7 @@ pub fn parseobj() {
         }
         println!("vec: {:?}", vec);
         println!("indices: {:?}", model.mesh.indices);
-        let mut i = (model.mesh.indices.len()/3);
+        let mut i = model.mesh.indices.len()/3;
 
         for u in 0..i {
             let mut a = Triangle::new(Vec::new(),None);

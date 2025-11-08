@@ -129,6 +129,9 @@ impl Triangle {
         self.points = points;
         // todo: check for points length, otherwise error
     }
+    pub fn add_point(&mut self, point: Vec3) {
+        self.points.push(point);
+    }
     
 }
 impl GeometricObject for Triangle {
