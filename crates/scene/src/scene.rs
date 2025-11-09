@@ -2,7 +2,7 @@ use glam::Vec3;
 
 use crate::{action_stack::ActionStack, geometric_object::{Camera, GeometricObject, LightSource, Material, Rotation, Sphere}, scene_graph::SceneGraph};
 
-
+/// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene{
     /*objects: Vec<GeometricObject>,
     camera: Camera,
@@ -21,6 +21,7 @@ impl Scene {
     }
 
     pub fn proto_init(&mut self) {
+        //! For the early version: This function adds a sphere, a camera, and a lightsource
         let sphere = Sphere::new(
             Vec3::new(2.0, 0.0, 0.0),
             1.0,
