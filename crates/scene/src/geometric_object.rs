@@ -1,8 +1,20 @@
+use std::any::Any;
+
 use glam::{Vec3};
 
-pub enum GeometricObject{
+/*pub enum GeometricObject{
     Triangles(Vec<Triangle>),
     Sphere(Sphere)
+}*/
+
+//marker for now
+pub trait GeometricObject {
+    //todo!();
+    fn scale(&mut self, factor: f32);
+    fn translate(&mut self, vec: Vec3);
+    fn rotate(&mut self, vec: Vec3);
+    fn as_any(&self) -> &dyn Any;
+
 }
 pub struct Sphere {
     center: Vec3,
@@ -10,10 +22,7 @@ pub struct Sphere {
     material: Material
 }
 impl Sphere {
-    pub fn scale(&mut self, factor: f32) -> f32 {
-        self.radius *= factor;
-        self.radius
-    }
+    
 
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
@@ -23,7 +32,7 @@ impl Sphere {
         self.radius
     }
     
-    pub fn center(&self) -> Vec3 {
+    pub fn get_center(&self) -> Vec3 {
         self.center
     }
 
@@ -31,30 +40,65 @@ impl Sphere {
         self.center = center;
     }
 
-    pub fn translate(&mut self, vec: Vec3) -> Vec3 {
-        self.center += vec;
-        self.center
-    }
-
+    
     pub fn get_material(&self) -> &Material {
         &self.material
     }
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
-    pub fn rotate(&mut self) {}
 
     pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
-        Sphere { center, radius, material }
+        Self { center, radius, material }
+    }
+}
+impl GeometricObject for Sphere{
+    fn scale(&mut self, factor: f32){
+        self.radius *= factor;
+        //self.radius
+    }
+    fn translate(&mut self, vec: Vec3){
+        self.center += vec;
+        //self.center
+    }
+    fn rotate(&mut self, vec: Vec3) {}
+    
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 
-} 
+}
+
 pub struct TriGeometry {
     triangles: Vec<Triangle>
 }  
+impl GeometricObject for TriGeometry {
+    fn scale(&mut self, factor: f32) {
+        for tri in self.get_triangles(){
+            tri.scale(factor);
+        }
+    }
+
+    fn translate(&mut self, vec: Vec3) {
+        for tri in self.get_triangles() {
+            tri.translate(vec);
+        }
+    }
+
+    fn rotate(&mut self, vec: Vec3) {
+        todo!()
+    }
+    
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+}
 impl TriGeometry{
-    pub fn get_triangles(&self)-> &Vec<Triangle> {
-        &self.triangles
+    pub fn get_triangles(&mut self)-> &mut Vec<Triangle> {
+        &mut self.triangles
+        // maybe one fn for mut, one for immut?
     }
 
     pub fn new(triangles: Vec<Triangle>) -> Self {
@@ -72,9 +116,9 @@ impl Triangle {
     pub fn get_points(&self) -> &Vec<Vec3> {
         &self.points
     }
-    pub fn add_point(&mut self, point: Vec3) {
+    /*pub fn add_point(&mut self, point: Vec3) {
         self.points.push(point);
-    }
+    }*/
     pub fn get_material(&self) -> &Option<Material> {
         &self.material
     }
@@ -85,16 +129,39 @@ impl Triangle {
         self.points = points;
         // todo: check for points length, otherwise error
     }
-    pub fn translate(&mut self, vec: Vec3) -> &Vec<Vec3> {
+    pub fn add_point(&mut self, point: Vec3) {
+        self.points.push(point);
+    }
+    
+}
+impl GeometricObject for Triangle {
+    fn translate(&mut self, vec: Vec3)/* -> &Vec<Vec3>*/  {
         for point in &mut self.points {
             *point += vec;
         }
-        self.get_points()
+        //self.get_points()
     }
+    
+    fn scale(&mut self, factor: f32) {
+        todo!()
+    }
+    
+    fn rotate(&mut self, vec: Vec3) {
+        todo!()
+    }
+    
+    
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+
 }
+
 pub struct Camera{
     position: Vec3,
     rotation: Rotation
+    // fov: f32 ?
 }
 impl Camera{
     pub fn set_position(&mut self, position: Vec3) {
@@ -140,23 +207,23 @@ pub struct LightSource{
 }
 
 impl LightSource {
-    fn get_position(&self) -> Vec3 {
+    pub fn get_position(&self) -> Vec3 {
         self.position
     }
 
-    fn set_position(&mut self, position: Vec3) {
+    pub fn set_position(&mut self, position: Vec3) {
         self.position = position
     }
 
-    fn get_luminositoy(&self) -> f32 {
+    pub fn get_luminositoy(&self) -> f32 {
         self.luminosity
     }
 
-    fn set_luminosity(&mut self, luminosity: f32) {
+    pub fn set_luminosity(&mut self, luminosity: f32) {
         self.luminosity = luminosity
     }
 
-    fn new(position: Vec3, luminosity: f32) -> Self {
+    pub fn new(position: Vec3, luminosity: f32) -> Self {
         LightSource { position, luminosity }
     }
 }
@@ -166,6 +233,8 @@ pub struct Material{
 
 }
 pub struct Color{
-    pub rgb: u8
+    pub r: u8,
+    pub g: u8,
+    pub b: u8
 
 }
