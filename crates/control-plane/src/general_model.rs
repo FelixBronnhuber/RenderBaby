@@ -1,16 +1,16 @@
-use crate::mvc::Model;
+use crate::mvc;
 
-pub struct FullModel {
+pub struct Model {
 
 }
 
-impl FullModel {
+impl Model {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl Model for FullModel {
+impl mvc::Model for Model {
     fn update(&mut self) {
         todo!()
     }

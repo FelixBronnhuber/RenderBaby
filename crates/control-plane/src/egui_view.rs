@@ -1,9 +1,9 @@
-use crate::mvc::View;
-use crate::controller::FullViewListener;
-use crate::model::FullModel;
+use crate::mvc;
+use crate::general_controller;
+use crate::mvc::ViewListener;
 
 pub struct EGuiView {
-    listener: Option<Box<dyn FullViewListener>>,
+    listener: Option<Box<dyn mvc::ViewListener<general_controller::Event>>>,
 }
 
 impl EGuiView {
@@ -12,18 +12,12 @@ impl EGuiView {
     }
 }
 
-impl<V> View<FullModel, V> for EGuiView
-    where V: FullViewListener + 'static
-{
+impl mvc::View<general_controller::Event> for EGuiView {
     fn run(self) {
         todo!()
     }
 
-    fn update(&mut self, model: &FullModel) {
-        todo!()
-    }
-
-    fn set_listener(&mut self, listener: Box<V>) {
+    fn set_listener(&mut self, listener: Box<dyn ViewListener<general_controller::Event>>) {
         self.listener = Some(listener);
     }
 }

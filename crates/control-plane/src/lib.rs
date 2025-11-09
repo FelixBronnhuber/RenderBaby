@@ -1,4 +1,4 @@
 mod mvc;
-mod controller;
+mod general_controller;
 mod egui_view;
-mod model;
+mod general_model;

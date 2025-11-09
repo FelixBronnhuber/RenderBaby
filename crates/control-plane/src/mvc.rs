@@ -4,8 +4,17 @@ pub trait Model {
     /* functions that communicate with other planes ... */
 }
 
-pub trait View<M: Model, L: ?Sized> {
+pub trait ViewListener<E> {
+    fn handle_event(&mut self, event: E);
+}
+
+pub trait View<E> {
     fn run(self);
-    fn update(&mut self, model: &M); // could be made more specific.
-    fn set_listener(&mut self, listener: Box<L>);
+    fn set_listener(&mut self, listener: Box<dyn ViewListener<E>>);
+}
+
+pub trait Controller<M: Model, E> : ViewListener<E> {
+    fn start(&mut self);
+    fn set_view(&mut self, view: Box<dyn View<E>>);
+    fn set_model(&mut self, model: M);
 }
