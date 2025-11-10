@@ -20,4 +20,27 @@ impl Scene{
         }
         res
     }
+
+    pub fn render(&self) -> Vec<u8> {
+    let render_state = RenderState::new(
+        Arc::new(GpuDevice::new()),
+            Arc::new(Queue::new()),
+            Buffer::new(),
+            Buffer::new(),
+            BindGroupLayout,
+            bind_group,
+            dimensions);
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
 }

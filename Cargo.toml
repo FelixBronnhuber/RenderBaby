@@ -18,4 +18,4 @@ members = [
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
     "crates/scene"
-]
+, "crates/scene-engine-adapter"]

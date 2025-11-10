@@ -1,0 +1,8 @@
+[package]
+name = "scene-engine-adapter"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
+scene = {path = "../scene"}

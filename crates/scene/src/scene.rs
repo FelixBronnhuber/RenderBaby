@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use engine_wgpu_wrapper::{GpuDevice, RenderState};
 use glam::Vec3;
 
 use crate::{action_stack::ActionStack, geometric_object::{Camera, GeometricObject, LightSource, Material, Rotation, Sphere}, scene_graph::SceneGraph};
@@ -16,9 +19,7 @@ impl Scene {
         todo!()
         // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
     }
-    pub fn render(&self) -> Vec<u8> {
-        todo!()
-    }
+
 
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
