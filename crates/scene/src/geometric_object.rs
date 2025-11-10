@@ -24,7 +24,12 @@ pub struct Sphere {
 }
 impl Sphere {
     
-
+    pub fn set_color(&mut self, color: [u8; 3]) {
+        self.color = color;
+    }
+    pub fn get_color(&self) -> [u8; 3] {
+        self.color
+    }
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
     }
