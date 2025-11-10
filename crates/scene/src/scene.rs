@@ -22,10 +22,12 @@ impl Scene {
 
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
+        let color = [0, 128, 0];
         let sphere = Sphere::new(
             Vec3::new(2.0, 0.0, 0.0),
             1.0,
-            Material{}
+            Material{},
+            color
         );
         let cam = Camera::new(
             Vec3::new(2.0, 0.0, 0.0),

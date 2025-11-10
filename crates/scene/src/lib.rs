@@ -5,6 +5,7 @@ mod geometric_object;
 mod obj_parser;
 mod scene_graph;
 mod action_stack;
+mod render_angine_adapter;
 
 pub fn test_dyn(obj: Box<dyn GeometricObject>) {
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();
@@ -22,7 +23,8 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(4, 4);
-        let sphere = geometric_object::Sphere::new(Vec3::new(0.0,0.0,0.0), 1.0, Material{});
+        let color = [0, 128, 0];
+        let sphere = geometric_object::Sphere::new(Vec3::new(0.0,0.0,0.0), 1.0, Material{}, color);
         let radius = 1.0;
         assert_eq!(sphere.get_radius(), radius);
         let mut scene = Scene::new();

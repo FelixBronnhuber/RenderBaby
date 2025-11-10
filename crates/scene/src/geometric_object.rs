@@ -19,7 +19,8 @@ pub trait GeometricObject {
 pub struct Sphere {
     center: Vec3,
     radius: f32,
-    material: Material
+    material: Material,
+    color: [u8; 3]
 }
 impl Sphere {
     
@@ -48,8 +49,8 @@ impl Sphere {
         self.material = material;
     }
 
-    pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
-        Self { center, radius, material }
+    pub fn new(center: Vec3, radius: f32, material: Material, color: [u8; 3]) -> Self {
+        Self { center, radius, material, color }
     }
 }
 impl GeometricObject for Sphere{
