@@ -42,8 +42,7 @@ impl App for View {
             /*log::error!("Render failed: {}", e)*/
             {
                 print!("Error: Render failed: {}", e)
-            }
-            //todo: GUI should show some error message
+            } //todo: GUI should show some error message
         }
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
