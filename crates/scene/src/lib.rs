@@ -1,16 +1,16 @@
 use crate::geometric_object::GeometricObject;
 
-mod scene;
-mod geometric_object;
+pub mod scene;
+pub mod geometric_object;
 mod obj_parser;
 mod scene_graph;
 mod action_stack;
-mod scene_engine_adapter;
+pub mod scene_engine_adapter;
 
-pub fn test_dyn(obj: Box<dyn GeometricObject>) {
+/*pub fn test_dyn(obj: Box<dyn GeometricObject>) {
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();
     objects.push(obj);
-}
+}*/
 #[cfg(test)]
 mod tests {
     use glam::Vec3;

@@ -1,4 +1,4 @@
-use engine_wgpu_wrapper::{EngineType, WgpuWrapper};
+use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
 
 use crate::{geometric_object::Sphere, scene::Scene};
 type RenderSphere = engine_wgpu_wrapper::Sphere;
@@ -23,14 +23,17 @@ impl Scene{
         res
     }
 
-    pub fn render(&self) -> Vec<u8> {
+    pub fn render(&self) -> RenderOutput { // todo: change return type to mask engine plane
         // todo: get from camera
-        let width = 600;
-        let height = 800;
+        let width = 1920 / 2;
+        let height = 1080 / 2; // todo: add camera size / fov
+        //let render_spheres = self.get_render_spheres();
         let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height);
         let res = wgpu.unwrap().render();
         let res = res.unwrap(); // todo catch error...
-        res.pixels
+        //res.pixels
+        //(res.height, res.width, res.pixels)
+        res
     }
 }
 

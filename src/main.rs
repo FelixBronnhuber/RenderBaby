@@ -1,6 +1,6 @@
 use eframe::egui;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
-
+use scene::scene::Scene;
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE */
 static WIDTH: usize = 1920 / 2;
 static HEIGHT: usize = 1080 / 2;
@@ -9,6 +9,7 @@ pub struct App {
     image: Option<egui::TextureHandle>,
     dirty: bool,
     renderer: Option<WgpuWrapper>,
+    scene: Scene
 }
 
 impl App {
@@ -20,11 +21,13 @@ impl App {
                 (None, Some(msg))
             }
         };
-
+        let mut scene = Scene::new();
+        scene.proto_init();
         Self {
             image: None,
             dirty: true,
             renderer,
+            scene
         }
     }
 
@@ -40,9 +43,9 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Rendered Output");
 
-            if ui.button("Render").clicked() || self.dirty {
-                if let Some(renderer) = &mut self.renderer {
-                    match renderer.render() {
+/*             if ui.button("Render").clicked() || self.dirty {
+                if let Some(scene) = &mut self.scene {
+                    match scene.render() {
                         Ok(output) => match output.validate() {
                             Err(e) => {
                                 log::error!("Invalid render output: {}", e);
@@ -55,6 +58,10 @@ impl eframe::App for App {
                     }
                 }
                 self.dirty = false;
+            } */
+            if ui.button("Render").clicked() || self.dirty {
+                let output = self.scene.render();
+                self.update_image_from_output(ctx, &output);
             }
 
             if let Some(img) = &self.image {
