@@ -2,13 +2,14 @@ use crate::{geometric_object::Sphere, scene::Scene};
 /// Serves as an adpter between the scene plane and the render engine.
 //use std::fmt::Error;
 use anyhow::{Error, Result};
+use engine_config::RenderCommand;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
-type RenderSphere = engine_wgpu_wrapper::Sphere;
+type RenderSphere = engine_config::Sphere;
 impl Sphere {
     fn to_render_engine_sphere(&self) -> RenderSphere {
         //! Creates and returns a engine_wgpu_wrapper::Sphere from self
         let center = self.get_center();
-        engine_wgpu_wrapper::Sphere::new(
+        RenderSphere::new(
             [center.x, center.y, center.x],
             self.get_radius(),
             self.get_color().map(|x| x as f32),
@@ -36,9 +37,14 @@ impl Scene {
         // todo: get from camera
         let width = 1920 / 2;
         let height = 1080 / 2; // todo: add camera size / fov
-        //let render_spheres = self.get_render_spheres();
-        let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height);
-        let res = wgpu.unwrap().render();
+        let fov = 5.0; //?
+        let render_spheres = self.get_render_spheres();
+        let rc = RenderCommand {
+            fov: Some(fov),
+            spheres: render_spheres,
+        };
+        let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height, fov);
+        let res = wgpu.unwrap().render(rc);
         //let res = res.unwrap(); // todo catch error...
         //res.pixels
         //(res.height, res.width, res.pixels)

@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 #computational-plane = {path = "../computational-plane"}
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
+engine-config = { path = "../engine-config"}
 #scene-engine-adapter = {path = "../scene-engine-adapter"}
 log = "0.4"
 env_logger = "0.11"

@@ -1,5 +1,6 @@
 use anyhow::{Result, anyhow};
-pub use engine_raytracer::{Dimensions, RenderOutput, RenderState, Sphere};
+use engine_config::{Camera, RenderCommand, Sphere};
+pub use engine_raytracer::{RenderOutput, RenderState};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
@@ -58,8 +59,8 @@ pub struct BufferBundle {
 }
 
 impl BufferBundle {
-    pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
-        let dimensions = Dimensions { width, height };
+    pub fn new(device: &wgpu::Device, width: u32, height: u32, fov: f32) -> Self {
+        let dimensions = Camera { width, height, fov };
 
         let dimensions_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Dimensions Buffer"),
@@ -171,9 +172,9 @@ pub struct WgpuContext {
 }
 
 impl WgpuContext {
-    pub fn new(width: u32, height: u32) -> Result<Self> {
+    pub fn new(width: u32, height: u32, fov: f32) -> Result<Self> {
         let gpu = GpuDevice::new()?;
-        let buffers = BufferBundle::new(&gpu.device, width, height);
+        let buffers = BufferBundle::new(&gpu.device, width, height, fov);
         let bind_groups = BindGroupBundle::new(&gpu.device, &buffers);
 
         Ok(Self {
@@ -187,8 +188,8 @@ impl WgpuContext {
 }
 
 pub trait Renderer {
-    fn render(&mut self) -> Result<RenderOutput>;
-    fn double_tile_size(&mut self) -> Result<RenderOutput>;
+    fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput>;
+    fn update(&mut self, rc: RenderCommand) -> Result<RenderOutput>;
 }
 
 pub struct WgpuWrapper {
@@ -201,8 +202,8 @@ pub enum EngineType {
 }
 
 impl WgpuWrapper {
-    pub fn new(engine_type: EngineType, width: usize, height: usize) -> Result<Self> {
-        let ctx = WgpuContext::new(width as u32, height as u32)?;
+    pub fn new(engine_type: EngineType, width: usize, height: usize, fov: f32) -> Result<Self> {
+        let ctx = WgpuContext::new(width as u32, height as u32, fov)?;
 
         let renderer = match engine_type {
             EngineType::Raytracer => RenderState::new(
@@ -212,6 +213,8 @@ impl WgpuWrapper {
                 ctx.buffers.staging,
                 ctx.bind_groups.layout,
                 ctx.bind_groups.group,
+                ctx.buffers.dimensions,
+                ctx.buffers.spheres,
                 (width, height),
             ),
             EngineType::Pathtracer => todo!("Implement PathTracer::new(...)"),
@@ -220,7 +223,7 @@ impl WgpuWrapper {
         Ok(Self { renderer })
     }
 
-    pub fn render(&mut self) -> anyhow::Result<RenderOutput> {
-        self.renderer.render()
+    pub fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput> {
+        self.renderer.render(rc)
     }
 }
