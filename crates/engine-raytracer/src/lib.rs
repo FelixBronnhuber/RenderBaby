@@ -69,6 +69,7 @@ pub struct RenderState {
     staging_buffer: wgpu::Buffer,
     main_bind_group: wgpu::BindGroup,
     dimensions_buffer: wgpu::Buffer,
+    spheres_buffer: wgpu::Buffer,
     width: usize,
     height: usize,
 }
@@ -82,6 +83,7 @@ impl RenderState {
         bind_group_layout: wgpu::BindGroupLayout,
         bind_group: wgpu::BindGroup,
         dimensions_buffer: wgpu::Buffer,
+        spheres_buffer: wgpu::Buffer,
         dimensions: (usize, usize),
     ) -> Self {
         let pipeline = ComputePipelineResources::new(&device, &bind_group_layout).pipeline;
@@ -94,6 +96,7 @@ impl RenderState {
             staging_buffer,
             main_bind_group: bind_group,
             dimensions_buffer,
+            spheres_buffer,
             width: dimensions.0,
             height: dimensions.1,
         }
@@ -110,36 +113,11 @@ impl RenderState {
         self.queue
             .write_buffer(&self.dimensions_buffer, 0, bytemuck::bytes_of(&camera));
 
-        // self.queue.write_buffer(
-        //     // Assuming you have a dimensions/camera buffer
-        //     &self
-        //         .main_bind_group
-        //         .to_owned()
-        //     0,
-        //     bytemuck::bytes_of(&camera),
-        // );
-
         // Update spheres
         let spheres: Vec<Sphere> = rc.spheres.clone();
 
-        // self.queue.write_buffer(
-        //     // Assuming you have a spheres buffer
-        //     &self
-        //         .main_bind_group
-        //         .get_binding_resource(2)
-        //         .unwrap()
-        //         .buffer()
-        //         .unwrap(),
-        //     0,
-        //     bytemuck::cast_slice(&spheres),
-        // );
-
-        // If resolution changed, recreate output and staging buffers
-        // if rc.width != self.width || rc.height != self.height {
-        // Recreate buffers and bind group here
-        // Update self.width/self.height
-        // Recreate pipeline if needed
-        // }
+        self.queue
+            .write_buffer(&self.spheres_buffer, 0, bytemuck::cast_slice(&spheres));
     }
 
     pub fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput> {
