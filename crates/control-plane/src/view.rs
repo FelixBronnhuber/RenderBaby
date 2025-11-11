@@ -18,7 +18,6 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        
         // bruteforce
         let mut scene = RBScene::new();
         scene.proto_init();
@@ -39,7 +38,11 @@ impl App for View {
                         Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
                 }
             },
-            Err(e) => /*log::error!("Render failed: {}", e)*/ print!("Error: Render failed: {}", e),
+            Err(e) =>
+            /*log::error!("Render failed: {}", e)*/
+            {
+                print!("Error: Render failed: {}", e)
+            }
             //todo: GUI should show some error message
         }
 
