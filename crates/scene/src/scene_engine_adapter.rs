@@ -1,3 +1,6 @@
+//use std::fmt::Error;
+use anyhow::{Error, Result};
+
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
 
 use crate::{geometric_object::Sphere, scene::Scene};
@@ -23,14 +26,14 @@ impl Scene{
         res
     }
 
-    pub fn render(&self) -> RenderOutput { // todo: change return type to mask engine plane
+    pub fn render(&self) -> Result<RenderOutput, Error> { // todo: change return type to mask engine plane
         // todo: get from camera
         let width = 1920 / 2;
         let height = 1080 / 2; // todo: add camera size / fov
         //let render_spheres = self.get_render_spheres();
         let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height);
         let res = wgpu.unwrap().render();
-        let res = res.unwrap(); // todo catch error...
+        //let res = res.unwrap(); // todo catch error...
         //res.pixels
         //(res.height, res.width, res.pixels)
         res
