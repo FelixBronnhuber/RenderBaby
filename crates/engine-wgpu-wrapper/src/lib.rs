@@ -214,6 +214,7 @@ impl WgpuWrapper {
                 ctx.bind_groups.layout,
                 ctx.bind_groups.group,
                 ctx.buffers.dimensions,
+                ctx.buffers.spheres,
                 (width, height),
             ),
             EngineType::Pathtracer => todo!("Implement PathTracer::new(...)"),
