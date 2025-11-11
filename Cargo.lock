@@ -979,6 +979,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3d8a32ae18130a3c84dd492d4215c3d913c3b07c6b63c2eb3eb7ff1101ab7bf"
 
 [[package]]
+name = "engine-config"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
+name = "engine-main"
+version = "0.1.0"
+
+[[package]]
 name = "engine-pathtracer"
 version = "0.1.0"
 
@@ -988,6 +999,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "engine-config",
  "wgpu",
 ]
 
@@ -997,6 +1009,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "engine-config",
  "engine-pathtracer",
  "engine-raytracer",
  "pollster",
@@ -2561,6 +2574,7 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "engine-config",
  "engine-wgpu-wrapper",
  "env_logger",
  "log",

@@ -1,6 +1,7 @@
-struct Dimensions {
+struct Camera {
     width: u32,
     height: u32,
+    fov: f32,
 };
 
 struct Sphere {
@@ -10,7 +11,7 @@ struct Sphere {
     _pad: u32, // 4 bytes padding for alignment
 };
 
-@group(0) @binding(0) var<uniform> dimensions: Dimensions;
+@group(0) @binding(0) var<uniform> camera: Camera;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 
@@ -40,11 +41,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
 
-    let aspect = f32(dimensions.width) / f32(dimensions.height);
-    let u = ((f32(x) / f32(dimensions.width - 1u)) * 2.0 - 1.0) * aspect;
-    let v = (1.0 - f32(y) / f32(dimensions.height - 1u)) * 2.0 - 1.0;
+    let aspect = f32(camera.width) / f32(camera.height);
+    let u = ((f32(x) / f32(camera.width - 1u)) * 2.0 - 1.0) * aspect;
+    let v = (1.0 - f32(y) / f32(camera.height - 1u)) * 2.0 - 1.0;
 
-    let camera_pos = vec3<f32>(0.0, 0.0, -2.0); // Camera behind the scene
+    let camera_pos = vec3<f32>(0.0, 0.0, -camera.fov); // Camera behind the scene
     let screen_z: f32 = 0.0;
 
     let ray_dir = normalize(vec3<f32>(u, v, screen_z - camera_pos.z));
@@ -64,6 +65,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let index: u32 = y * dimensions.width + x;
+    let index: u32 = y * camera.width + x;
     output[index] = color_map(hit_color);
 }
