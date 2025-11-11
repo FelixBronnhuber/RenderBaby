@@ -1,19 +1,30 @@
 use eframe::egui;
+use engine_config::Sphere;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
 
-/* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE */
+/* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
 static WIDTH: usize = 1920 / 2;
 static HEIGHT: usize = 1080 / 2;
+static FOV: f32 = std::f32::consts::FRAC_PI_4;
+
+const SPHERES: [Sphere; 5] = [
+    Sphere::new([0.0, 0.6, 1.0], 0.5, [1.0, 0.0, 1.0]), // Top, magenta
+    Sphere::new([-0.6, 0.0, 1.0], 0.5, [0.0, 1.0, 0.0]), // Left, green
+    Sphere::new([0.0, 0.0, 1.0], 0.5, [1.0, 0.0, 0.0]), // Centered, red
+    Sphere::new([0.6, 0.0, 1.0], 0.5, [0.0, 0.0, 1.0]), // Right, blue
+    Sphere::new([0.0, -0.6, 1.0], 0.5, [0.0, 1.0, 1.0]), // Bottom, cyan
+];
 
 pub struct App {
     image: Option<egui::TextureHandle>,
     dirty: bool,
     renderer: Option<WgpuWrapper>,
+    fov: f32,
 }
 
 impl App {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        let (renderer, _) = match WgpuWrapper::new(EngineType::Raytracer, WIDTH, HEIGHT) {
+        let (renderer, _) = match WgpuWrapper::new(EngineType::Raytracer, WIDTH, HEIGHT, FOV) {
             Ok(r) => (Some(r), None),
             Err(e) => {
                 let msg = format!("Renderer initialization failed: {}", e);
@@ -25,6 +36,7 @@ impl App {
             image: None,
             dirty: true,
             renderer,
+            fov: FOV,
         }
     }
 
@@ -32,6 +44,26 @@ impl App {
         let size = [output.width, output.height];
         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &output.pixels);
         self.image = Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
+    }
+
+    fn update_render(&mut self, ctx: &egui::Context) {
+        if let Some(renderer) = &mut self.renderer {
+            match renderer.render(engine_config::RenderCommand {
+                fov: Some(self.fov),
+                spheres: SPHERES.into(),
+            }) {
+                Ok(output) => match output.validate() {
+                    Err(e) => {
+                        log::error!("Invalid render output: {}", e);
+                    }
+                    Ok(_) => {
+                        self.update_image_from_output(ctx, &output);
+                    }
+                },
+                Err(e) => log::error!("Render failed: {}", e),
+            }
+        }
+        self.dirty = false;
     }
 }
 
@@ -41,20 +73,14 @@ impl eframe::App for App {
             ui.heading("Rendered Output");
 
             if ui.button("Render").clicked() || self.dirty {
-                if let Some(renderer) = &mut self.renderer {
-                    match renderer.render() {
-                        Ok(output) => match output.validate() {
-                            Err(e) => {
-                                log::error!("Invalid render output: {}", e);
-                            }
-                            Ok(_) => {
-                                self.update_image_from_output(ctx, &output);
-                            }
-                        },
-                        Err(e) => log::error!("Render failed: {}", e),
-                    }
-                }
-                self.dirty = false;
+                self.update_render(ctx);
+            }
+
+            if ui
+                .add(egui::Slider::new(&mut self.fov, 1.0..=20.0).text("FOV"))
+                .changed()
+            {
+                self.update_render(ctx);
             }
 
             if let Some(img) = &self.image {
@@ -65,6 +91,7 @@ impl eframe::App for App {
         });
     }
 }
+
 /* END TEMPORARY EXAMPLE CODE */
 
 const EGUI_DEFAULT_WINDOW_DIMENSION: (f32, f32) = (1280.0, 720.0);

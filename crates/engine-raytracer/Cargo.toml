@@ -9,3 +9,4 @@ readme = "README.md"
 anyhow = "1.0.100"
 bytemuck = "1.24.0"
 wgpu = "27.0.1"
+engine-config = { path = "../engine-config" }
