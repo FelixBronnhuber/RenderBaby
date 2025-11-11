@@ -9,7 +9,7 @@ pub struct App {
     image: Option<egui::TextureHandle>,
     dirty: bool,
     renderer: Option<WgpuWrapper>,
-    scene: Scene
+    scene: Scene,
 }
 
 impl App {
@@ -27,7 +27,7 @@ impl App {
             image: None,
             dirty: true,
             renderer,
-            scene
+            scene,
         }
     }
 
@@ -43,7 +43,7 @@ impl eframe::App for App {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Rendered Output");
 
-/*             if ui.button("Render").clicked() || self.dirty {
+            /*             if ui.button("Render").clicked() || self.dirty {
                 if let Some(scene) = &mut self.scene {
                     match scene.render() {
                         Ok(output) => match output.validate() {
@@ -67,9 +67,7 @@ impl eframe::App for App {
                             log::error!("Invalid render output: {}", e);
                             //todo: GUI should show some error message
                         }
-                        Ok(_) => {
-                            self.update_image_from_output(ctx, &output)
-                        }
+                        Ok(_) => self.update_image_from_output(ctx, &output),
                     },
                     Err(e) => log::error!("Render failed: {}", e),
                     //todo: GUI should show some error message

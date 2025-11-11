@@ -1,11 +1,11 @@
 use crate::geometric_object::GeometricObject;
 
-pub mod scene;
+mod action_stack;
 pub mod geometric_object;
 mod obj_parser;
-mod scene_graph;
-mod action_stack;
+pub mod scene;
 pub mod scene_engine_adapter;
+mod scene_graph;
 
 /*pub fn test_dyn(obj: Box<dyn GeometricObject>) {
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();
@@ -15,7 +15,10 @@ pub mod scene_engine_adapter;
 mod tests {
     use glam::Vec3;
 
-    use crate::{geometric_object::{GeometricObject, Material, Sphere}, scene::Scene};
+    use crate::{
+        geometric_object::{GeometricObject, Material, Sphere},
+        scene::Scene,
+    };
 
     use super::*;
     use crate::obj_parser::parseobj;
@@ -24,7 +27,8 @@ mod tests {
     fn it_works() {
         assert_eq!(4, 4);
         let color = [0, 128, 0];
-        let sphere = geometric_object::Sphere::new(Vec3::new(0.0,0.0,0.0), 1.0, Material{}, color);
+        let sphere =
+            geometric_object::Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material {}, color);
         let radius = 1.0;
         assert_eq!(sphere.get_radius(), radius);
         let mut scene = Scene::new();
@@ -37,7 +41,7 @@ mod tests {
         let obj_unpacked = obj.unwrap();
         let obj_obj = obj_unpacked.as_ref();
         //obj_obj.something();
-        
+
         if let Some(sphere2) = obj_obj.as_any().downcast_ref::<Sphere>() {
             assert_eq!(sphere2.get_radius(), radius);
             //sphere2.scale(3.0);
@@ -51,7 +55,7 @@ mod tests {
     }
 
     #[test]
-    fn parse(){
+    fn parse() {
         parseobj();
     }
 }

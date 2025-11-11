@@ -5,7 +5,7 @@ use crate::geometric_object::{Camera, GeometricObject, LightSource, Rotation};
 pub(crate) struct SceneGraph {
     objects: Vec<Box<dyn GeometricObject>>,
     light_sources: Vec<LightSource>,
-    camera: Camera
+    camera: Camera,
 }
 
 impl SceneGraph {
@@ -13,8 +13,7 @@ impl SceneGraph {
         Self {
             objects: Vec::new(),
             light_sources: Vec::new(),
-            camera: Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0))
-
+            camera: Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0)),
         }
     }
     pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
@@ -44,5 +43,4 @@ impl SceneGraph {
     pub fn remove_light_source(&mut self, index: usize) {
         self.light_sources.remove(index);
     }
-    
 }

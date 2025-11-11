@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use glam::{Vec3};
+use glam::Vec3;
 
 /*pub enum GeometricObject{
     Triangles(Vec<Triangle>),
@@ -14,16 +14,14 @@ pub trait GeometricObject {
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
-
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material,
-    color: [u8; 3]
+    color: [u8; 3],
 }
 impl Sphere {
-    
     pub fn set_color(&mut self, color: [u8; 3]) {
         self.color = color;
     }
@@ -33,11 +31,11 @@ impl Sphere {
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
     }
-    
+
     pub fn get_radius(&self) -> f32 {
         self.radius
     }
-    
+
     pub fn get_center(&self) -> Vec3 {
         self.center
     }
@@ -46,7 +44,6 @@ impl Sphere {
         self.center = center;
     }
 
-    
     pub fn get_material(&self) -> &Material {
         &self.material
     }
@@ -55,32 +52,36 @@ impl Sphere {
     }
 
     pub fn new(center: Vec3, radius: f32, material: Material, color: [u8; 3]) -> Self {
-        Self { center, radius, material, color }
+        Self {
+            center,
+            radius,
+            material,
+            color,
+        }
     }
 }
-impl GeometricObject for Sphere{
-    fn scale(&mut self, factor: f32){
+impl GeometricObject for Sphere {
+    fn scale(&mut self, factor: f32) {
         self.radius *= factor;
         //self.radius
     }
-    fn translate(&mut self, vec: Vec3){
+    fn translate(&mut self, vec: Vec3) {
         self.center += vec;
         //self.center
     }
     fn rotate(&mut self, vec: Vec3) {}
-    
+
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 
 pub struct TriGeometry {
-    triangles: Vec<Triangle>
-}  
+    triangles: Vec<Triangle>,
+}
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
-        for tri in self.get_triangles(){
+        for tri in self.get_triangles() {
             tri.scale(factor);
         }
     }
@@ -94,15 +95,13 @@ impl GeometricObject for TriGeometry {
     fn rotate(&mut self, vec: Vec3) {
         todo!()
     }
-    
-    
+
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
-impl TriGeometry{
-    pub fn get_triangles(&mut self)-> &mut Vec<Triangle> {
+impl TriGeometry {
+    pub fn get_triangles(&mut self) -> &mut Vec<Triangle> {
         &mut self.triangles
         // maybe one fn for mut, one for immut?
     }
@@ -111,9 +110,9 @@ impl TriGeometry{
         TriGeometry { triangles }
     }
 }
-pub struct Triangle{
+pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
-    material: Option<Material>
+    material: Option<Material>,
 }
 impl Triangle {
     pub fn new(points: Vec<Vec3>, material: Option<Material>) -> Self {
@@ -138,42 +137,38 @@ impl Triangle {
     pub fn add_point(&mut self, point: Vec3) {
         self.points.push(point);
     }
-    
 }
 impl GeometricObject for Triangle {
-    fn translate(&mut self, vec: Vec3)/* -> &Vec<Vec3>*/  {
+    fn translate(&mut self, vec: Vec3) /* -> &Vec<Vec3>*/
+    {
         for point in &mut self.points {
             *point += vec;
         }
         //self.get_points()
     }
-    
+
     fn scale(&mut self, factor: f32) {
         todo!()
     }
-    
+
     fn rotate(&mut self, vec: Vec3) {
         todo!()
     }
-    
-    
+
     fn as_any(&self) -> &dyn Any {
         self
     }
-
-
 }
 
-pub struct Camera{
+pub struct Camera {
     position: Vec3,
-    rotation: Rotation
-    // fov: f32 ?
+    rotation: Rotation, // fov: f32 ?
 }
-impl Camera{
+impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;
     }
-    pub fn set_rotation(&mut self, pitch: f32, yaw: f32){
+    pub fn set_rotation(&mut self, pitch: f32, yaw: f32) {
         self.rotation = Rotation { pitch, yaw }
     }
     pub fn position(&self) -> Vec3 {
@@ -187,29 +182,31 @@ impl Camera{
     }
 }
 
-pub(crate) struct Rotation{
+pub(crate) struct Rotation {
     pitch: f32,
     yaw: f32,
 }
-impl Rotation{
-    pub fn set(&mut self,pitch:f32,yaw:f32){
+impl Rotation {
+    pub fn set(&mut self, pitch: f32, yaw: f32) {
         self.pitch = pitch;
         self.yaw = yaw;
     }
-    pub fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)} // maybe into (f32, f32)?
+    pub fn get_rotation(&self) -> (f32, f32) {
+        (self.pitch, self.yaw)
+    } // maybe into (f32, f32)?
     fn get_pitch(&self) -> f32 {
         self.pitch
     }
     pub fn get_yaw(&self) -> f32 {
         self.yaw
     }
-    pub fn new(pitch:f32, yaw:f32) -> Self {
+    pub fn new(pitch: f32, yaw: f32) -> Self {
         Rotation { pitch, yaw }
     }
 }
-pub struct LightSource{
+pub struct LightSource {
     position: Vec3,
-    luminosity: f32
+    luminosity: f32,
 }
 
 impl LightSource {
@@ -230,17 +227,17 @@ impl LightSource {
     }
 
     pub fn new(position: Vec3, luminosity: f32) -> Self {
-        LightSource { position, luminosity }
+        LightSource {
+            position,
+            luminosity,
+        }
     }
 }
 
 // Maybe Material/Color/Texture as enum?
-pub struct Material{
-
-}
-pub struct Color{
+pub struct Material {}
+pub struct Color {
     pub r: u8,
     pub g: u8,
-    pub b: u8
-
+    pub b: u8,
 }
