@@ -65,12 +65,14 @@ impl eframe::App for App {
                     Ok(output) => match output.validate() {
                         Err(e) => {
                             log::error!("Invalid render output: {}", e);
+                            //todo: GUI should show some error message
                         }
                         Ok(_) => {
                             self.update_image_from_output(ctx, &output)
                         }
                     },
                     Err(e) => log::error!("Render failed: {}", e),
+                    //todo: GUI should show some error message
                 }
                 //self.update_image_from_output(ctx, &output);
                 //self.dirty = false;
