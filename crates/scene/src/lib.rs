@@ -1,4 +1,5 @@
-use crate::geometric_object::GeometricObject;
+#![allow(dead_code)]
+#![allow(unused_variables)]
 
 mod action_stack;
 pub mod geometric_object;
@@ -16,7 +17,7 @@ mod tests {
     use glam::Vec3;
 
     use crate::{
-        geometric_object::{GeometricObject, Material, Sphere},
+        geometric_object::{Material, Sphere},
         scene::Scene,
     };
 
@@ -37,7 +38,7 @@ mod tests {
         scene.add_object(Box::new(sphere));
         let objects = scene.get_objects();
         //assert!(objects.pop())
-        let obj = objects.get(0);
+        let obj = objects.first();
         let obj_unpacked = obj.unwrap();
         let obj_obj = obj_unpacked.as_ref();
         //obj_obj.something();

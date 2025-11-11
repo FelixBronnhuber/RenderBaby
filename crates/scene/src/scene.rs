@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use engine_wgpu_wrapper::{GpuDevice, RenderState};
 use glam::Vec3;
 
 use crate::{
@@ -17,6 +14,11 @@ pub struct Scene {
     */
     scene_graph: SceneGraph,
     action_stack: ActionStack,
+}
+impl Default for Scene {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl Scene {
     pub fn image_buffer(&self) -> Vec<u8> {

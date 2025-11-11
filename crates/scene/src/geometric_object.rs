@@ -1,7 +1,5 @@
-use std::any::Any;
-
 use glam::Vec3;
-
+use std::any::Any;
 /*pub enum GeometricObject{
     Triangles(Vec<Triangle>),
     Sphere(Sphere)
@@ -182,7 +180,7 @@ impl Camera {
     }
 }
 
-pub(crate) struct Rotation {
+pub struct Rotation {
     pitch: f32,
     yaw: f32,
 }
