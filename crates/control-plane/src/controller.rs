@@ -1,5 +1,5 @@
-use crate::view::*;
 use crate::model::*;
+use crate::view::*;
 
 pub struct Controller {
     view: Option<View>,
@@ -7,7 +7,6 @@ pub struct Controller {
 }
 
 impl Controller {
-
     pub fn new(view: View, model: Model) -> Self {
         Self {
             view: Some(view),

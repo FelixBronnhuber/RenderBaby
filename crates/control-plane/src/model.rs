@@ -1,4 +1,1 @@
-
-pub struct Model {
-
-}
+pub struct Model {}

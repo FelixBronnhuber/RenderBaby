@@ -1,9 +1,7 @@
-use eframe::{App, Frame};
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
+use eframe::{App, Frame};
 
-pub enum Event {
-
-}
+pub enum Event {}
 
 pub trait ViewListener {
     fn handle_event(&mut self, event: Event);
@@ -24,25 +22,27 @@ impl App for View {
 
 impl View {
     pub fn new() -> Self {
-        View { listener: None, texture: None }
+        View {
+            listener: None,
+            texture: None,
+        }
     }
 
     pub fn open(self) {
         let options = eframe::NativeOptions::default();
-        let _ = eframe::run_native(
-            "RenderBaby",
-            options,
-            Box::new(|_cc| Ok(Box::new(self))),
-        );
+        let _ = eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
         self.listener = Some(listener);
     }
 
-    pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image:Vec<u8>) {
-        let color_image = eframe::egui::ColorImage::from_rgba_unmultiplied([width as usize, height as usize], &image);
-        self.texture = Some(ctx.load_texture("image", color_image, TextureOptions::NEAREST, ));
+    pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image: Vec<u8>) {
+        let color_image = eframe::egui::ColorImage::from_rgba_unmultiplied(
+            [width as usize, height as usize],
+            &image,
+        );
+        self.texture = Some(ctx.load_texture("image", color_image, TextureOptions::NEAREST));
     }
 
     fn display_image(&mut self, ui: &mut Ui) {

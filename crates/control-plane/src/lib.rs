@@ -1,5 +1,5 @@
-mod model;
 mod controller;
+mod model;
 mod view;
 
 use controller::Controller;
