@@ -18,7 +18,7 @@ members = [
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
-    "crates/control-plane"
+    "crates/control-plane",
     "crates/engine-config",
     "crates/engine-main",
 ]
