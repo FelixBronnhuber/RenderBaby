@@ -1,9 +1,11 @@
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
 
+#[allow(dead_code)]
 pub enum Event {}
 
 pub trait ViewListener {
+    #[allow(dead_code)]
     fn handle_event(&mut self, event: Event);
 }
 
@@ -37,6 +39,7 @@ impl View {
         self.listener = Some(listener);
     }
 
+    #[allow(dead_code)]
     pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image: Vec<u8>) {
         let color_image = eframe::egui::ColorImage::from_rgba_unmultiplied(
             [width as usize, height as usize],

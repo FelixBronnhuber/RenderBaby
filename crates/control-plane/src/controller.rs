@@ -3,6 +3,7 @@ use crate::view::*;
 
 pub struct Controller {
     view: Option<View>,
+    #[allow(dead_code)]
     model: Model,
 }
 
@@ -22,7 +23,8 @@ impl Controller {
 }
 
 impl ViewListener for Controller {
-    fn handle_event(&mut self, event: Event) {
+    #[allow(dead_code)]
+    fn handle_event(&mut self, _event: Event) {
         todo!()
     }
 }
