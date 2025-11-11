@@ -60,8 +60,20 @@ impl eframe::App for App {
                 self.dirty = false;
             } */
             if ui.button("Render").clicked() || self.dirty {
-                let output = self.scene.render();
-                self.update_image_from_output(ctx, &output);
+                let render = self.scene.render();
+                match render {
+                    Ok(output) => match output.validate() {
+                        Err(e) => {
+                            log::error!("Invalid render output: {}", e);
+                        }
+                        Ok(_) => {
+                            self.update_image_from_output(ctx, &output)
+                        }
+                    },
+                    Err(e) => log::error!("Render failed: {}", e),
+                }
+                //self.update_image_from_output(ctx, &output);
+                //self.dirty = false;
             }
 
             if let Some(img) = &self.image {

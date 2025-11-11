@@ -2639,6 +2639,7 @@ dependencies = [
 name = "scene"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "engine-wgpu-wrapper",
  "env_logger",
  "glam",
