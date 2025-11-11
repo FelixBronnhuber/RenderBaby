@@ -44,11 +44,13 @@ impl Scene {
             spheres: render_spheres,
         };
         let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height, fov);
-        let res = wgpu.unwrap().render(rc);
-        //let res = res.unwrap(); // todo catch error...
+        /*let res = wgpu.unwrap().render(rc);
+        let res = res.unwrap(); // todo catch error...
         //res.pixels
         //(res.height, res.width, res.pixels)
         res
+        */
+        wgpu.unwrap().render(rc)
     }
 }
 
