@@ -75,6 +75,7 @@ pub struct RenderState {
 }
 
 impl RenderState {
+    #![allow(clippy::too_many_arguments)]
     pub fn new(
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
