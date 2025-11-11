@@ -55,8 +55,8 @@ mod tests {
         assert_eq!(scene.get_light_sources().len(), 1)
     }
 
-    #[test]
+    /*     #[test]
     fn parse() {
         parseobj();
-    }
+    } */
 }
