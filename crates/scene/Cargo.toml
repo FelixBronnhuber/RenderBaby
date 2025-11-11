@@ -5,8 +5,8 @@ edition = "2024"
 
 [dependencies]
 #computational-plane = {path = "../computational-plane"}
-#engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
-scene-engine-adapter = {path = "../scene-engine-adapter"}
+engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
+#scene-engine-adapter = {path = "../scene-engine-adapter"}
 log = "0.4"
 env_logger = "0.11"
 glam = { version = "0.30.9", default-features = false, features = ["libm"] }

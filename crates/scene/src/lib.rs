@@ -5,7 +5,7 @@ mod geometric_object;
 mod obj_parser;
 mod scene_graph;
 mod action_stack;
-mod render_angine_adapter;
+mod scene_engine_adapter;
 
 pub fn test_dyn(obj: Box<dyn GeometricObject>) {
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();

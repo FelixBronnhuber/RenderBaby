@@ -1,3 +1,5 @@
+use engine_wgpu_wrapper::{EngineType, WgpuWrapper};
+
 use crate::{geometric_object::Sphere, scene::Scene};
 type RenderSphere = engine_wgpu_wrapper::Sphere;
 impl Sphere {
@@ -22,14 +24,13 @@ impl Scene{
     }
 
     pub fn render(&self) -> Vec<u8> {
-    let render_state = RenderState::new(
-        Arc::new(GpuDevice::new()),
-            Arc::new(Queue::new()),
-            Buffer::new(),
-            Buffer::new(),
-            BindGroupLayout,
-            bind_group,
-            dimensions);
+        // todo: get from camera
+        let width = 600;
+        let height = 800;
+        let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height);
+        let res = wgpu.unwrap().render();
+        let res = res.unwrap(); // todo catch error...
+        res.pixels
     }
 }
 
@@ -40,7 +41,6 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+        
     }
 }
