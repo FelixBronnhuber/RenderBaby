@@ -5,12 +5,20 @@ edition = "2024"
 
 [dependencies]
 control-plane = { path = "crates/control-plane" }
+eframe = "0.33.0"
+egui = "0.33.0"
+engine-wgpu-wrapper = { path = "crates/engine-wgpu-wrapper" }
+engine-config = { path = "crates/engine-config" }
+env_logger = "0.11.8"
+log = "0.4.28"
 
 [workspace]
 members = [
-    ".",
+    ".", "crates/engine-config", "crates/engine-main",
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
     "crates/control-plane"
+    "crates/engine-config",
+    "crates/engine-main",
 ]

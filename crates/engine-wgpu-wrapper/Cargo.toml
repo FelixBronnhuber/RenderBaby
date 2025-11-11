@@ -10,5 +10,6 @@ anyhow = "1.0.100"
 wgpu = "27.0.1"
 engine-raytracer = { path = "../engine-raytracer" }
 engine-pathtracer = { path = "../engine-pathtracer" }
+engine-config = { path = "../engine-config" }
 bytemuck = "1.24.0"
 pollster = "0.4.0"

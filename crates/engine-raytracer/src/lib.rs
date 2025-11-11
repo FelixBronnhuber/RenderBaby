@@ -1,33 +1,6 @@
 use anyhow::{Result, anyhow};
-use bytemuck::{Pod, Zeroable};
+pub use engine_config::*;
 use std::sync::Arc;
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable, Debug)]
-pub struct Dimensions {
-    pub width: u32,
-    pub height: u32,
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable, Debug)]
-pub struct Sphere {
-    pub center: [f32; 3],
-    pub radius: f32,
-    pub color: [f32; 3],
-    _pad: [u8; 4],
-}
-
-impl Sphere {
-    pub const fn new(center: [f32; 3], radius: f32, color: [f32; 3]) -> Sphere {
-        Sphere {
-            center,
-            radius,
-            color,
-            _pad: [0u8; 4],
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct RenderOutput {
@@ -95,11 +68,14 @@ pub struct RenderState {
     output_buffer: wgpu::Buffer,
     staging_buffer: wgpu::Buffer,
     main_bind_group: wgpu::BindGroup,
+    dimensions_buffer: wgpu::Buffer,
+    spheres_buffer: wgpu::Buffer,
     width: usize,
     height: usize,
 }
 
 impl RenderState {
+    #![allow(clippy::too_many_arguments)]
     pub fn new(
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
@@ -107,6 +83,8 @@ impl RenderState {
         staging_buffer: wgpu::Buffer,
         bind_group_layout: wgpu::BindGroupLayout,
         bind_group: wgpu::BindGroup,
+        dimensions_buffer: wgpu::Buffer,
+        spheres_buffer: wgpu::Buffer,
         dimensions: (usize, usize),
     ) -> Self {
         let pipeline = ComputePipelineResources::new(&device, &bind_group_layout).pipeline;
@@ -118,13 +96,35 @@ impl RenderState {
             output_buffer,
             staging_buffer,
             main_bind_group: bind_group,
+            dimensions_buffer,
+            spheres_buffer,
             width: dimensions.0,
             height: dimensions.1,
         }
     }
 
-    pub fn render(&mut self) -> Result<RenderOutput> {
+    fn update_from(&mut self, rc: RenderCommand) {
+        // Update camera (dimensions/fov)
+        let camera = Camera {
+            width: self.width as u32,
+            height: self.height as u32,
+            fov: rc.fov.unwrap_or(std::f32::consts::FRAC_PI_4),
+        };
+
+        self.queue
+            .write_buffer(&self.dimensions_buffer, 0, bytemuck::bytes_of(&camera));
+
+        // Update spheres
+        let spheres: Vec<Sphere> = rc.spheres.clone();
+
+        self.queue
+            .write_buffer(&self.spheres_buffer, 0, bytemuck::cast_slice(&spheres));
+    }
+
+    pub fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput> {
         self.dispatch_compute()?;
+
+        self.update_from(rc);
 
         let buffer_slice = self.staging_buffer.slice(..);
         let (sender, receiver) = std::sync::mpsc::channel();
