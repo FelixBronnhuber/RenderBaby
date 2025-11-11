@@ -21,7 +21,7 @@ impl Sphere {
 
 impl Scene {
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
-        //! Returns a Vec that contains all Scene spheres as engine_wgpu_wrapper::Sphere
+        //! Returns a Vec that contains all Scene spheres as engine_config::Sphere
         let mut res = vec![];
         for obj in self.get_objects() {
             if let Some(sphere) = obj.as_any().downcast_ref::<Sphere>() {

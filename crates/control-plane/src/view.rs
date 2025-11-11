@@ -1,7 +1,9 @@
-use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
+use eframe::egui::{self, Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
-
+//use env_logger::Logger;
 #[allow(dead_code)]
+type RBScene = scene::scene::Scene;
+
 pub enum Event {}
 
 pub trait ViewListener {
@@ -16,6 +18,31 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        
+        // bruteforce
+        let mut scene = RBScene::new();
+        scene.proto_init();
+        let render = scene.render();
+        match render {
+            Ok(output) => match output.validate() {
+                Err(e) => {
+                    //log::error!("Invalid render output: {}", e);
+                    print!("Error: Invalid render output {}", e);
+                    //todo: GUI should show some error message
+                }
+                Ok(_) => {
+                    //self.update_image_from_output(ctx, &output)
+                    let size = [output.width, output.height];
+                    let color_image =
+                        egui::ColorImage::from_rgba_unmultiplied(size, &output.pixels);
+                    self.texture =
+                        Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
+                }
+            },
+            Err(e) => /*log::error!("Render failed: {}", e)*/ print!("Error: Render failed: {}", e),
+            //todo: GUI should show some error message
+        }
+
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.display_image(ui);
         });
