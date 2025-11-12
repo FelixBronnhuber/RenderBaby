@@ -1,24 +1,19 @@
 use crate::model::*;
+use crate::pipeline::Pipeline;
 use crate::view::*;
 
 pub struct Controller {
-    view: Option<View>,
     #[allow(dead_code)]
     model: Model,
+    pipeline: Pipeline
 }
 
 impl Controller {
-    pub fn new(view: View, model: Model) -> Self {
+    pub fn new(pipeline: Pipeline, model: Model) -> Self {
         Self {
-            view: Some(view),
             model,
+            pipeline
         }
-    }
-
-    pub fn start(mut self) {
-        let mut view = self.view.take().expect("view already taken");
-        view.set_listener(Box::new(self));
-        view.open();
     }
 }
 

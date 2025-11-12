@@ -1,5 +1,6 @@
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
+use crate::pipeline::Pipeline;
 
 #[allow(dead_code)]
 pub enum Event {}
@@ -12,6 +13,7 @@ pub trait ViewListener {
 pub struct View {
     listener: Option<Box<dyn ViewListener>>,
     texture: Option<TextureHandle>,
+    pipeline: Pipeline,
 }
 
 impl App for View {
@@ -23,10 +25,11 @@ impl App for View {
 }
 
 impl View {
-    pub fn new() -> Self {
+    pub fn new(pipeline: Pipeline) -> Self {
         View {
             listener: None,
             texture: None,
+            pipeline,
         }
     }
 
