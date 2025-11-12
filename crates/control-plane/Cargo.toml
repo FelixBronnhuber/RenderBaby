@@ -4,4 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+engine-raytracer = { path = "../engine-raytracer" }
+engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }
 eframe = "0.33.0"
+anyhow = "1.0"
+crossbeam = "0.8.4"
