@@ -1,16 +1,8 @@
 use anyhow::{Result, anyhow};
-use engine_config::{Camera, RenderCommand, Sphere};
+use engine_config::{Camera, RenderConfig, Sphere};
 pub use engine_raytracer::{RenderOutput, RenderState};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-
-const SPHERES: [Sphere; 5] = [
-    Sphere::new([0.0, 0.6, 1.0], 0.5, [1.0, 0.0, 1.0]), // Top, magenta
-    Sphere::new([-0.6, 0.0, 1.0], 0.5, [0.0, 1.0, 0.0]), // Left, green
-    Sphere::new([0.0, 0.0, 1.0], 0.5, [1.0, 0.0, 0.0]), // Centered, red
-    Sphere::new([0.6, 0.0, 1.0], 0.5, [0.0, 0.0, 1.0]), // Right, blue
-    Sphere::new([0.0, -0.6, 1.0], 0.5, [0.0, 1.0, 1.0]), // Bottom, cyan
-];
 
 pub struct GpuDevice {
     pub device: Arc<wgpu::Device>,
@@ -59,8 +51,9 @@ pub struct BufferBundle {
 }
 
 impl BufferBundle {
-    pub fn new(device: &wgpu::Device, width: u32, height: u32, fov: f32) -> Self {
-        let dimensions = Camera { width, height, fov };
+    pub fn new(device: &wgpu::Device, rc: &RenderConfig) -> Self {
+        let dimensions = rc.camera.clone();
+        let size = (rc.camera.width * rc.camera.height * 4) as u64;
 
         let dimensions_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Dimensions Buffer"),
@@ -70,20 +63,20 @@ impl BufferBundle {
 
         let spheres_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Spheres Buffer"),
-            contents: bytemuck::cast_slice(SPHERES.as_ref()),
+            contents: bytemuck::cast_slice(&rc.spheres),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
 
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Output Buffer"),
-            size: (width * height * 4) as u64,
+            size: size,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
 
         let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Staging Buffer"),
-            size: (width * height * 4) as u64,
+            size: size,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -172,24 +165,23 @@ pub struct WgpuContext {
 }
 
 impl WgpuContext {
-    pub fn new(width: u32, height: u32, fov: f32) -> Result<Self> {
+    pub fn new(rc: &RenderConfig) -> Result<Self> {
         let gpu = GpuDevice::new()?;
-        let buffers = BufferBundle::new(&gpu.device, width, height, fov);
+        let buffers = BufferBundle::new(&gpu.device, &rc);
         let bind_groups = BindGroupBundle::new(&gpu.device, &buffers);
 
         Ok(Self {
             gpu,
             buffers,
             bind_groups,
-            width,
-            height,
+            width: (&rc).camera.width,
+            height: (&rc).camera.height,
         })
     }
 }
 
 pub trait Renderer {
-    fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput>;
-    fn update(&mut self, rc: RenderCommand) -> Result<RenderOutput>;
+    fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput>;
 }
 
 pub struct WgpuWrapper {
@@ -202,8 +194,8 @@ pub enum EngineType {
 }
 
 impl WgpuWrapper {
-    pub fn new(engine_type: EngineType, width: usize, height: usize, fov: f32) -> Result<Self> {
-        let ctx = WgpuContext::new(width as u32, height as u32, fov)?;
+    pub fn new(engine_type: EngineType, rc: RenderConfig) -> Result<Self> {
+        let ctx = WgpuContext::new(&rc)?;
 
         let renderer = match engine_type {
             EngineType::Raytracer => RenderState::new(
@@ -215,7 +207,7 @@ impl WgpuWrapper {
                 ctx.bind_groups.group,
                 ctx.buffers.dimensions,
                 ctx.buffers.spheres,
-                (width, height),
+                ((&rc).camera.width as usize, (&rc).camera.height as usize),
             ),
             EngineType::Pathtracer => todo!("Implement PathTracer::new(...)"),
         };
@@ -223,7 +215,7 @@ impl WgpuWrapper {
         Ok(Self { renderer })
     }
 
-    pub fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput> {
+    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
         self.renderer.render(rc)
     }
 }

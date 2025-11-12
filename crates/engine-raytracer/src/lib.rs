@@ -103,13 +103,9 @@ impl RenderState {
         }
     }
 
-    fn update_from(&mut self, rc: RenderCommand) {
+    fn update_from(&mut self, rc: RenderConfig) {
         // Update camera (dimensions/fov)
-        let camera = Camera {
-            width: self.width as u32,
-            height: self.height as u32,
-            fov: rc.fov.unwrap_or(std::f32::consts::FRAC_PI_4),
-        };
+        let camera = rc.camera;
 
         self.queue
             .write_buffer(&self.dimensions_buffer, 0, bytemuck::bytes_of(&camera));
@@ -121,7 +117,7 @@ impl RenderState {
             .write_buffer(&self.spheres_buffer, 0, bytemuck::cast_slice(&spheres));
     }
 
-    pub fn render(&mut self, rc: RenderCommand) -> Result<RenderOutput> {
+    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
         self.dispatch_compute()?;
 
         self.update_from(rc);

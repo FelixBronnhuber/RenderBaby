@@ -1,0 +1,61 @@
+use core::fmt;
+
+use bytemuck::{Pod, Zeroable};
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug)]
+pub struct Sphere {
+    pub center: [f32; 3],
+    pub radius: f32,
+    pub color: [f32; 3],
+    pub _pad: [u8; 4],
+}
+
+#[derive(Debug)]
+pub enum SphereError {
+    RadiusOutOfBounds,
+    ColorOutOfBounds,
+}
+
+impl fmt::Display for SphereError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SphereError::RadiusOutOfBounds => write!(f, "Sphere radius must be positive"),
+            SphereError::ColorOutOfBounds => write!(f, "Sphere color values must be in [0.0, 1.0]"),
+        }
+    }
+}
+
+impl std::error::Error for SphereError {}
+
+impl Sphere {
+    pub const DEFAULT_CENTER: [f32; 3] = [0.0, 0.0, 0.0];
+    pub const DEFAULT_RADIUS: f32 = 1.0;
+    pub const DEFAULT_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+
+    pub fn new(center: [f32; 3], radius: f32, color: [f32; 3]) -> Result<Sphere, SphereError> {
+        if radius <= 0.0 {
+            return Err(SphereError::RadiusOutOfBounds);
+        }
+        if color.iter().any(|&c| c < 0.0 || c > 1.0) {
+            return Err(SphereError::ColorOutOfBounds);
+        }
+        Ok(Sphere {
+            center,
+            radius,
+            color,
+            _pad: [0u8; 4],
+        })
+    }
+}
+
+impl Default for Sphere {
+    fn default() -> Self {
+        Sphere {
+            center: Self::DEFAULT_CENTER,
+            radius: Self::DEFAULT_RADIUS,
+            color: Self::DEFAULT_COLOR,
+            _pad: [0u8; 4],
+        }
+    }
+}
