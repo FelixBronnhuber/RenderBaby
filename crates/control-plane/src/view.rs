@@ -1,12 +1,13 @@
+use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
-use crate::pipeline::Pipeline;
 
-#[allow(dead_code)]
-pub enum Event {}
+#[derive(PartialEq)]
+pub enum Event {
+    DoRender,
+}
 
 pub trait ViewListener {
-    #[allow(dead_code)]
     fn handle_event(&mut self, event: Event);
 }
 
@@ -18,6 +19,28 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
+        if let Some(output) = render_output_opt {
+            self.set_image(
+                ctx,
+                output.width as u32,
+                output.height as u32,
+                output.pixels,
+            )
+        }
+
+        eframe::egui::SidePanel::left("SidePanel")
+            .resizable(true)
+            .min_width(220.0)
+            .show(ctx, |ui| {
+                if ui.button("Render").clicked() {
+                    self.listener
+                        .as_mut()
+                        .unwrap()
+                        .handle_event(Event::DoRender);
+                }
+            });
+
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.display_image(ui);
         });
@@ -42,7 +65,6 @@ impl View {
         self.listener = Some(listener);
     }
 
-    #[allow(dead_code)]
     pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image: Vec<u8>) {
         let color_image = eframe::egui::ColorImage::from_rgba_unmultiplied(
             [width as usize, height as usize],
