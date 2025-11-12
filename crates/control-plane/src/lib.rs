@@ -1,14 +1,17 @@
 mod controller;
 mod model;
 mod view;
+mod pipeline;
 
 use controller::Controller;
 use model::Model;
 use view::View;
 
 pub fn run() {
-    let view = View::new();
+    let pipeline = pipeline::Pipeline::new();
+    let mut view = View::new(pipeline.clone());
     let model = Model {};
-    let controller = Controller::new(view, model);
-    controller.start();
+    let controller = Controller::new(pipeline, model);
+    view.set_listener(Box::new(controller));
+    view.open();
 }
