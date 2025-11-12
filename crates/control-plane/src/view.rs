@@ -1,10 +1,10 @@
+use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
-use crate::pipeline::Pipeline;
 
 #[derive(PartialEq)]
 pub enum Event {
-    DoRender
+    DoRender,
 }
 
 pub trait ViewListener {
@@ -21,7 +21,12 @@ impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
         let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
         if let Some(output) = render_output_opt {
-            self.set_image(ctx, output.width as u32, output.height as u32, output.pixels)
+            self.set_image(
+                ctx,
+                output.width as u32,
+                output.height as u32,
+                output.pixels,
+            )
         }
 
         eframe::egui::SidePanel::left("SidePanel")
@@ -29,7 +34,10 @@ impl App for View {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    self.listener.as_mut().unwrap().handle_event(Event::DoRender);
+                    self.listener
+                        .as_mut()
+                        .unwrap()
+                        .handle_event(Event::DoRender);
                 }
             });
 

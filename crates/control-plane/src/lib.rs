@@ -1,7 +1,7 @@
 mod controller;
 mod model;
-mod view;
 mod pipeline;
+mod view;
 
 use controller::Controller;
 use model::Model;
