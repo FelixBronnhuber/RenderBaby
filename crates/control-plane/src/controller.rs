@@ -3,7 +3,6 @@ use crate::pipeline::Pipeline;
 use crate::view::*;
 
 pub struct Controller {
-    #[allow(dead_code)]
     model: Model,
     pipeline: Pipeline
 }
@@ -18,8 +17,12 @@ impl Controller {
 }
 
 impl ViewListener for Controller {
-    #[allow(dead_code)]
     fn handle_event(&mut self, _event: Event) {
-        todo!()
+        if (_event == Event::DoRender) {
+            let output = self.model.generate_render_output();
+            if (output.validate().is_ok()) {
+                *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
+            }
+        }
     }
 }
