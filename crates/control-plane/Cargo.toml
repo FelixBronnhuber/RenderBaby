@@ -7,4 +7,3 @@ edition = "2024"
 eframe = "0.33.0"
 engine-raytracer = { path = "../engine-raytracer" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }
-engine-config = { path = "../engine-config" }
