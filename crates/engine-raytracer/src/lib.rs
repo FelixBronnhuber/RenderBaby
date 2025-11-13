@@ -1,6 +1,7 @@
 use anyhow::{Result, anyhow};
 pub use engine_config::*;
 use std::sync::Arc;
+use engine_wgpu_wrapper::GpuWrapper;
 
 #[derive(Debug, Clone)]
 pub struct RenderOutput {
@@ -76,18 +77,8 @@ pub struct RenderState {
 
 impl RenderState {
     #![allow(clippy::too_many_arguments)]
-    pub fn new(
-        device: Arc<wgpu::Device>,
-        queue: Arc<wgpu::Queue>,
-        output_buffer: wgpu::Buffer,
-        staging_buffer: wgpu::Buffer,
-        bind_group_layout: wgpu::BindGroupLayout,
-        bind_group: wgpu::BindGroup,
-        dimensions_buffer: wgpu::Buffer,
-        spheres_buffer: wgpu::Buffer,
-        dimensions: (usize, usize),
-    ) -> Self {
-        let pipeline = ComputePipelineResources::new(&device, &bind_group_layout).pipeline;
+    pub fn new() -> Self {
+        let pipeline = ComputePipelineResources::new(&GpuWrapper::, &bind_group_layout).pipeline;
 
         Self {
             device,
