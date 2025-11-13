@@ -47,6 +47,8 @@ pub struct App {
     dirty: bool,
     renderer: Option<Engine>,
     fov: f32,
+    width: usize,
+    height: usize,
 }
 
 impl App {
@@ -74,6 +76,8 @@ impl App {
             dirty: true,
             renderer: Some(renderer),
             fov: FOV,
+            width: WIDTH,
+            height: HEIGHT,
         }
     }
 
@@ -84,7 +88,7 @@ impl App {
     }
 
     fn make_updated_render_config(&mut self) -> Result<RenderConfig> {
-        let camera = Camera::new((WIDTH) as u32, (HEIGHT) as u32, self.fov).unwrap();
+        let camera = Camera::new((self.width) as u32, (self.height) as u32, self.fov).unwrap();
         RenderConfigBuilder::new()
             .camera(camera)?
             .spheres(SPHERES.into())?
@@ -138,6 +142,24 @@ impl eframe::App for App {
             if ui
                 .add(
                     egui::Slider::new(&mut self.fov, Camera::MIN_FOV..=Camera::MAX_FOV).text("FOV"),
+                )
+                .changed()
+            {
+                self.update_render(ctx);
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.width, 1..=2000).text("WIDTH"),
+                )
+                .changed()
+            {
+                self.update_render(ctx);
+            }
+
+            if ui
+                .add(
+                    egui::Slider::new(&mut self.height, 1..=2000).text("HEIGHT"),
                 )
                 .changed()
             {
