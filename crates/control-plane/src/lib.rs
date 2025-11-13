@@ -5,6 +5,7 @@ mod view;
 
 use controller::Controller;
 use model::Model;
+use pipeline::Pipeline;
 use view::View;
 
 pub struct App {
@@ -17,7 +18,7 @@ impl App {
     }
 
     pub fn create_egui_app() -> Self {
-        let pipeline = pipeline::Pipeline::new();
+        let pipeline = Pipeline::new();
 
         let model = Model::new();
         let controller = Controller::new(pipeline.clone(), model);
@@ -30,5 +31,11 @@ impl App {
 
     pub fn show(self) {
         self.view.open();
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }
