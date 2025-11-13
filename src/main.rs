@@ -1,5 +1,6 @@
-use control_plane::run;
+use control_plane::App;
 
 fn main() {
-    run();
+    let app = App::new();
+    app.show();
 }
