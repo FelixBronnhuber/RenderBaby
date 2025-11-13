@@ -50,7 +50,19 @@ impl GpuBuffers {
         }
     }
     
-    pub fn grow(&mut self, buffer: Buffer) {
-        
+    pub fn grow_resolution(&mut self, device: &Device, size: u64) {
+        self.output = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Output Buffer"),
+            size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false,
+        });
+
+        self.staging = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Staging Buffer"),
+            size,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
     }
 }

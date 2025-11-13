@@ -13,7 +13,7 @@ impl Engine {
         }
     }
 
-    pub fn render(&mut self) -> Result<RenderOutput> {
-        self.renderer.render()
+    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
+        self.renderer.render(rc)
     }
 }

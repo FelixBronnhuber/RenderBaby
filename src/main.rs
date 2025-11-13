@@ -84,7 +84,7 @@ impl App {
     }
 
     fn make_updated_render_config(&mut self) -> Result<RenderConfig> {
-        let camera = Camera::new(WIDTH as u32, HEIGHT as u32, self.fov).unwrap();
+        let camera = Camera::new((WIDTH) as u32, (HEIGHT) as u32, self.fov).unwrap();
         RenderConfigBuilder::new()
             .camera(camera)?
             .spheres(SPHERES.into())?
@@ -106,11 +106,7 @@ impl App {
             }
         };
 
-        if let Some(renderer) = self.renderer.as_mut() {
-            renderer.renderer.gpu_wrapper.rc = rc;
-        }
-
-        let output = match self.renderer.as_mut().unwrap().render() {
+        let output = match self.renderer.as_mut().unwrap().render(rc) {
             Ok(output) => output,
             Err(e) => {
                 log::error!("Render failed: {}", e);

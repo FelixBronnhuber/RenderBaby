@@ -31,8 +31,32 @@ impl GpuWrapper {
         }
     }
 
-    pub fn update(&mut self, queue: &wgpu::Queue) {
-        self.buffers.grow(self.buffers.camera.clone())
+    pub fn update(&mut self, rc:RenderConfig) {
+        let new_size = rc.camera.height*rc.camera.width;
+        if self.get_size() !=  new_size {
+            self.buffers.grow_resolution(&self.device, (new_size * 4) as u64);
+            self.bind_group = BindGroup::new(&self.device, &self.buffers, self.get_bind_group_layout())
+        }
+        self.rc = rc;
+    }
+    pub fn get_size(&self) -> u32 {
+        self.rc.camera.height*self.rc.camera.width
+    }
+
+    pub fn get_width(&self) -> u32 {
+        self.rc.camera.width
+    }
+
+    pub fn get_height(&self) -> u32 {
+        self.rc.camera.height
+    }
+
+    pub fn get_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
+        &self.bind_group_layout.bind_group_layout
+    }
+
+    pub fn get_bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group.bind_group
     }
 
 

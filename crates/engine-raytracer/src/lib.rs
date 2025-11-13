@@ -1,6 +1,5 @@
 use anyhow::{Result, anyhow};
-pub use engine_config::*;
-use std::sync::Arc;
+pub use engine_config::{RenderConfig, Sphere};
 use engine_wgpu_wrapper::GpuWrapper;
 
 #[derive(Debug, Clone)]
@@ -64,7 +63,7 @@ impl ComputePipelineResources {
 
 pub struct RenderState {
     pipeline: wgpu::ComputePipeline,
-    pub gpu_wrapper: GpuWrapper
+    gpu_wrapper: GpuWrapper
 }
 
 impl RenderState {
@@ -94,7 +93,8 @@ impl RenderState {
             .write_buffer(&self.gpu_wrapper.buffers.spheres, 0, bytemuck::cast_slice(&spheres));
     }
 
-    pub fn render(&mut self) -> Result<RenderOutput> {
+    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
+        self.gpu_wrapper.update(rc);
         self.dispatch_compute()?;
 
         self.update_from();
@@ -117,7 +117,7 @@ impl RenderState {
         map_result.map_err(|_| anyhow!("GPU buffer mapping failed"))?;
 
         let data_slice = buffer_slice.get_mapped_range();
-        let mut result = Vec::with_capacity((self.gpu_wrapper.rc.camera.width * self.gpu_wrapper.rc.camera.height * 4) as usize);
+        let mut result = Vec::with_capacity((self.gpu_wrapper.get_size() * 4) as usize);
 
         for chunk in data_slice.chunks_exact(4) {
             result.extend_from_slice(&[chunk[0], chunk[1], chunk[2], 255]);
@@ -127,17 +127,17 @@ impl RenderState {
 
         self.gpu_wrapper.buffers.staging.unmap();
 
-        if result.len() != (self.gpu_wrapper.rc.camera.width * self.gpu_wrapper.rc.camera.height * 4) as usize {
+        if result.len() != (self.gpu_wrapper.get_size() * 4) as usize {
             return Err(anyhow!(
                 "Render produced {} bytes but expected {}",
                 result.len(),
-                self.gpu_wrapper.rc.camera.width * self.gpu_wrapper.rc.camera.height * 4
+                self.gpu_wrapper.get_size() * 4
             ));
         }
 
         Ok(RenderOutput {
-            width: self.gpu_wrapper.rc.camera.width as usize,
-            height: self.gpu_wrapper.rc.camera.height as usize,
+            width: self.gpu_wrapper.get_width() as usize,
+            height: self.gpu_wrapper.get_height() as usize,
             pixels: result,
         })
     }
@@ -154,10 +154,10 @@ impl RenderState {
             });
 
             pass.set_pipeline(&self.pipeline);
-            pass.set_bind_group(0, &self.gpu_wrapper.bind_group.bind_group, &[]);
+            pass.set_bind_group(0, self.gpu_wrapper.get_bind_group(), &[]);
             pass.dispatch_workgroups(
-                (self.gpu_wrapper.rc.camera.width as f32 / 8.0).ceil() as u32,
-                (self.gpu_wrapper.rc.camera.height as f32 / 8.0).ceil() as u32,
+                (self.gpu_wrapper.get_width() as f32 / 8.0).ceil() as u32,
+                (self.gpu_wrapper.get_height() as f32 / 8.0).ceil() as u32,
                 1,
             );
         }
@@ -167,7 +167,7 @@ impl RenderState {
             0,
             &self.gpu_wrapper.buffers.staging,
             0,
-            (self.gpu_wrapper.rc.camera.width * self.gpu_wrapper.rc.camera.height * 4) as u64,
+            (self.gpu_wrapper.get_size() * 4) as u64,
         );
 
         self.gpu_wrapper.queue.submit(Some(encoder.finish()));
