@@ -1,7 +1,7 @@
 use crate::GpuBuffers;
 
 pub struct BindGroupLayout {
-    pub(crate) bind_group_layout: wgpu::BindGroupLayout,
+    pub bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl BindGroupLayout {
@@ -47,7 +47,7 @@ impl BindGroupLayout {
 }
 
 pub struct BindGroup {
-    bind_group: wgpu::BindGroup,
+    pub bind_group: wgpu::BindGroup,
 }
 
 impl BindGroup {

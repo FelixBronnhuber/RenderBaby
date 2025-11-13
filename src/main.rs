@@ -1,7 +1,8 @@
 use anyhow::Result;
 use eframe::egui;
 use engine_config::{Camera, RenderConfig, RenderConfigBuilder, Sphere};
-use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
+use engine_main::Engine;
+use engine_raytracer::RenderOutput;
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
 static WIDTH: usize = 1920 / 2;
@@ -44,23 +45,21 @@ const SPHERES: [Sphere; 5] = [
 pub struct App {
     image: Option<egui::TextureHandle>,
     dirty: bool,
-    renderer: Option<WgpuWrapper>,
+    renderer: Option<Engine>,
     fov: f32,
 }
 
 impl App {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let camera = Camera::new(WIDTH as u32, HEIGHT as u32, 1.0).unwrap();
-        let (renderer, _) = match WgpuWrapper::new(
-            EngineType::Raytracer,
+        let (builder, _) = match
             RenderConfigBuilder::new()
                 .camera(camera)
                 .unwrap()
                 .spheres(SPHERES.into())
                 .unwrap()
                 .build()
-                .unwrap(),
-        ) {
+         {
             Ok(r) => (Some(r), None),
             Err(e) => {
                 let msg = format!("Renderer initialization failed: {}", e);
@@ -68,10 +67,12 @@ impl App {
             }
         };
 
+        let renderer = Engine::new(builder.unwrap());
+
         Self {
             image: None,
             dirty: true,
-            renderer,
+            renderer: Some(renderer),
             fov: FOV,
         }
     }
@@ -105,7 +106,11 @@ impl App {
             }
         };
 
-        let output = match self.renderer.as_mut().unwrap().render(rc) {
+        if let Some(renderer) = self.renderer.as_mut() {
+            renderer.renderer.gpu_wrapper.rc = rc;
+        }
+
+        let output = match self.renderer.as_mut().unwrap().render() {
             Ok(output) => output,
             Err(e) => {
                 log::error!("Render failed: {}", e);

@@ -5,14 +5,14 @@ use wgpu::util::DeviceExt;
 use engine_config::RenderConfig;
 
 pub struct GpuBuffers {
-    pub(crate) spheres: Buffer,
-    pub(crate) camera: Buffer,
-    pub(crate) output: Buffer,
-    pub(crate) staging: Buffer,
+    pub spheres: Buffer,
+    pub camera: Buffer,
+    pub output: Buffer,
+    pub staging: Buffer,
 }
 
 impl GpuBuffers {
-    pub fn new(rc:RenderConfig, device: &Device) -> Self {
+    pub fn new(rc: &RenderConfig, device: &Device) -> Self {
         let cam = rc.camera.clone();
                 let size = (rc.camera.width * rc.camera.height * 4) as u64;
         

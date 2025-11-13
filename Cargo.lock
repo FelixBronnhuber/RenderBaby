@@ -996,6 +996,10 @@ dependencies = [
 [[package]]
 name = "engine-main"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "engine-raytracer",
+]
 
 [[package]]
 name = "engine-pathtracer"
@@ -2584,7 +2588,8 @@ dependencies = [
  "eframe",
  "egui",
  "engine-config",
- "engine-wgpu-wrapper",
+ "engine-main",
+ "engine-raytracer",
  "env_logger",
  "log",
 ]
