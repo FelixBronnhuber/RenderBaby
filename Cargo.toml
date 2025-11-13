@@ -11,10 +11,11 @@ engine-wgpu-wrapper = { path = "crates/engine-wgpu-wrapper" }
 engine-config = { path = "crates/engine-config" }
 env_logger = "0.11.8"
 log = "0.4.28"
+scene = { path = "crates/scene"}
 
 [workspace]
 members = [
-    ".", "crates/engine-config", "crates/engine-main",
+    ".",
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
