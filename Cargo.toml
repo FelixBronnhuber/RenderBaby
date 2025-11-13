@@ -8,7 +8,7 @@ control-plane = { path = "crates/control-plane" }
 
 [workspace]
 members = [
-    ".", "crates/engine-config", "crates/engine-main",
+    ".",
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",

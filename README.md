@@ -1,8 +1,33 @@
 # RenderBaby
 
-## Tests
+RenderBaby is a Rust project.  
+This repository uses a workspace structure, with multiple crates located in the `crates/` directory.
 
-To run all tests, including those for each crate in the `crates/` directory, use:
+## Local Development & CI Precheck
+
+Before pushing changes or opening a pull request, you should verify your code passes all checks performed by our CI pipeline.  
+A Makefile is provided to help you run these checks locally.
+
+To run all checks:
+
+```bash
+make ci
+# or just:
+make
+```
+
+This command will:
+- Check code formatting (`cargo fmt`)
+- Run Clippy linter (`cargo clippy`)
+- Run all tests (`cargo test`)
+- Build the project (`cargo build`)
+- Generate documentation (`cargo doc`)
+
+Running `make ci` ensures your code meets the standards enforced by CI.
+
+## Running Tests
+
+To run all tests for every crate in the workspace:
 
 ```bash
 cargo test --all
