@@ -12,7 +12,7 @@ impl Sphere {
         RenderSphere::new(
             [center.x, center.y, center.x],
             self.get_radius(),
-            self.get_color().map(|x| x as f32),
+            self.get_color(),
         )
         //center.as_slice?
         //todo: maybe do this when sphere is created/changed in scene to save preparation time when rendering

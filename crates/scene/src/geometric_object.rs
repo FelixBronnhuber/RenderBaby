@@ -17,13 +17,13 @@ pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material,
-    color: [u8; 3],
+    color: [f32; 3],
 }
 impl Sphere {
-    pub fn set_color(&mut self, color: [u8; 3]) {
+    pub fn set_color(&mut self, color: [f32; 3]) {
         self.color = color;
     }
-    pub fn get_color(&self) -> [u8; 3] {
+    pub fn get_color(&self) -> [f32; 3] {
         self.color
     }
     pub fn set_radius(&mut self, radius: f32) {
@@ -49,7 +49,7 @@ impl Sphere {
         self.material = material;
     }
 
-    pub fn new(center: Vec3, radius: f32, material: Material, color: [u8; 3]) -> Self {
+    pub fn new(center: Vec3, radius: f32, material: Material, color: [f32; 3]) -> Self {
         Self {
             center,
             radius,
@@ -205,6 +205,7 @@ impl Rotation {
 pub struct LightSource {
     position: Vec3,
     luminosity: f32,
+    
 }
 
 impl LightSource {
@@ -235,7 +236,7 @@ impl LightSource {
 // Maybe Material/Color/Texture as enum?
 pub struct Material {}
 pub struct Color {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
 }
