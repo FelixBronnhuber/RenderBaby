@@ -4,7 +4,7 @@ pub use engine_raytracer::{RenderOutput, RenderState};
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
-const SPHERES: [Sphere; 5] = [
+pub const SPHERES: [Sphere; 5] = [
     Sphere::new([0.0, 0.6, 1.0], 0.5, [1.0, 0.0, 1.0]), // Top, magenta
     Sphere::new([-0.6, 0.0, 1.0], 0.5, [0.0, 1.0, 0.0]), // Left, green
     Sphere::new([0.0, 0.0, 1.0], 0.5, [1.0, 0.0, 0.0]), // Centered, red
