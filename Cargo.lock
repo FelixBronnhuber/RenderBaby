@@ -994,16 +994,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "engine-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "engine-config",
+]
+
+[[package]]
 name = "engine-main"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "engine-config",
+ "engine-core",
+ "engine-pathtracer",
  "engine-raytracer",
 ]
 
 [[package]]
 name = "engine-pathtracer"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "engine-config",
+ "engine-core",
+ "engine-wgpu-wrapper",
+ "wgpu",
+]
 
 [[package]]
 name = "engine-raytracer"
@@ -1012,9 +1031,14 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
+ "engine-core",
  "engine-wgpu-wrapper",
  "wgpu",
 ]
+
+[[package]]
+name = "engine-shader"
+version = "0.1.0"
 
 [[package]]
 name = "engine-wgpu-wrapper"
@@ -1023,6 +1047,7 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
+ "engine-shader",
  "pollster",
  "wgpu",
 ]
@@ -2588,6 +2613,7 @@ dependencies = [
  "eframe",
  "egui",
  "engine-config",
+ "engine-core",
  "engine-main",
  "engine-raytracer",
  "env_logger",

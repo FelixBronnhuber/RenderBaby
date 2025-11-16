@@ -9,5 +9,6 @@ readme = "README.md"
 anyhow = "1.0.100"
 wgpu = "27.0.1"
 engine-config = { path = "../engine-config" }
+engine-shader = { path = "../engine-shader" }
 bytemuck = "1.24.0"
 pollster = "0.4.0"

@@ -1,8 +1,8 @@
 use anyhow::Result;
 use eframe::egui;
-use engine_config::{Camera, RenderConfig, RenderConfigBuilder, Sphere};
+use engine_config::{Camera, RenderConfig, RenderConfigBuilder, RenderEngine, Sphere};
 use engine_main::Engine;
-use engine_raytracer::RenderOutput;
+use engine_core::RenderOutput;
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
 static WIDTH: usize = 1920 / 2;
@@ -60,6 +60,7 @@ impl App {
                 .unwrap()
                 .spheres(SPHERES.into())
                 .unwrap()
+                .engine(RenderEngine::Raytracer)
                 .build()
          {
             Ok(r) => (Some(r), None),
@@ -92,6 +93,7 @@ impl App {
         RenderConfigBuilder::new()
             .camera(camera)?
             .spheres(SPHERES.into())?
+            .engine(RenderEngine::Raytracer)
             .build()
     }
 
