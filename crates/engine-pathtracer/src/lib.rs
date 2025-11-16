@@ -3,6 +3,7 @@ pub use engine_config::RenderConfig;
 use engine_core::{RenderOutput, Renderer};
 use engine_wgpu_wrapper::GpuWrapper;
 
+#[allow(dead_code)]
 pub struct Engine {
     gpu_wrapper: GpuWrapper,
 }
@@ -22,7 +23,7 @@ impl Engine {
         }
     }
 
-    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
+    pub fn render(&mut self, _rc: RenderConfig) -> Result<RenderOutput> {
         todo!()
     }
 }

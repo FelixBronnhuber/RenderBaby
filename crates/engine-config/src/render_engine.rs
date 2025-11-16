@@ -1,12 +1,9 @@
-use anyhow::Result;
-
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum RenderEngine {
+    #[default]
     Raytracer,
     Pathtracer,
 }
-
 
 impl RenderEngine {
     pub fn default_shader(&self) -> &'static str {
@@ -16,12 +13,3 @@ impl RenderEngine {
         }
     }
 }
-
-impl Default for RenderEngine {
-    fn default() -> Self {
-        RenderEngine::Raytracer
-    }
-}
-
-
-

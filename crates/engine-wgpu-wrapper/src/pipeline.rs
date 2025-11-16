@@ -5,10 +5,7 @@ pub struct ComputePipeline {
 }
 
 impl ComputePipeline {
-    pub fn new(
-        device: &wgpu::Device,
-        bind_group_layout: &wgpu::BindGroupLayout
-    ) -> Self {
+    pub fn new(device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout) -> Self {
         // Pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),

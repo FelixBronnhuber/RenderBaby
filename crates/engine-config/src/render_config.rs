@@ -57,13 +57,14 @@ impl RenderConfigBuilder {
     }
 
     pub fn build(self) -> Result<RenderConfig> {
-        let engine = self.engine.unwrap_or(RenderEngine::default());
+        let engine = self.engine.unwrap_or_default();
         let rc = RenderConfig {
-            camera: self.camera.unwrap_or(Camera::default()),
-            spheres: self.spheres.unwrap_or(vec![]),
-            shader_path: self.shader_path
-            .unwrap_or_else(|| engine.default_shader().to_string()),
-            engine
+            camera: self.camera.unwrap_or_default(),
+            spheres: self.spheres.unwrap_or_default(),
+            shader_path: self
+                .shader_path
+                .unwrap_or_else(|| engine.default_shader().to_string()),
+            engine,
         };
 
         Ok(rc)

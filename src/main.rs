@@ -1,8 +1,8 @@
 use anyhow::Result;
 use eframe::egui;
 use engine_config::{Camera, RenderConfig, RenderConfigBuilder, RenderEngine, Sphere};
-use engine_main::Engine;
 use engine_core::RenderOutput;
+use engine_main::Engine;
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
 static WIDTH: usize = 1920 / 2;
@@ -54,15 +54,14 @@ pub struct App {
 impl App {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let camera = Camera::new(WIDTH as u32, HEIGHT as u32, 1.0).unwrap();
-        let (builder, _) = match
-            RenderConfigBuilder::new()
-                .camera(camera)
-                .unwrap()
-                .spheres(SPHERES.into())
-                .unwrap()
-                .engine(RenderEngine::Raytracer)
-                .build()
-         {
+        let (builder, _) = match RenderConfigBuilder::new()
+            .camera(camera)
+            .unwrap()
+            .spheres(SPHERES.into())
+            .unwrap()
+            .engine(RenderEngine::Raytracer)
+            .build()
+        {
             Ok(r) => (Some(r), None),
             Err(e) => {
                 let msg = format!("Renderer initialization failed: {}", e);
@@ -151,18 +150,14 @@ impl eframe::App for App {
             }
 
             if ui
-                .add(
-                    egui::Slider::new(&mut self.width, 1..=2000).text("WIDTH"),
-                )
+                .add(egui::Slider::new(&mut self.width, 1..=2000).text("WIDTH"))
                 .changed()
             {
                 self.update_render(ctx);
             }
 
             if ui
-                .add(
-                    egui::Slider::new(&mut self.height, 1..=2000).text("HEIGHT"),
-                )
+                .add(egui::Slider::new(&mut self.height, 1..=2000).text("HEIGHT"))
                 .changed()
             {
                 self.update_render(ctx);

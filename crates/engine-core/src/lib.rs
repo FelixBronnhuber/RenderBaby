@@ -1,5 +1,5 @@
-use engine_config::RenderConfig;
 use anyhow::Result;
+use engine_config::RenderConfig;
 
 pub trait Renderer {
     fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput>;

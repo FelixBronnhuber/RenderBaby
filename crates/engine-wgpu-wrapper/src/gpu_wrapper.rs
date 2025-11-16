@@ -21,7 +21,7 @@ impl GpuWrapper {
     pub fn new(rc: RenderConfig) -> Result<Self> {
         let gpu = GpuDevice::new().unwrap();
         let buffers = GpuBuffers::new(&rc, &gpu.device);
-        let layout = BindGroupLayout::new(&gpu.device, &buffers);
+        let layout = BindGroupLayout::new(&gpu.device);
         let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
         let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout);
         Ok(Self {
@@ -39,7 +39,7 @@ impl GpuWrapper {
         let new_size = (rc.camera.height as u64) * (rc.camera.width as u64);
         if self.get_size() != new_size {
             self.buffer_wrapper
-                .grow_resolution(&self.device, (new_size * 4) as u64);
+                .grow_resolution(&self.device, new_size * 4);
             self.bind_group_wrapper = BindGroup::new(
                 &self.device,
                 &self.buffer_wrapper,
@@ -86,7 +86,11 @@ impl GpuWrapper {
 
             pass.set_pipeline(self.get_pipeline());
             pass.set_bind_group(0, self.get_bind_group(), &[]);
-            pass.dispatch_workgroups((self.get_width() + 7) / 8, (self.get_height() + 7) / 8, 1);
+            pass.dispatch_workgroups(
+                self.get_width().div_ceil(8),
+                self.get_height().div_ceil(8),
+                1,
+            );
         }
 
         encoder.copy_buffer_to_buffer(
@@ -94,7 +98,7 @@ impl GpuWrapper {
             0,
             &self.buffer_wrapper.staging,
             0,
-            (self.get_size() * 4) as u64,
+            self.get_size() * 4,
         );
 
         self.queue.submit(Some(encoder.finish()));

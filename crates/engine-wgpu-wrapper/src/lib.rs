@@ -1,11 +1,11 @@
-mod gpu_wrapper;
 mod bind_group;
-mod gpu_device;
 mod buffers;
+mod gpu_device;
+mod gpu_wrapper;
 mod pipeline;
 
-pub use gpu_wrapper::*;
 pub use bind_group::*;
-pub use gpu_device::*;
 pub use buffers::*;
+pub use gpu_device::*;
+pub use gpu_wrapper::*;
 pub use pipeline::*;

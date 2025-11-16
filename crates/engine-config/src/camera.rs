@@ -43,13 +43,13 @@ impl Camera {
     pub const MAX_FOV: f32 = f32::consts::PI * 10.0;
 
     pub fn new(width: u32, height: u32, fov: f32) -> Result<Self, CameraError> {
-        if width < Self::MIN_WIDTH || width > Self::MAX_WIDTH {
+        if !(Self::MIN_WIDTH..=Self::MAX_WIDTH).contains(&width) {
             return Err(CameraError::WidthOutOfBounds);
         }
-        if height < Self::MIN_HEIGHT || height > Self::MAX_HEIGHT {
+        if !(Self::MIN_HEIGHT..=Self::MAX_HEIGHT).contains(&height) {
             return Err(CameraError::HeightOutOfBounds);
         }
-        if fov < Self::MIN_FOV || fov > Self::MAX_FOV {
+        if !(Self::MIN_FOV..=Self::MAX_FOV).contains(&fov) {
             return Err(CameraError::FOVOutOfBounds);
         }
         Ok(Self { width, height, fov })

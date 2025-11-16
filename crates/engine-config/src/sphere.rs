@@ -37,7 +37,7 @@ impl Sphere {
         if radius <= 0.0 {
             return Err(SphereError::RadiusOutOfBounds);
         }
-        if color.iter().any(|&c| c < 0.0 || c > 1.0) {
+        if color.iter().any(|&c| !(0.0..=1.0).contains(&c)) {
             return Err(SphereError::ColorOutOfBounds);
         }
         Ok(Sphere {
