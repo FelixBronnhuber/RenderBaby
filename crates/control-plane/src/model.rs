@@ -3,20 +3,13 @@ use engine_wgpu_wrapper::{EngineType, SPHERES, WgpuWrapper};
 
 pub struct Model {
     renderer: WgpuWrapper,
-    width: usize,
-    height: usize,
 }
 
 impl Model {
     pub fn new() -> Self {
-        let width = 500;
-        let height = 500;
-
         Self {
-            renderer: WgpuWrapper::new(EngineType::Raytracer, width, height, std::f32::consts::FRAC_PI_4)
+            renderer: WgpuWrapper::new(EngineType::Raytracer, 500, 500, std::f32::consts::FRAC_PI_4)
                 .expect("Renderer initialization failed"),
-            width,
-            height,
         }
     }
 
