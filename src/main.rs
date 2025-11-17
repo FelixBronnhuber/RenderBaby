@@ -56,9 +56,7 @@ impl App {
         let camera = Camera::new(WIDTH as u32, HEIGHT as u32, 1.0).unwrap();
         let (builder, _) = match RenderConfigBuilder::new()
             .camera(camera)
-            .unwrap()
             .spheres(SPHERES.into())
-            .unwrap()
             .build()
         {
             Ok(r) => (Some(r), None),
@@ -95,8 +93,8 @@ impl App {
         let camera =
             Camera::new((self.width) as u32, (self.height) as u32, self.fov).unwrap();
         RenderConfigBuilder::new()
-            .camera(camera)?
-            .spheres(SPHERES.into())?
+            .camera(camera)
+            .spheres(SPHERES.into())
             .build()
     }
 

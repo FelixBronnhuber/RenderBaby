@@ -30,21 +30,23 @@ impl RenderConfigBuilder {
         }
     }
 
-    pub fn camera(mut self, camera: Camera) -> Result<Self> {
+    pub fn camera(mut self, camera: Camera) -> Self {
         self.camera = Some(camera);
-        Ok(self)
+        self
     }
 
-    pub fn spheres(mut self, spheres: Vec<Sphere>) -> Result<Self> {
+    pub fn spheres(mut self, spheres: Vec<Sphere>) -> Self {
         self.spheres = Some(spheres);
-        Ok(self)
+        self
     }
 
     pub fn build(self) -> Result<RenderConfig> {
-        let rc = RenderConfig {
-            camera: self.camera.unwrap_or_default(),
-            spheres: self.spheres.unwrap_or_default(),
-        };
+        let camera = self.camera.ok_or(RenderConfigBuilderError::MissingCamera)?;
+        let spheres = self
+            .spheres
+            .ok_or(RenderConfigBuilderError::MissingSpheres)?;
+
+        let rc = RenderConfig { camera, spheres };
 
         Ok(rc)
     }
@@ -53,12 +55,16 @@ impl RenderConfigBuilder {
 #[derive(Debug)]
 pub enum RenderConfigBuilderError {
     FOVOutOfBounds,
+    MissingCamera,
+    MissingSpheres,
 }
 
 impl fmt::Display for RenderConfigBuilderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
+            RenderConfigBuilderError::MissingCamera => write!(f, "Camera is required"),
+            RenderConfigBuilderError::MissingSpheres => write!(f, "Spheres are required"),
         }
     }
 }
@@ -71,7 +77,8 @@ mod tests {
 
     #[test]
     fn builder_defaults() {
-        let builder = RenderConfigBuilder::new();
+        let camera = Camera::default();
+        let builder = RenderConfigBuilder::new().camera(camera).spheres(vec![]);
         let config = builder.build().unwrap();
         assert_eq!(config.camera.width, Camera::DEFAULT_WIDTH);
         assert_eq!(config.camera.height, Camera::DEFAULT_HEIGHT);
@@ -86,15 +93,36 @@ mod tests {
             Sphere::new(Vec3::new(1.0, 2.0, 3.0), 2.0, Vec3::ONE.scale(0.5)).unwrap();
         let builder = RenderConfigBuilder::new()
             .camera(camera)
-            .unwrap()
-            .spheres(vec![sphere])
-            .unwrap();
+            .spheres(vec![sphere]);
         let config = builder.build().unwrap();
         assert_eq!(config.camera.width, 800);
         assert_eq!(config.camera.height, 600);
         assert_eq!(config.camera.fov, 1.0);
         assert_eq!(config.spheres.len(), 1);
         assert_eq!(config.spheres[0].radius, 2.0);
+    }
+
+    #[test]
+    fn builder_missing_camera() {
+        let builder = RenderConfigBuilder::new().spheres(vec![]);
+        let result = builder.build();
+        assert!(
+            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
+            .map(|e| matches!(e, RenderConfigBuilderError::MissingCamera))
+            .unwrap_or(false))
+        );
+    }
+
+    #[test]
+    fn builder_missing_spheres() {
+        let camera = Camera::default();
+        let builder = RenderConfigBuilder::new().camera(camera);
+        let result = builder.build();
+        assert!(
+            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
+            .map(|e| matches!(e, RenderConfigBuilderError::MissingSpheres))
+            .unwrap_or(false))
+        );
     }
 
     #[test]
