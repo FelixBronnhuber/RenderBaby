@@ -5,7 +5,7 @@ use eframe::{App, Frame};
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
-    SetFov(f32)
+    SetFov(f32),
 }
 
 pub trait ViewListener {
@@ -42,9 +42,18 @@ impl App for View {
                 }
 
                 let mut fov = self.pipeline.get_fov();
-                if ui.add(eframe::egui::Slider::new(&mut fov, 0.3..=1.5).text("FOV")).changed() {
-                    self.listener.as_mut().unwrap().handle_event(Event::SetFov(fov));
-                    self.listener.as_mut().unwrap().handle_event(Event::DoRender);
+                if ui
+                    .add(eframe::egui::Slider::new(&mut fov, 0.3..=1.5).text("FOV"))
+                    .changed()
+                {
+                    self.listener
+                        .as_mut()
+                        .unwrap()
+                        .handle_event(Event::SetFov(fov));
+                    self.listener
+                        .as_mut()
+                        .unwrap()
+                        .handle_event(Event::DoRender);
                 }
             });
 

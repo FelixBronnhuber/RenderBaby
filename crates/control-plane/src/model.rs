@@ -8,8 +8,13 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         Self {
-            renderer: WgpuWrapper::new(EngineType::Raytracer, 500, 500, std::f32::consts::FRAC_PI_4)
-                .expect("Renderer initialization failed"),
+            renderer: WgpuWrapper::new(
+                EngineType::Raytracer,
+                500,
+                500,
+                std::f32::consts::FRAC_PI_4,
+            )
+            .expect("Renderer initialization failed"),
         }
     }
 
