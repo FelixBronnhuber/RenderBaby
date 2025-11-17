@@ -15,10 +15,16 @@ impl Controller {
 
 impl ViewListener for Controller {
     fn handle_event(&mut self, event: Event) {
-        if event == Event::DoRender {
-            let output = self.model.generate_render_output();
-            if output.validate().is_ok() {
-                *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
+        match event {
+            Event::DoRender => {
+                let output = self.model.generate_render_output(self.pipeline.get_fov());
+                if output.validate().is_ok() {
+                    *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
+                }
+            }
+
+            Event::SetFov(fov) => {
+                self.pipeline.set_fov(fov);
             }
         }
     }
