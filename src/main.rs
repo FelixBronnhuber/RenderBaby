@@ -1,6 +1,6 @@
 use anyhow::Result;
 use eframe::egui;
-use engine_config::{Camera, RenderConfig, RenderConfigBuilder, Sphere};
+use engine_config::{Camera, RenderConfig, RenderConfigBuilder, Sphere, Vec3};
 use engine_main::{Engine, RenderEngine};
 use engine_wgpu_wrapper::RenderOutput;
 
@@ -11,33 +11,33 @@ static FOV: f32 = std::f32::consts::FRAC_PI_4;
 
 const SPHERES: [Sphere; 5] = [
     Sphere {
-        center: [0.0, 0.6, 1.0],
+        center: Vec3([0.0, 0.6, 1.0]),
         radius: 0.5,
-        color: [1.0, 0.0, 1.0],
+        color: Vec3::COLOR_MAGENTA,
         _pad: [0u8; 4],
     }, // Top, magenta
     Sphere {
-        center: [-0.6, 0.0, 1.0],
+        center: Vec3([-0.6, 0.0, 1.0]),
         radius: 0.5,
-        color: [0.0, 1.0, 0.0],
+        color: Vec3::COLOR_GREEN,
         _pad: [0u8; 4],
     }, // Left, green
     Sphere {
-        center: [0.0, 0.0, 1.0],
+        center: Vec3([0.0, 0.0, 1.0]),
         radius: 0.5,
-        color: [1.0, 0.0, 0.0],
+        color: Vec3::COLOR_RED,
         _pad: [0u8; 4],
     }, // Centered, red
     Sphere {
-        center: [0.6, 0.0, 1.0],
+        center: Vec3([0.6, 0.0, 1.0]),
         radius: 0.5,
-        color: [0.0, 0.0, 1.0],
+        color: Vec3::COLOR_BLUE,
         _pad: [0u8; 4],
     }, // Right, blue
     Sphere {
-        center: [0.0, -0.6, 1.0],
+        center: Vec3([0.0, -0.6, 1.0]),
         radius: 0.5,
-        color: [0.0, 1.0, 1.0],
+        color: Vec3::COLOR_CYAN,
         _pad: [0u8; 4],
     }, // Bottom, cyan
 ];
@@ -80,14 +80,20 @@ impl App {
         }
     }
 
-    pub fn update_image_from_output(&mut self, ctx: &egui::Context, output: &RenderOutput) {
+    pub fn update_image_from_output(
+        &mut self,
+        ctx: &egui::Context,
+        output: &RenderOutput,
+    ) {
         let size = [output.width, output.height];
         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, &output.pixels);
-        self.image = Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
+        self.image =
+            Some(ctx.load_texture("output", color_image, egui::TextureOptions::LINEAR));
     }
 
     fn make_updated_render_config(&mut self) -> Result<RenderConfig> {
-        let camera = Camera::new((self.width) as u32, (self.height) as u32, self.fov).unwrap();
+        let camera =
+            Camera::new((self.width) as u32, (self.height) as u32, self.fov).unwrap();
         RenderConfigBuilder::new()
             .camera(camera)?
             .spheres(SPHERES.into())?
@@ -140,7 +146,8 @@ impl eframe::App for App {
 
             if ui
                 .add(
-                    egui::Slider::new(&mut self.fov, Camera::MIN_FOV..=Camera::MAX_FOV).text("FOV"),
+                    egui::Slider::new(&mut self.fov, Camera::MIN_FOV..=Camera::MAX_FOV)
+                        .text("FOV"),
                 )
                 .changed()
             {

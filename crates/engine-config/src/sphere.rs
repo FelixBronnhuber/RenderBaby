@@ -2,12 +2,14 @@ use core::fmt;
 
 use bytemuck::{Pod, Zeroable};
 
+use crate::vec3::Vec3;
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct Sphere {
-    pub center: [f32; 3],
+    pub center: Vec3,
     pub radius: f32,
-    pub color: [f32; 3],
+    pub color: Vec3,
     pub _pad: [u8; 4],
 }
 
@@ -21,7 +23,9 @@ impl fmt::Display for SphereError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SphereError::RadiusOutOfBounds => write!(f, "Sphere radius must be positive"),
-            SphereError::ColorOutOfBounds => write!(f, "Sphere color values must be in [0.0, 1.0]"),
+            SphereError::ColorOutOfBounds => {
+                write!(f, "Sphere color values must be in [0.0, 1.0]")
+            }
         }
     }
 }
@@ -29,23 +33,23 @@ impl fmt::Display for SphereError {
 impl std::error::Error for SphereError {}
 
 impl Sphere {
-    pub const DEFAULT_CENTER: [f32; 3] = [0.0, 0.0, 0.0];
+    pub const DEFAULT_CENTER: Vec3 = Vec3::ZERO;
     pub const DEFAULT_RADIUS: f32 = 1.0;
-    pub const DEFAULT_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+    pub const DEFAULT_COLOR: Vec3 = Vec3::COLOR_RED;
 
-    pub fn new(center: [f32; 3], radius: f32, color: [f32; 3]) -> Result<Sphere, SphereError> {
+    pub fn new(center: Vec3, radius: f32, color: Vec3) -> Result<Sphere, SphereError> {
         if radius <= 0.0 {
             return Err(SphereError::RadiusOutOfBounds);
         }
-        if color.iter().any(|&c| !(0.0..=1.0).contains(&c)) {
-            return Err(SphereError::ColorOutOfBounds);
+        match color.is_valid_color() {
+            true => return Err(SphereError::ColorOutOfBounds),
+            false => Ok(Sphere {
+                center,
+                radius,
+                color,
+                _pad: [0u8; 4],
+            }),
         }
-        Ok(Sphere {
-            center,
-            radius,
-            color,
-            _pad: [0u8; 4],
-        })
     }
 }
 

@@ -82,7 +82,8 @@ mod tests {
     #[test]
     fn builder_sets_camera_and_spheres() {
         let camera = Camera::new(800, 600, 1.0).unwrap();
-        let sphere = Sphere::new([1.0, 2.0, 3.0], 2.0, [0.5, 0.5, 0.5]).unwrap();
+        let sphere =
+            Sphere::new(Vec3::new(1.0, 2.0, 3.0), 2.0, Vec3::ONE.scale(0.5)).unwrap();
         let builder = RenderConfigBuilder::new()
             .camera(camera)
             .unwrap()
@@ -110,13 +111,13 @@ mod tests {
 
     #[test]
     fn sphere_invalid_radius() {
-        let result = Sphere::new([0.0, 0.0, 0.0], 0.0, [1.0, 1.0, 1.0]);
+        let result = Sphere::new(Vec3::ONE, 0.0, Vec3::COLOR_WHITE.scale(0.5));
         assert!(matches!(result, Err(SphereError::RadiusOutOfBounds)));
     }
 
     #[test]
     fn sphere_invalid_color() {
-        let result = Sphere::new([0.0, 0.0, 0.0], 1.0, [2.0, -1.0, 1.0]);
+        let result = Sphere::new(Vec3::ZERO, 1.0, Vec3::new(-1.0, 0.0, -1.0));
         assert!(matches!(result, Err(SphereError::ColorOutOfBounds)));
     }
 }
