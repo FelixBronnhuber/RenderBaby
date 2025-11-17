@@ -14,6 +14,8 @@ pub struct Scene {
     */
     scene_graph: SceneGraph,
     action_stack: ActionStack,
+    background_color: [f32; 3],
+    name: String,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -31,7 +33,11 @@ impl Scene {
         let color = [0.0, 1.0, 0.0];
         let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, color);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
-        let light = LightSource::new(Vec3::new(0.0, 0.0, 3.0), 0.0);
+        let light = LightSource::new(
+            Vec3::new(0.0, 0.0, 3.0),
+            0.0,
+            [1.0, 1.0, 1.0],
+            "proto_light".to_owned());
         self.add_object(Box::new(sphere));
         self.set_camera(cam);
         self.add_lightsource(light);
@@ -49,7 +55,9 @@ impl Scene {
         Self {
             scene_graph: SceneGraph::new(),
             action_stack: ActionStack::new(),
-        }
+            name: "scene".to_owned(),
+            background_color: [1.0, 1.0, 1.0],
+        } // todo: allow name and color as param
     }
 
     pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
@@ -76,4 +84,20 @@ impl Scene {
     pub fn redo(&mut self) {
         self.action_stack.redo();
     }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+    pub fn get_background_color(&self) -> [f32; 3] {
+        self.background_color
+    }
+    pub fn set_backgroubd_color(&mut self, color: [f32; 3]) {
+        self.background_color = color;
+    }
 }
+
+/* pub struct SceneConfig{
+    background_color: [f32; 3]
+} */

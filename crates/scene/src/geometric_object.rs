@@ -7,17 +7,23 @@ use std::any::Any;
 
 //marker for now
 pub trait GeometricObject {
-    //todo!();
-    fn scale(&mut self, factor: f32);
+    fn scale(&mut self, factor: f32); // todo: probably scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
+    fn get_path(&self) -> String;
+    //fn set_path(&mut self, path: String);
+    fn get_scale(&self) -> Vec3;
+    fn get_translation(&self) -> Vec3;
+    fn get_rotation(&self) -> Vec3;
+
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material,
     color: [f32; 3],
+    attr: ObjConf
 }
 impl Sphere {
     pub fn set_color(&mut self, color: [f32; 3]) {
@@ -50,11 +56,19 @@ impl Sphere {
     }
 
     pub fn new(center: Vec3, radius: f32, material: Material, color: [f32; 3]) -> Self {
+        let conf = ObjConf {
+            name: "New Sphere".to_owned(),
+            path: /*Some("todo".to_owned())*/ None,
+            scale: Vec3::new(0.0, 0.0, 0.0),
+            translation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Vec3::new(0.0, 0.0, 0.0),
+        };
         Self {
             center,
             radius,
             material,
             color,
+            attr: conf
         }
     }
 }
@@ -72,11 +86,28 @@ impl GeometricObject for Sphere {
     fn as_any(&self) -> &dyn Any {
         self
     }
+    
+    fn get_path(&self) -> String {
+        self.attr.path
+    }
+    
+    fn get_scale(&self) -> Vec3 {
+        self.attr.scale
+    }
+    
+    fn get_translation(&self) -> Vec3 {
+        self.attr.translation
+    }
+    
+    fn get_rotation(&self) -> Vec3 {
+        self.attr.translation
+    }
 }
 
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
 }
+// todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
         for tri in self.get_triangles() {
@@ -96,6 +127,22 @@ impl GeometricObject for TriGeometry {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+    
+    fn get_path(&self) -> String {
+        todo!()
+    }
+    
+    fn get_scale(&self) -> Vec3 {
+        todo!()
+    }
+    
+    fn get_translation(&self) -> Vec3 {
+        todo!()
+    }
+    
+    fn get_rotation(&self) -> Vec3 {
+        todo!()
     }
 }
 impl TriGeometry {
@@ -205,7 +252,8 @@ impl Rotation {
 pub struct LightSource {
     position: Vec3,
     luminosity: f32,
-    
+    name: String,
+    color: [f32; 3],
 }
 
 impl LightSource {
@@ -225,10 +273,12 @@ impl LightSource {
         self.luminosity = luminosity
     }
 
-    pub fn new(position: Vec3, luminosity: f32) -> Self {
+    pub fn new(position: Vec3, luminosity: f32, color: [f32; 3], name: String) -> Self {
         LightSource {
             position,
             luminosity,
+            name,
+            color,
         }
     }
 }
@@ -240,3 +290,18 @@ pub struct Color {
     pub g: f32,
     pub b: f32,
 }
+
+struct ObjConf {
+    pub name: String,
+    pub path: Option<String>,
+    pub scale: Vec3,
+    pub translation: Vec3,
+    pub rotation: Vec3,
+}
+
+enum LightType {
+    Ambient,
+    Point,
+    Directional,
+} // todo include in LightSource
+
