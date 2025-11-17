@@ -15,4 +15,4 @@ pub use render_output::*;
 pub use renderer::*;
 
 pub use anyhow::Result;
-pub use engine_config::{RenderConfig, RenderEngine};
+pub use engine_config::RenderConfig;

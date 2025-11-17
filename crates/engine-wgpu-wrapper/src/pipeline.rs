@@ -6,7 +6,11 @@ pub struct ComputePipeline {
 }
 
 impl ComputePipeline {
-    pub fn new(device: &wgpu::Device, bind_group_layout: &wgpu::BindGroupLayout, path: &str) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        bind_group_layout: &wgpu::BindGroupLayout,
+        path: &str,
+    ) -> Self {
         // Pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
@@ -16,7 +20,7 @@ impl ComputePipeline {
 
         //let shader = device.create_shader_module(wgpu::include_wgsl!("../../engine-raytracer/shader.wgsl"));
 
-        let path_new:&str = &(env!("CARGO_MANIFEST_DIR").to_owned() + "/../" + path);
+        let path_new: &str = &(env!("CARGO_MANIFEST_DIR").to_owned() + "/../" + path);
 
         let shader_path = Path::new(path_new);
 

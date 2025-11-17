@@ -1,5 +1,8 @@
+mod render_engine;
+pub use render_engine::RenderEngine;
+
 use anyhow::Result;
-use engine_config::{RenderConfig, RenderEngine};
+use engine_config::RenderConfig;
 use engine_wgpu_wrapper::{RenderOutput, Renderer};
 
 pub struct Engine {
@@ -8,9 +11,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new(rc: RenderConfig) -> Self {
-        let engine_type = rc.engine;
-
+    pub fn new(rc: RenderConfig, engine_type: RenderEngine) -> Self {
         let renderer: Box<dyn Renderer> = match engine_type {
             RenderEngine::Raytracer => Box::new(engine_raytracer::Engine::new(rc)),
             RenderEngine::Pathtracer => Box::new(engine_pathtracer::Engine::new(rc)),

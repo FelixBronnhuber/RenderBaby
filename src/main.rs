@@ -1,7 +1,7 @@
 use anyhow::Result;
 use eframe::egui;
-use engine_config::{Camera, RenderConfig, RenderConfigBuilder, RenderEngine, Sphere};
-use engine_main::Engine;
+use engine_config::{Camera, RenderConfig, RenderConfigBuilder, Sphere};
+use engine_main::{Engine, RenderEngine};
 use engine_wgpu_wrapper::RenderOutput;
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
@@ -59,7 +59,6 @@ impl App {
             .unwrap()
             .spheres(SPHERES.into())
             .unwrap()
-            .engine(RenderEngine::Raytracer)
             .build()
         {
             Ok(r) => (Some(r), None),
@@ -69,7 +68,7 @@ impl App {
             }
         };
 
-        let renderer = Engine::new(builder.unwrap());
+        let renderer = Engine::new(builder.unwrap(), RenderEngine::Raytracer);
 
         Self {
             image: None,
@@ -92,7 +91,6 @@ impl App {
         RenderConfigBuilder::new()
             .camera(camera)?
             .spheres(SPHERES.into())?
-            .engine(RenderEngine::Raytracer)
             .build()
     }
 

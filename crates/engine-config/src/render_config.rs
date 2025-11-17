@@ -8,7 +8,6 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub camera: Camera,
     pub spheres: Vec<Sphere>,
-    pub engine: RenderEngine,
 }
 
 impl RenderConfig {
@@ -21,7 +20,6 @@ impl RenderConfig {
 pub struct RenderConfigBuilder {
     camera: Option<Camera>,
     spheres: Option<Vec<Sphere>>,
-    engine: Option<RenderEngine>,
 }
 
 impl RenderConfigBuilder {
@@ -29,7 +27,6 @@ impl RenderConfigBuilder {
         Self {
             camera: None,
             spheres: None,
-            engine: None,
         }
     }
 
@@ -43,16 +40,10 @@ impl RenderConfigBuilder {
         Ok(self)
     }
 
-    pub fn engine(mut self, engine: RenderEngine) -> Self {
-        self.engine = Some(engine);
-        self
-    }
-
     pub fn build(self) -> Result<RenderConfig> {
         let rc = RenderConfig {
             camera: self.camera.unwrap_or_default(),
             spheres: self.spheres.unwrap_or_default(),
-            engine: self.engine.unwrap_or_default(),
         };
 
         Ok(rc)
