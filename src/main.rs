@@ -1,3 +1,6 @@
+use control_plane::App;
+
 fn main() {
-    println!("Hello, world!");
+    let app = App::new();
+    app.show();
 }

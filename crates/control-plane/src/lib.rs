@@ -1,14 +1,41 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+mod controller;
+mod model;
+mod pipeline;
+mod view;
+
+use controller::Controller;
+use model::Model;
+use pipeline::Pipeline;
+use view::View;
+
+pub struct App {
+    view: View,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl App {
+    pub fn new() -> Self {
+        App::create_egui_app()
+    }
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    pub fn create_egui_app() -> Self {
+        let pipeline = Pipeline::new();
+
+        let model = Model::new();
+        let controller = Controller::new(pipeline.clone(), model);
+        let mut view = View::new(pipeline);
+
+        view.set_listener(Box::new(controller));
+
+        Self { view }
+    }
+
+    pub fn show(self) {
+        self.view.open();
+    }
+}
+
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }

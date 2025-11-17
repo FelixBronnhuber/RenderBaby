@@ -1,0 +1,12 @@
+[package]
+name = "engine-raytracer"
+version = "0.1.0"
+edition = "2024"
+description = "Provides a wgpu-based ray tracing implementation, extending the engine-wgpu-wrapper crate"
+readme = "README.md"
+
+[dependencies]
+anyhow = "1.0.100"
+bytemuck = "1.24.0"
+wgpu = "27.0.1"
+engine-config = { path = "../engine-config" }

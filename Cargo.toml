@@ -4,14 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-computational-plane = { path = "crates/computational-plane" }
-data-plane = { path = "crates/data-plane" }
 control-plane = { path = "crates/control-plane" }
 
 [workspace]
 members = [
-    "crates/computational-plane",
-    "crates/data-plane",
+    ".",
+    "crates/engine-pathtracer",
+    "crates/engine-raytracer",
+    "crates/engine-wgpu-wrapper",
     "crates/control-plane",
-    "."
+    "crates/engine-config",
+    "crates/engine-main",
 ]

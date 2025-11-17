@@ -1,0 +1,15 @@
+[package]
+name = "engine-wgpu-wrapper"
+version = "0.1.0"
+edition = "2024"
+description = "Provides a reusable wgpu setup base and delegates the rest to engine-raytracer/pathtracer."
+readme = "README.md"
+
+[dependencies]
+anyhow = "1.0.100"
+wgpu = "27.0.1"
+engine-raytracer = { path = "../engine-raytracer" }
+engine-pathtracer = { path = "../engine-pathtracer" }
+engine-config = { path = "../engine-config" }
+bytemuck = "1.24.0"
+pollster = "0.4.0"
