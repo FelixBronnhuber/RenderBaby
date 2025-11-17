@@ -18,12 +18,12 @@ pub struct GpuWrapper {
 
 impl GpuWrapper {
     ///initializes shared Config, deligated to Sub modules
-    pub fn new(rc: RenderConfig) -> Result<Self> {
+    pub fn new(rc: RenderConfig, path: &str) -> Result<Self> {
         let gpu = GpuDevice::new().unwrap();
         let buffers = GpuBuffers::new(&rc, &gpu.device);
         let layout = BindGroupLayout::new(&gpu.device);
         let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
-        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout);
+        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, path);
         Ok(Self {
             buffer_wrapper: buffers,
             bind_group_layout_wrapper: layout,

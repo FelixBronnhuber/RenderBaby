@@ -1027,17 +1027,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "engine-shader"
-version = "0.1.0"
-
-[[package]]
 name = "engine-wgpu-wrapper"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
- "engine-shader",
  "pollster",
  "wgpu",
 ]

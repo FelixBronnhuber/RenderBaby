@@ -8,7 +8,6 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub camera: Camera,
     pub spheres: Vec<Sphere>,
-    pub shader_path: String,
     pub engine: RenderEngine,
 }
 
@@ -22,7 +21,6 @@ impl RenderConfig {
 pub struct RenderConfigBuilder {
     camera: Option<Camera>,
     spheres: Option<Vec<Sphere>>,
-    shader_path: Option<String>,
     engine: Option<RenderEngine>,
 }
 
@@ -31,7 +29,6 @@ impl RenderConfigBuilder {
         Self {
             camera: None,
             spheres: None,
-            shader_path: None,
             engine: None,
         }
     }
@@ -46,25 +43,16 @@ impl RenderConfigBuilder {
         Ok(self)
     }
 
-    pub fn shader_path(mut self, path: impl Into<String>) -> Self {
-        self.shader_path = Some(path.into());
-        self
-    }
-
     pub fn engine(mut self, engine: RenderEngine) -> Self {
         self.engine = Some(engine);
         self
     }
 
     pub fn build(self) -> Result<RenderConfig> {
-        let engine = self.engine.unwrap_or_default();
         let rc = RenderConfig {
             camera: self.camera.unwrap_or_default(),
             spheres: self.spheres.unwrap_or_default(),
-            shader_path: self
-                .shader_path
-                .unwrap_or_else(|| engine.default_shader().to_string()),
-            engine,
+            engine: self.engine.unwrap_or_default(),
         };
 
         Ok(rc)

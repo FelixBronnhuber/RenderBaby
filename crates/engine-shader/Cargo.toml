@@ -1,8 +1,0 @@
-[package]
-name = "engine-shader"
-version = "0.1.0"
-edition = "2024"
-description = "Provides WGSL shaders for the engine, consumable by engine-wgpu-wrapper and other crates."
-
-[lib]
-crate-type = ["lib"]
