@@ -994,22 +994,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "engine-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "engine-config",
-]
-
-[[package]]
 name = "engine-main"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "engine-config",
- "engine-core",
  "engine-pathtracer",
  "engine-raytracer",
+ "engine-wgpu-wrapper",
 ]
 
 [[package]]
@@ -1019,7 +1011,6 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
- "engine-core",
  "engine-wgpu-wrapper",
  "wgpu",
 ]
@@ -1031,7 +1022,6 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
- "engine-core",
  "engine-wgpu-wrapper",
  "wgpu",
 ]
@@ -2613,9 +2603,9 @@ dependencies = [
  "eframe",
  "egui",
  "engine-config",
- "engine-core",
  "engine-main",
  "engine-raytracer",
+ "engine-wgpu-wrapper",
  "env_logger",
  "log",
 ]

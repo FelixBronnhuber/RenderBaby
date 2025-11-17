@@ -11,4 +11,3 @@ bytemuck = "1.24.0"
 wgpu = "27.0.1"
 engine-config = { path = "../engine-config" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
-engine-core = { path = "../engine-core"}

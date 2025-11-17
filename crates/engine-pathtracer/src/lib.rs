@@ -1,7 +1,6 @@
 use anyhow::Result;
 pub use engine_config::RenderConfig;
-use engine_core::{RenderOutput, Renderer};
-use engine_wgpu_wrapper::GpuWrapper;
+use engine_wgpu_wrapper::{GpuWrapper, RenderOutput, Renderer};
 
 #[allow(dead_code)]
 pub struct Engine {

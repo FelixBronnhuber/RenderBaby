@@ -1,9 +1,0 @@
-[package]
-name = "engine-core"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-engine-config = { path = "../engine-config" }
-anyhow = "1.0"
-

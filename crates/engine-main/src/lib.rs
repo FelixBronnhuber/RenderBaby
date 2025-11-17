@@ -1,6 +1,6 @@
 use anyhow::Result;
 use engine_config::{RenderConfig, RenderEngine};
-use engine_core::{RenderOutput, Renderer};
+use engine_wgpu_wrapper::{RenderOutput, Renderer};
 
 pub struct Engine {
     renderer: Box<dyn Renderer>,

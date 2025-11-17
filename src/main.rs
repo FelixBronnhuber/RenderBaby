@@ -1,8 +1,8 @@
 use anyhow::Result;
 use eframe::egui;
 use engine_config::{Camera, RenderConfig, RenderConfigBuilder, RenderEngine, Sphere};
-use engine_core::RenderOutput;
 use engine_main::Engine;
+use engine_wgpu_wrapper::RenderOutput;
 
 /* START TEMPORARY EXAMPLE CODE - THIS SHOULD BE MOVED INTO ITS OWN CRATE(S) */
 static WIDTH: usize = 1920 / 2;
