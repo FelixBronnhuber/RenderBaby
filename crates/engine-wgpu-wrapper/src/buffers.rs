@@ -14,17 +14,19 @@ impl GpuBuffers {
         let cam = rc.camera;
         let size = (rc.camera.width * rc.camera.height * 4) as u64;
 
-        let dimensions_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Dimensions Buffer"),
-            contents: bytemuck::bytes_of(&cam),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let dimensions_buffer =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Dimensions Buffer"),
+                contents: bytemuck::bytes_of(&cam),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
 
-        let spheres_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Spheres Buffer"),
-            contents: bytemuck::cast_slice(&rc.spheres),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-        });
+        let spheres_buffer =
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Spheres Buffer"),
+                contents: bytemuck::cast_slice(&rc.spheres),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
 
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Output Buffer"),
