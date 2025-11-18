@@ -43,7 +43,7 @@ impl App for View {
 
                 let mut fov = self.pipeline.get_fov();
                 if ui
-                    .add(eframe::egui::Slider::new(&mut fov, 0.3..=1.5).text("FOV"))
+                    .add(eframe::egui::Slider::new(&mut fov, 0.1..=20.0).text("FOV"))
                     .changed()
                 {
                     self.listener

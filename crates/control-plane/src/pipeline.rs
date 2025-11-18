@@ -1,4 +1,4 @@
-use engine_raytracer::RenderOutput;
+use engine_wgpu_wrapper::RenderOutput;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
