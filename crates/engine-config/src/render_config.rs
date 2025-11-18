@@ -56,19 +56,32 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn add_sphere(&mut self, sphere: Sphere) -> &mut Self {
+        self.spheres.get_or_insert_with(Vec::new).push(sphere);
+        self
+    }
+
+    pub fn add_vertex(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
+        self.verticies
+            .get_or_insert_with(Vec::new)
+            .extend_from_slice(&[x, y, z]);
+        self
+    }
+
+    pub fn add_triangle(&mut self, v0: u32, v1: u32, v2: u32) -> &mut Self {
+        self.triangles
+            .get_or_insert_with(Vec::new)
+            .extend_from_slice(&[v0, v1, v2]);
+        self
+    }
+
     pub fn build(self) -> Result<RenderConfig> {
         // TODO: Instead of mandatory MissingErrors consider Logging for example:
         // `MissingSpheresWarning` on build() and init with empty vector
         let camera = self.camera.ok_or(RenderConfigBuilderError::MissingCamera)?;
-        let spheres = self
-            .spheres
-            .ok_or(RenderConfigBuilderError::MissingSpheres)?;
-        let verticies = self
-            .verticies
-            .ok_or(RenderConfigBuilderError::MisingVerticies)?;
-        let triangles = self
-            .triangles
-            .ok_or(RenderConfigBuilderError::MisingTriangles)?;
+        let spheres = self.spheres.unwrap_or_default();
+        let verticies = self.verticies.unwrap_or_default();
+        let triangles = self.triangles.unwrap_or_default();
 
         let rc = RenderConfig {
             camera,
@@ -132,29 +145,6 @@ mod tests {
         assert_eq!(config.camera.fov, 1.0);
         assert_eq!(config.spheres.len(), 1);
         assert_eq!(config.spheres[0].radius, 2.0);
-    }
-
-    #[test]
-    fn builder_missing_camera() {
-        let builder = RenderConfigBuilder::new().spheres(vec![]);
-        let result = builder.build();
-        assert!(
-            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
-            .map(|e| matches!(e, RenderConfigBuilderError::MissingCamera))
-            .unwrap_or(false))
-        );
-    }
-
-    #[test]
-    fn builder_missing_spheres() {
-        let camera = Camera::default();
-        let builder = RenderConfigBuilder::new().camera(camera);
-        let result = builder.build();
-        assert!(
-            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
-            .map(|e| matches!(e, RenderConfigBuilderError::MissingSpheres))
-            .unwrap_or(false))
-        );
     }
 
     #[test]

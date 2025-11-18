@@ -3,40 +3,6 @@ use engine_config::*;
 use engine_main::{Engine, RenderEngine};
 use engine_wgpu_wrapper::RenderOutput;
 
-// TODO: Remove this temporary Scene
-const SPHERES: [Sphere; 5] = [
-    Sphere {
-        center: Vec3([0.0, 0.6, 1.0]),
-        radius: 0.5,
-        color: Vec3::COLOR_MAGENTA,
-        _pad: [0u8; 4],
-    }, // Top, magenta
-    Sphere {
-        center: Vec3([-0.6, 0.0, 1.0]),
-        radius: 0.5,
-        color: Vec3::COLOR_GREEN,
-        _pad: [0u8; 4],
-    }, // Left, green
-    Sphere {
-        center: Vec3([0.0, 0.0, 1.0]),
-        radius: 0.5,
-        color: Vec3::COLOR_RED,
-        _pad: [0u8; 4],
-    }, // Centered, red
-    Sphere {
-        center: Vec3([0.6, 0.0, 1.0]),
-        radius: 0.5,
-        color: Vec3::COLOR_BLUE,
-        _pad: [0u8; 4],
-    }, // Right, blue
-    Sphere {
-        center: Vec3([0.0, -0.6, 1.0]),
-        radius: 0.5,
-        color: Vec3::COLOR_CYAN,
-        _pad: [0u8; 4],
-    }, // Bottom, cyan
-];
-
 pub struct Model {
     engine: Engine,
 }
@@ -44,29 +10,21 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         // TODO: Get this from the Data-Plane!
-        let rc = RenderConfigBuilder::new()
-            // .spheres(SPHERES.into())
-            .spheres(vec![
-                Sphere::new(
-                    Vec3::new(999999.0, 999999.0, 999999.0),
-                    1.0,
-                    Vec3::COLOR_RED,
-                )
-                .unwrap(),
-            ])
-            .camera(Camera::default())
-            .verticies(vec![
-                0.0, 0.0, 0.0, // Bottom-left
-                1.0, 0.0, 0.0, // Bottom-right
-                1.0, 1.0, 0.0, // Top-right
-                0.0, 1.0, 0.0, // Top-left
-            ])
-            .triangles(vec![
-                0, 1, 2, // First triangle
-                2, 3, 1, // Second triangle
-            ])
-            .build()
-            .unwrap();
+        let mut builder = RenderConfigBuilder::new();
+        builder
+            .add_sphere(Sphere::new(Vec3::new(0.0, 0.6, 4.0), 0.5, Vec3::COLOR_MAGENTA).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(-0.6, 0.0, 4.0), 0.5, Vec3::COLOR_GREEN).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.0, 0.0, 4.0), 0.5, Vec3::COLOR_RED).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.6, 0.0, 4.0), 0.5, Vec3::COLOR_BLUE).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.0, -0.6, 4.0), 0.5, Vec3::COLOR_CYAN).unwrap())
+            .add_vertex(0.0, 0.0, 0.0) // Bottom-left
+            .add_vertex(1.0, 0.0, 0.0) // Bottom-right
+            .add_vertex(1.0, 1.0, 0.0) // Top-right
+            .add_vertex(0.0, 1.0, 0.0) // Top-left
+            .add_triangle(0, 1, 2) // First triangle
+            .add_triangle(2, 3, 1); // Second triangle
+
+        let rc = builder.camera(Camera::default()).build().unwrap();
         Self {
             engine: Engine::new(rc, RenderEngine::Raytracer),
         }
@@ -81,22 +39,21 @@ impl Model {
             // height: (fov as u32 * 400).clamp(128, 2046),
             ..Default::default()
         };
-        let rc = RenderConfigBuilder::new()
-            //.spheres(SPHERES.into())
-            .spheres(vec![])
-            .camera(new_camera)
-            .verticies(vec![
-                0.0, 0.0, 1.0, // Bottom-left
-                1.0, 0.0, 1.0, // Bottom-right
-                1.0, 1.0, 1.0, // Top-right
-                0.0, 1.0, 1.0, // Top-left
-            ])
-            .triangles(vec![
-                0, 1, 2, // First triangle
-                0, 2, 3, // Second triangle
-            ])
-            .build()
-            .unwrap();
+        let mut builder = RenderConfigBuilder::new();
+        builder
+            .add_sphere(Sphere::new(Vec3::new(0.0, 0.6, 4.0), 0.5, Vec3::COLOR_MAGENTA).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(-0.6, 0.0, 4.0), 0.5, Vec3::COLOR_GREEN).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.0, 0.0, 4.0), 0.5, Vec3::COLOR_RED).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.6, 0.0, 4.0), 0.5, Vec3::COLOR_BLUE).unwrap())
+            .add_sphere(Sphere::new(Vec3::new(0.0, -0.6, 4.0), 0.5, Vec3::COLOR_CYAN).unwrap())
+            .add_vertex(0.0, 0.0, 1.0) // Bottom-left
+            .add_vertex(1.0, 0.0, 1.0) // Bottom-right
+            .add_vertex(1.0, 1.0, 1.0) // Top-right
+            .add_vertex(0.0, 1.0, 1.0) // Top-left
+            .add_triangle(0, 1, 2) // First triangle
+            .add_triangle(0, 2, 3); // Second triangle
+
+        let rc = builder.camera(new_camera).build().unwrap();
         self.engine.render(rc).expect("Render failed")
     }
 }

@@ -41,10 +41,6 @@ impl Vec3 {
     }
 
     pub fn scale(&self, lambda: f32) -> Vec3 {
-        Vec3([
-            self.0[0] * lambda,
-            self.0[1] * lambda,
-            self.0[2] * lambda,
-        ])
+        Vec3([self.0[0] * lambda, self.0[1] * lambda, self.0[2] * lambda])
     }
 }
