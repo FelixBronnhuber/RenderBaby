@@ -8,8 +8,8 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub camera: Camera,
     pub spheres: Vec<Sphere>,
-    pub verticies: Vec<Vec3>,
-    pub triangles: Vec<Triangle>,
+    pub verticies: Vec<f32>,
+    pub triangles: Vec<u32>,
 }
 
 impl RenderConfig {
@@ -22,8 +22,8 @@ impl RenderConfig {
 pub struct RenderConfigBuilder {
     camera: Option<Camera>,
     spheres: Option<Vec<Sphere>>,
-    verticies: Option<Vec<Vec3>>,
-    triangles: Option<Vec<Triangle>>,
+    verticies: Option<Vec<f32>>,
+    triangles: Option<Vec<u32>>,
 }
 
 impl RenderConfigBuilder {
@@ -46,12 +46,12 @@ impl RenderConfigBuilder {
         self
     }
 
-    pub fn verticies(mut self, verticies: Vec<Vec3>) -> Self {
+    pub fn verticies(mut self, verticies: Vec<f32>) -> Self {
         self.verticies = Some(verticies);
         self
     }
 
-    pub fn triangles(mut self, triangles: Vec<Triangle>) -> Self {
+    pub fn triangles(mut self, triangles: Vec<u32>) -> Self {
         self.triangles = Some(triangles);
         self
     }

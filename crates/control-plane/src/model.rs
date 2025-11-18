@@ -6,31 +6,31 @@ use engine_wgpu_wrapper::RenderOutput;
 // TODO: Remove this temporary Scene
 const SPHERES: [Sphere; 5] = [
     Sphere {
-        center: Vec3([0.0, 0.6, 1.0, 0.0]),
+        center: Vec3([0.0, 0.6, 1.0]),
         radius: 0.5,
         color: Vec3::COLOR_MAGENTA,
         _pad: [0u8; 4],
     }, // Top, magenta
     Sphere {
-        center: Vec3([-0.6, 0.0, 1.0, 0.0]),
+        center: Vec3([-0.6, 0.0, 1.0]),
         radius: 0.5,
         color: Vec3::COLOR_GREEN,
         _pad: [0u8; 4],
     }, // Left, green
     Sphere {
-        center: Vec3([0.0, 0.0, 1.0, 0.0]),
+        center: Vec3([0.0, 0.0, 1.0]),
         radius: 0.5,
         color: Vec3::COLOR_RED,
         _pad: [0u8; 4],
     }, // Centered, red
     Sphere {
-        center: Vec3([0.6, 0.0, 1.0, 0.0]),
+        center: Vec3([0.6, 0.0, 1.0]),
         radius: 0.5,
         color: Vec3::COLOR_BLUE,
         _pad: [0u8; 4],
     }, // Right, blue
     Sphere {
-        center: Vec3([0.0, -0.6, 1.0, 0.0]),
+        center: Vec3([0.0, -0.6, 1.0]),
         radius: 0.5,
         color: Vec3::COLOR_CYAN,
         _pad: [0u8; 4],
@@ -48,7 +48,7 @@ impl Model {
             // .spheres(SPHERES.into())
             .spheres(vec![
                 Sphere::new(
-                    Vec3::new(1000000.0, 100000000.0, 10000000.0),
+                    Vec3::new(999999.0, 999999.0, 999999.0),
                     1.0,
                     Vec3::COLOR_RED,
                 )
@@ -56,12 +56,15 @@ impl Model {
             ])
             .camera(Camera::default())
             .verticies(vec![
-                Vec3::new(0.0, 0.0, 0.0),
-                Vec3::new(1.0, 0.0, 0.0),
-                Vec3::new(1.0, 1.0, 0.0),
-                Vec3::new(0.0, 1.0, 0.0),
+                0.0, 0.0, 0.0, // Bottom-left
+                1.0, 0.0, 0.0, // Bottom-right
+                1.0, 1.0, 0.0, // Top-right
+                0.0, 1.0, 0.0, // Top-left
             ])
-            .triangles(vec![Triangle::new(0, 1, 2), Triangle::new(1, 2, 3)])
+            .triangles(vec![
+                0, 1, 2, // First triangle
+                2, 3, 1, // Second triangle
+            ])
             .build()
             .unwrap();
         Self {
@@ -79,15 +82,19 @@ impl Model {
             ..Default::default()
         };
         let rc = RenderConfigBuilder::new()
-            .spheres(SPHERES.into())
+            //.spheres(SPHERES.into())
+            .spheres(vec![])
             .camera(new_camera)
             .verticies(vec![
-                Vec3::new(0.0, 0.0, 2.0),
-                Vec3::new(1.0, 0.0, 2.0),
-                Vec3::new(1.0, 1.0, 2.0),
-                Vec3::new(0.0, 1.0, 2.0),
+                0.0, 0.0, 1.0, // Bottom-left
+                1.0, 0.0, 1.0, // Bottom-right
+                1.0, 1.0, 1.0, // Top-right
+                0.0, 1.0, 1.0, // Top-left
             ])
-            .triangles(vec![Triangle::new(0, 1, 2), Triangle::new(0, 2, 3)])
+            .triangles(vec![
+                0, 1, 2, // First triangle
+                0, 2, 3, // Second triangle
+            ])
             .build()
             .unwrap();
         self.engine.render(rc).expect("Render failed")
