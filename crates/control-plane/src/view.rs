@@ -91,7 +91,13 @@ impl View {
 
     fn display_image(&mut self, ui: &mut Ui) {
         if let Some(image) = &self.texture {
-            ui.image((image.id(), image.size_vec2()));
+            let aspect = image.size_vec2().x / image.size_vec2().y;
+            let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
+                eframe::egui::vec2(ui.available_size().y * aspect, ui.available_size().y)
+            } else {
+                eframe::egui::vec2(ui.available_size().x, ui.available_size().x / aspect)
+            };
+            ui.image((image.id(), size_scaled));
         } else {
             ui.label("Render Output Area");
         }
