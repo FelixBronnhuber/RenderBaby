@@ -16,6 +16,7 @@ pub struct View {
     listener: Option<Box<dyn ViewListener>>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
+    bottom_visible: bool,
 }
 
 impl App for View {
@@ -29,6 +30,15 @@ impl App for View {
                 output.pixels,
             )
         }
+
+        eframe::egui::TopBottomPanel::top("Toolbar").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Toolbar");
+                if ui.button("Toggle log-view").clicked() {
+                    self.bottom_visible = !self.bottom_visible;
+                }
+            })
+        });
 
         eframe::egui::SidePanel::left("SidePanel")
             .resizable(true)
@@ -55,11 +65,23 @@ impl App for View {
                         .unwrap()
                         .handle_event(Event::DoRender);
                 }
+
+                let available = ui.available_rect_before_wrap();
+                ui.allocate_rect(available, eframe::egui::Sense::drag());
             });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
             self.display_image(ui);
         });
+
+        eframe::egui::TopBottomPanel::bottom("Log-view")
+            .resizable(true)
+            .min_height(10.0)
+            .show_animated(ctx, self.bottom_visible, |ui| {
+                ui.label("Log-view");
+                let available = ui.available_rect_before_wrap();
+                ui.allocate_rect(available, eframe::egui::Sense::drag());
+            });
     }
 }
 
@@ -69,6 +91,7 @@ impl View {
             listener: None,
             texture: None,
             pipeline,
+            bottom_visible: true,
         }
     }
 
