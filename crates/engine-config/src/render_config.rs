@@ -8,6 +8,8 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub camera: Camera,
     pub spheres: Vec<Sphere>,
+    pub verticies: Vec<Vec3>,
+    pub triangles: Vec<Triangle>,
 }
 
 impl RenderConfig {
@@ -20,6 +22,8 @@ impl RenderConfig {
 pub struct RenderConfigBuilder {
     camera: Option<Camera>,
     spheres: Option<Vec<Sphere>>,
+    verticies: Option<Vec<Vec3>>,
+    triangles: Option<Vec<Triangle>>,
 }
 
 impl RenderConfigBuilder {
@@ -27,6 +31,8 @@ impl RenderConfigBuilder {
         Self {
             camera: None,
             spheres: None,
+            verticies: None,
+            triangles: None,
         }
     }
 
@@ -40,13 +46,36 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn verticies(mut self, verticies: Vec<Vec3>) -> Self {
+        self.verticies = Some(verticies);
+        self
+    }
+
+    pub fn triangles(mut self, triangles: Vec<Triangle>) -> Self {
+        self.triangles = Some(triangles);
+        self
+    }
+
     pub fn build(self) -> Result<RenderConfig> {
+        // TODO: Instead of mandatory MissingErrors consider Logging for example:
+        // `MissingSpheresWarning` on build() and init with empty vector
         let camera = self.camera.ok_or(RenderConfigBuilderError::MissingCamera)?;
         let spheres = self
             .spheres
             .ok_or(RenderConfigBuilderError::MissingSpheres)?;
+        let verticies = self
+            .verticies
+            .ok_or(RenderConfigBuilderError::MisingVerticies)?;
+        let triangles = self
+            .triangles
+            .ok_or(RenderConfigBuilderError::MisingTriangles)?;
 
-        let rc = RenderConfig { camera, spheres };
+        let rc = RenderConfig {
+            camera,
+            spheres,
+            verticies,
+            triangles,
+        };
 
         Ok(rc)
     }
@@ -57,6 +86,8 @@ pub enum RenderConfigBuilderError {
     FOVOutOfBounds,
     MissingCamera,
     MissingSpheres,
+    MisingVerticies,
+    MisingTriangles,
 }
 
 impl fmt::Display for RenderConfigBuilderError {
@@ -65,6 +96,8 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
             RenderConfigBuilderError::MissingCamera => write!(f, "Camera is required"),
             RenderConfigBuilderError::MissingSpheres => write!(f, "Spheres are required"),
+            RenderConfigBuilderError::MisingVerticies => write!(f, "Verticies are required"),
+            RenderConfigBuilderError::MisingTriangles => write!(f, "Triangles are required"),
         }
     }
 }

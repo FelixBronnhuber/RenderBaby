@@ -7,6 +7,8 @@ pub struct GpuBuffers {
     pub camera: Buffer,
     pub output: Buffer,
     pub staging: Buffer,
+    pub verticies: Buffer,
+    pub triangles: Buffer,
 }
 
 impl GpuBuffers {
@@ -40,11 +42,25 @@ impl GpuBuffers {
             mapped_at_creation: false,
         });
 
+        let verticies_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Verticies Buffer"),
+            contents: bytemuck::cast_slice(&rc.verticies),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let triangles_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Triangles Buffer"),
+            contents: bytemuck::cast_slice(&rc.triangles),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+
         Self {
             spheres: spheres_buffer,
             camera: dimensions_buffer,
             output: output_buffer,
             staging: staging_buffer,
+            verticies: verticies_buffer,
+            triangles: triangles_buffer,
         }
     }
 

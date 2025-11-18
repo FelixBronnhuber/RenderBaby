@@ -47,6 +47,7 @@ impl GpuWrapper {
             )
         }
         self.rc = rc;
+        todo!("Also grow the size of the other buffers");
     }
 
     pub fn get_size(&self) -> u64 {
@@ -146,6 +147,20 @@ impl GpuWrapper {
             &self.buffer_wrapper.spheres,
             0,
             bytemuck::cast_slice(&spheres),
+        );
+
+        let verticies = &self.rc.verticies;
+        self.queue.write_buffer(
+            &self.buffer_wrapper.verticies,
+            0,
+            bytemuck::cast_slice(verticies),
+        );
+
+        let triangles = &self.rc.triangles;
+        self.queue.write_buffer(
+            &self.buffer_wrapper.triangles,
+            0,
+            bytemuck::cast_slice(triangles),
         );
     }
 }

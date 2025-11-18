@@ -14,7 +14,7 @@ impl Renderer for Engine {
 
 impl Engine {
     pub fn new(rc: RenderConfig) -> Self {
-        let wrapper = GpuWrapper::new(rc, "engine-raytracer/shader.wgsl").unwrap();
+        let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
 
         Self {
             gpu_wrapper: wrapper,
