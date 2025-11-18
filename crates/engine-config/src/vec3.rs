@@ -33,7 +33,7 @@ impl Vec3 {
     }
 
     pub fn is_valid_color(&self) -> bool {
-        self.0.iter().all(|&c| c >= 0.0 && c <= 1.0)
+        self.0.iter().all(|&c| (0.0..=1.0).contains(&c))
     }
 
     pub fn new(x: f32, y: f32, z: f32) -> Self {

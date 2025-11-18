@@ -42,7 +42,7 @@ impl Sphere {
             return Err(SphereError::RadiusOutOfBounds);
         }
         match color.is_valid_color() {
-            false => return Err(SphereError::ColorOutOfBounds),
+            false => Err(SphereError::ColorOutOfBounds),
             true => Ok(Sphere {
                 center,
                 radius,

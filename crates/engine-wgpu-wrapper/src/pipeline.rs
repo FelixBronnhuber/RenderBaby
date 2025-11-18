@@ -25,8 +25,8 @@ impl ComputePipeline {
 
         let shader_path = Path::new(path_new);
 
-        let shader_source = fs::read_to_string(&shader_path)
-            .expect(&format!("Failed to read shader file: {:?}", shader_path));
+        let shader_source = fs::read_to_string(shader_path)
+            .unwrap_or_else(|_| panic!("Faile d to read shader file: {:?}", shader_path));
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some(&format!("{} shader", path)),
