@@ -12,12 +12,11 @@ impl ComputePipeline {
         path: &str,
     ) -> Self {
         // Pipeline layout
-        let pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Pipeline Layout"),
-                bind_group_layouts: &[bind_group_layout],
-                push_constant_ranges: &[],
-            });
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Pipeline Layout"),
+            bind_group_layouts: &[bind_group_layout],
+            push_constant_ranges: &[],
+        });
 
         //let shader = device.create_shader_module(wgpu::include_wgsl!("../../engine-raytracer/shader.wgsl"));
 

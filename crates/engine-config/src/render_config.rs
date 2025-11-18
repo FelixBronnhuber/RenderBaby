@@ -89,8 +89,7 @@ mod tests {
     #[test]
     fn builder_sets_camera_and_spheres() {
         let camera = Camera::new(800, 600, 1.0).unwrap();
-        let sphere =
-            Sphere::new(Vec3::new(1.0, 2.0, 3.0), 2.0, Vec3::ONE.scale(0.5)).unwrap();
+        let sphere = Sphere::new(Vec3::new(1.0, 2.0, 3.0), 2.0, Vec3::ONE.scale(0.5)).unwrap();
         let builder = RenderConfigBuilder::new()
             .camera(camera)
             .spheres(vec![sphere]);

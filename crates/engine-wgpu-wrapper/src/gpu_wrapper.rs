@@ -138,11 +138,8 @@ impl GpuWrapper {
 
     pub fn update_uniforms(&self) {
         let camera = &self.rc.camera;
-        self.queue.write_buffer(
-            &self.buffer_wrapper.camera,
-            0,
-            bytemuck::bytes_of(camera),
-        );
+        self.queue
+            .write_buffer(&self.buffer_wrapper.camera, 0, bytemuck::bytes_of(camera));
 
         let spheres: Vec<Sphere> = self.rc.spheres.clone();
         self.queue.write_buffer(

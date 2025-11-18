@@ -74,8 +74,7 @@ impl View {
 
     pub fn open(self) {
         let options = eframe::NativeOptions::default();
-        let _ =
-            eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
+        let _ = eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
@@ -87,8 +86,7 @@ impl View {
             [width as usize, height as usize],
             &image,
         );
-        self.texture =
-            Some(ctx.load_texture("image", color_image, TextureOptions::NEAREST));
+        self.texture = Some(ctx.load_texture("image", color_image, TextureOptions::NEAREST));
     }
 
     fn display_image(&mut self, ui: &mut Ui) {
