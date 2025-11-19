@@ -23,10 +23,10 @@ impl Default for Scene {
     }
 }
 impl Scene {
-    pub fn image_buffer(&self) -> Vec<u8> {
+    /*pub fn image_buffer(&self) -> Vec<u8> {
         todo!()
         // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
-    }
+    }*/
 
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource

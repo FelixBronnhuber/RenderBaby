@@ -11,6 +11,7 @@ pub trait GeometricObject {
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
+    // todo color?
     
 
 }
@@ -272,6 +273,8 @@ pub struct LightSource {
     luminosity: f32,
     name: String,
     color: [f32; 3],
+    rotation: Vec3,
+    light_type: LightType
 }
 
 impl LightSource {
@@ -291,12 +294,25 @@ impl LightSource {
         self.luminosity = luminosity
     }
 
+    pub fn get_rotation(&self) -> Vec3 {
+        self.rotation
+    }
+    pub fn rotate(&mut self, vec: Vec3) -> Vec3 {
+        todo!()
+        // rotate and return new orientation?
+    }
+    pub fn get_light_type(&self) -> &LightType {
+        &self.light_type
+    }
+
     pub fn new(position: Vec3, luminosity: f32, color: [f32; 3], name: String) -> Self {
         LightSource {
             position,
             luminosity,
             name,
             color,
+            rotation: Vec3::new(0.0, 0.0, 0.0), // some types have no ratation
+            light_type: LightType::Ambient,
         }
     }
 }
@@ -317,9 +333,9 @@ struct ObjConf {
     pub rotation: Vec3,
 }
 
-enum LightType {
+pub enum LightType {
     Ambient,
     Point,
     Directional,
-} // todo include in LightSource
+}
 
