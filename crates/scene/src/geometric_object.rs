@@ -7,10 +7,15 @@ use std::any::Any;
 
 //marker for now
 pub trait GeometricObject {
-    fn scale(&mut self, factor: f32); // todo: probably scale 3d?
+    fn scale(&mut self, factor: f32); // todo: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
+    
+
+}
+
+pub trait FileObject: GeometricObject {
     fn get_path(&self) -> String;
     //fn set_path(&mut self, path: String);
     fn get_scale(&self) -> Vec3;
@@ -86,9 +91,12 @@ impl GeometricObject for Sphere {
     fn as_any(&self) -> &dyn Any {
         self
     }
-    
-    fn get_path(&self) -> String {
-        self.attr.path
+}
+
+impl FileObject for Sphere {
+        fn get_path(&self) -> String {
+        //self.attr.path
+        todo!()
     }
     
     fn get_scale(&self) -> Vec3 {
@@ -106,6 +114,7 @@ impl GeometricObject for Sphere {
 
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
+    attr: ObjConf
 }
 // todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
@@ -128,8 +137,9 @@ impl GeometricObject for TriGeometry {
     fn as_any(&self) -> &dyn Any {
         self
     }
-    
-    fn get_path(&self) -> String {
+}
+impl FileObject for TriGeometry {
+        fn get_path(&self) -> String {
         todo!()
     }
     
@@ -152,7 +162,15 @@ impl TriGeometry {
     }
 
     pub fn new(triangles: Vec<Triangle>) -> Self {
-        TriGeometry { triangles }
+        let conf = ObjConf {
+            name: "".to_owned(),
+            path: Some("".to_owned()),
+            scale: Vec3::new(0.0, 0.0, 0.0),
+            translation: Vec3::new(0.0, 0.0, 0.0),
+            rotation: Vec3::new(0.0, 0.0, 0.0)
+
+        };
+        TriGeometry { triangles, attr: conf }
     }
 }
 pub struct Triangle {
