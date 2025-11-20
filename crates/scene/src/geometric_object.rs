@@ -1,13 +1,13 @@
-use glam::{Vec3};
+use glam::Vec3;
 
-pub enum GeometricObject{
+pub enum GeometricObject {
     Triangles(Vec<Triangle>),
-    Sphere(Sphere)
+    Sphere(Sphere),
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
-    material: Material
+    material: Material,
 }
 impl Sphere {
     pub fn scale(&mut self, factor: f32) -> f32 {
@@ -18,11 +18,11 @@ impl Sphere {
     pub fn set_radius(&mut self, radius: f32) {
         self.radius = radius;
     }
-    
+
     pub fn get_radius(&self) -> f32 {
         self.radius
     }
-    
+
     pub fn center(&self) -> Vec3 {
         self.center
     }
@@ -45,26 +45,33 @@ impl Sphere {
     pub fn rotate(&mut self) {}
 
     pub fn new(center: Vec3, radius: f32, material: Material) -> Self {
-        Sphere { center, radius, material }
+        Sphere {
+            center,
+            radius,
+            material,
+        }
     }
-
-} 
+}
 pub struct TriGeometry {
-    triangles: Vec<Triangle>
-}  
-impl TriGeometry{
-    pub fn get_triangles(&self)-> &Vec<Triangle> {
+    triangles: Vec<Triangle>,
+    material: Material
+}
+impl TriGeometry {
+    pub fn get_triangles(&self) -> &Vec<Triangle> {
         &self.triangles
     }
-
-    pub fn new(triangles: Vec<Triangle>) -> Self {
-        TriGeometry { triangles }
+    pub fn get_material(&self) -> &Material {
+        &self.material
+    }
+    pub fn new(triangles: Vec<Triangle>, material: Material) -> Self {
+        TriGeometry { triangles, material }
     }
 }
-pub struct Triangle{
+pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
-    material: Option<Material>
+    material: Option<Material>,
 }
+
 impl Triangle {
     pub fn new(points: Vec<Vec3>, material: Option<Material>) -> Self {
         Triangle { points, material }
@@ -92,15 +99,15 @@ impl Triangle {
         self.get_points()
     }
 }
-pub struct Camera{
+pub struct Camera {
     position: Vec3,
-    rotation: Rotation
+    rotation: Rotation,
 }
-impl Camera{
+impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;
     }
-    pub fn set_rotation(&mut self, pitch: f32, yaw: f32){
+    pub fn set_rotation(&mut self, pitch: f32, yaw: f32) {
         self.rotation = Rotation { pitch, yaw }
     }
     pub fn position(&self) -> Vec3 {
@@ -114,29 +121,31 @@ impl Camera{
     }
 }
 
-pub(crate) struct Rotation{
+pub(crate) struct Rotation {
     pitch: f32,
     yaw: f32,
 }
-impl Rotation{
-    pub fn set(&mut self,pitch:f32,yaw:f32){
+impl Rotation {
+    pub fn set(&mut self, pitch: f32, yaw: f32) {
         self.pitch = pitch;
         self.yaw = yaw;
     }
-    pub fn get_rotation(&self) -> (f32, f32) {(self.pitch,self.yaw)} // maybe into (f32, f32)?
+    pub fn get_rotation(&self) -> (f32, f32) {
+        (self.pitch, self.yaw)
+    } // maybe into (f32, f32)?
     fn get_pitch(&self) -> f32 {
         self.pitch
     }
     pub fn get_yaw(&self) -> f32 {
         self.yaw
     }
-    pub fn new(pitch:f32, yaw:f32) -> Self {
+    pub fn new(pitch: f32, yaw: f32) -> Self {
         Rotation { pitch, yaw }
     }
 }
-pub struct LightSource{
+pub struct LightSource {
     position: Vec3,
-    luminosity: f32
+    luminosity: f32,
 }
 
 impl LightSource {
@@ -157,15 +166,42 @@ impl LightSource {
     }
 
     fn new(position: Vec3, luminosity: f32) -> Self {
-        LightSource { position, luminosity }
+        LightSource {
+            position,
+            luminosity,
+        }
     }
 }
 
 // Maybe Material/Color/Texture as enum?
-pub struct Material{
-
+#[derive(Debug)]
+pub struct Material {
+    ambient_reflectivity: Vec<f64>, //Ka
+    diffuse_reflectivity: Vec<f64>, //Kd
+    specular_reflectivity: Vec<f64>, //Ks
+    shininess: f64, //Ns
+    transparency: f64, //d
 }
-pub struct Color{
-    pub rgb: u8
-
+impl Material {
+    pub fn new(
+        ambient_reflectivity: Vec<f64>,
+        diffuse_reflectivity: Vec<f64>,
+        specular_reflectivity: Vec<f64>,
+        shininess: f64,
+        transparency: f64,
+    ) -> Self {
+        Material {
+            ambient_reflectivity,
+            diffuse_reflectivity,
+            specular_reflectivity,
+            shininess,
+            transparency,
+        }
+    }
+       pub fn default() -> Self{
+        Material{ambient_reflectivity: vec![0.0,0.0,0.0],diffuse_reflectivity: vec![0.0,0.0,0.0], specular_reflectivity: vec![0.0,0.0,0.0],shininess: 0.0, transparency: 0.0 }
+    }
+}
+pub struct Color {
+    pub rgb: u8,
 }
