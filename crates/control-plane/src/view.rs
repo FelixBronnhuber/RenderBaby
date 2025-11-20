@@ -13,6 +13,7 @@ pub trait ViewListener {
 }
 
 pub struct View {
+    at_start: bool,
     listener: Option<Box<dyn ViewListener>>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
@@ -20,6 +21,11 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        if self.at_start == true {
+            self.on_start(ctx, _frame);
+            self.at_start = false;
+        }
+
         let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
         if let Some(output) = render_output_opt {
             self.set_image(
@@ -35,10 +41,7 @@ impl App for View {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.do_render();
                 }
 
                 let mut fov = self.pipeline.get_fov();
@@ -50,10 +53,7 @@ impl App for View {
                         .as_mut()
                         .unwrap()
                         .handle_event(Event::SetFov(fov));
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.do_render()
                 }
             });
 
@@ -69,12 +69,17 @@ impl View {
             listener: None,
             texture: None,
             pipeline,
+            at_start: true,
         }
     }
 
     pub fn open(self) {
         let options = eframe::NativeOptions::default();
         let _ = eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
+    }
+
+    fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
+        self.do_render();
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
@@ -95,5 +100,12 @@ impl View {
         } else {
             ui.label("Render Output Area");
         }
+    }
+
+    fn do_render(&mut self) {
+        self.listener
+            .as_mut()
+            .unwrap()
+            .handle_event(Event::DoRender);
     }
 }
