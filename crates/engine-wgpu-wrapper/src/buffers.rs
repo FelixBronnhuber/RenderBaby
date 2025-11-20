@@ -22,11 +22,15 @@ impl GpuBuffers {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let spheres_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Spheres Buffer"),
-            contents: bytemuck::cast_slice(&rc.spheres),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-        });
+        let mut spheres_buffer = Self::create_placeholder_buffer(device);
+
+        if !rc.spheres.is_empty() {
+            spheres_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Spheres Buffer"),
+                contents: bytemuck::cast_slice(&rc.spheres),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
+        }
 
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Output Buffer"),
@@ -42,17 +46,25 @@ impl GpuBuffers {
             mapped_at_creation: false,
         });
 
-        let verticies_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Verticies Buffer"),
-            contents: bytemuck::cast_slice(&rc.verticies),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-        });
+        let mut verticies_buffer = Self::create_placeholder_buffer(device);
 
-        let triangles_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Triangles Buffer"),
-            contents: bytemuck::cast_slice(&rc.triangles),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-        });
+        if !rc.verticies.is_empty() {
+            verticies_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Verticies Buffer"),
+                contents: bytemuck::cast_slice(&rc.verticies),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
+        }
+
+        let mut triangles_buffer = Self::create_placeholder_buffer(device);
+
+        if !rc.triangles.is_empty() {
+            triangles_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Triangles Buffer"),
+                contents: bytemuck::cast_slice(&rc.triangles),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
+        }
 
         Self {
             spheres: spheres_buffer,
@@ -102,5 +114,14 @@ impl GpuBuffers {
             contents: bytemuck::cast_slice(&rc.triangles),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
+    }
+
+    fn create_placeholder_buffer(device: &Device) -> Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Spheres Buffer"),
+            size: 4,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
     }
 }
