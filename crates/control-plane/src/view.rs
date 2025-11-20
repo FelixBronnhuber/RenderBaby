@@ -6,6 +6,8 @@ use eframe::{App, Frame};
 pub enum Event {
     DoRender,
     SetFov(f32),
+    SetWidth(u32),
+    SetHeight(u32),
 }
 
 pub trait ViewListener {
@@ -55,6 +57,28 @@ impl App for View {
                         .unwrap()
                         .handle_event(Event::DoRender);
                 }
+
+                ui.horizontal(|ui| {
+                    ui.label("Width:");
+                    let mut width = self.pipeline.get_width();
+                    if ui.add(eframe::egui::DragValue::new(&mut width)).changed() {
+                        self.listener
+                            .as_mut()
+                            .unwrap()
+                            .handle_event(Event::SetWidth(width));
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Height:");
+                    let mut height = self.pipeline.get_height();
+                    if ui.add(eframe::egui::DragValue::new(&mut height)).changed() {
+                        self.listener
+                            .as_mut()
+                            .unwrap()
+                            .handle_event(Event::SetHeight(height));
+                    }
+                });
             });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
@@ -91,7 +115,13 @@ impl View {
 
     fn display_image(&mut self, ui: &mut Ui) {
         if let Some(image) = &self.texture {
-            ui.image((image.id(), image.size_vec2()));
+            let aspect = image.size_vec2().x / image.size_vec2().y;
+            let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
+                eframe::egui::vec2(ui.available_size().y * aspect, ui.available_size().y)
+            } else {
+                eframe::egui::vec2(ui.available_size().x, ui.available_size().x / aspect)
+            };
+            ui.image((image.id(), size_scaled));
         } else {
             ui.label("Render Output Area");
         }
