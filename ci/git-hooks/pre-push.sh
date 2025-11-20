@@ -5,10 +5,7 @@ get_changed_files() {
     local local_ref=$1
     local local_sha=$2
     local remote_sha=$3
-
-    local branch
-    branch=$(git rev-parse --abbrev-ref "$local_ref")
-
+    
     local reference
     if [[ "$remote_sha" =~ ^0+$ ]]; then
         reference=$(git rev-list --remotes --max-count=1 2>/dev/null || git rev-parse "$local_sha~1")
