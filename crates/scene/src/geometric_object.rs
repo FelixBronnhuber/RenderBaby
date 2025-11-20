@@ -227,6 +227,8 @@ impl GeometricObject for Triangle {
 pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
+    fov: f32,
+    resolution: [u32; 2]
 }
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
@@ -242,7 +244,7 @@ impl Camera {
         &self.rotation
     }
     pub fn new(position: Vec3, rotation: Rotation) -> Self {
-        Camera { position, rotation }
+        Camera { position, rotation, fov: 1.0, resolution: [1920, 1080] }
     }
 }
 
