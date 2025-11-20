@@ -79,4 +79,28 @@ impl GpuBuffers {
             mapped_at_creation: false,
         });
     }
+
+    pub fn grow_spheres(&mut self, device: &Device, rc: &RenderConfig) {
+        self.spheres = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Spheres Buffer"),
+            contents: bytemuck::cast_slice(&rc.spheres),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+    }
+
+    pub fn grow_verticies(&mut self, device: &Device, rc: &RenderConfig) {
+        self.verticies = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Verticies Buffer"),
+            contents: bytemuck::cast_slice(&rc.verticies),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+    }
+
+    pub fn grow_triangles(&mut self, device: &Device, rc: &RenderConfig) {
+        self.triangles = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Triangles Buffer"),
+            contents: bytemuck::cast_slice(&rc.triangles),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+    }
 }
