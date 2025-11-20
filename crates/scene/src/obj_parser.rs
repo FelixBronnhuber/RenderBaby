@@ -1,6 +1,6 @@
-use std::path::Path;
 use crate::geometric_object::{GeometricObject, Material, TriGeometry, Triangle};
 use glam::Vec3;
+use std::path::Path;
 pub fn parseobj(obj_path: String) -> TriGeometry {
     let obj_path = Path::new(&obj_path);
 
@@ -17,7 +17,7 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
 
     let amount_models = models.len();
     let mut z: usize = 0;
-    let mut returnTriangles: Vec<Triangle> = Vec::new();
+    let mut return_Triangles: Vec<Triangle> = Vec::new();
     models.iter().for_each(|model| {
         z = 0;
         let triangles = GeometricObject::Triangles(Vec::new());
@@ -41,21 +41,34 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
             a.add_point(vec[model.mesh.indices[u * 3] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 1] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 2] as usize]);
-            returnTriangles.push(a);
+            return_Triangles.push(a);
         }
     });
 
     let mats: &tobj::Material;
-    let mut mat : Material = Material::default();
+    let mut mat: Material = Material::default();
     if let material = materials.unwrap() {
         mats = material.first().unwrap();
-        mat = Material::new(vec![mats.ambient.unwrap()[0].into(), mats.ambient.unwrap()[1].into(), mats.ambient.unwrap()[2].into()],
-                      vec![mats.diffuse.unwrap()[0].into(), mats.diffuse.unwrap()[1].into(), mats.diffuse.unwrap()[2].into()],
-                      vec![mats.specular.unwrap()[0].into(), mats.specular.unwrap()[1].into(), mats.specular.unwrap()[2].into()],
-                      mats.shininess.unwrap().into(),
-                      mats.dissolve.unwrap().into()
+        mat = Material::new(
+            vec![
+                mats.ambient.unwrap()[0].into(),
+                mats.ambient.unwrap()[1].into(),
+                mats.ambient.unwrap()[2].into(),
+            ],
+            vec![
+                mats.diffuse.unwrap()[0].into(),
+                mats.diffuse.unwrap()[1].into(),
+                mats.diffuse.unwrap()[2].into(),
+            ],
+            vec![
+                mats.specular.unwrap()[0].into(),
+                mats.specular.unwrap()[1].into(),
+                mats.specular.unwrap()[2].into(),
+            ],
+            mats.shininess.unwrap().into(),
+            mats.dissolve.unwrap().into(),
         );
     }
 
-    TriGeometry::new(returnTriangles, mat)
+    TriGeometry::new(return_Triangles, mat)
 }

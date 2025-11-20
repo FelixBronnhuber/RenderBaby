@@ -54,7 +54,7 @@ impl Sphere {
 }
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
-    material: Material
+    material: Material,
 }
 impl TriGeometry {
     pub fn get_triangles(&self) -> &Vec<Triangle> {
@@ -64,7 +64,10 @@ impl TriGeometry {
         &self.material
     }
     pub fn new(triangles: Vec<Triangle>, material: Material) -> Self {
-        TriGeometry { triangles, material }
+        TriGeometry {
+            triangles,
+            material,
+        }
     }
 }
 pub struct Triangle {
@@ -176,11 +179,11 @@ impl LightSource {
 // Maybe Material/Color/Texture as enum?
 #[derive(Debug)]
 pub struct Material {
-    ambient_reflectivity: Vec<f64>, //Ka
-    diffuse_reflectivity: Vec<f64>, //Kd
+    ambient_reflectivity: Vec<f64>,  //Ka
+    diffuse_reflectivity: Vec<f64>,  //Kd
     specular_reflectivity: Vec<f64>, //Ks
-    shininess: f64, //Ns
-    transparency: f64, //d
+    shininess: f64,                  //Ns
+    transparency: f64,               //d
 }
 impl Material {
     pub fn new(
@@ -198,8 +201,14 @@ impl Material {
             transparency,
         }
     }
-       pub fn default() -> Self{
-        Material{ambient_reflectivity: vec![0.0,0.0,0.0],diffuse_reflectivity: vec![0.0,0.0,0.0], specular_reflectivity: vec![0.0,0.0,0.0],shininess: 0.0, transparency: 0.0 }
+    pub fn default() -> Self {
+        Material {
+            ambient_reflectivity: vec![0.0, 0.0, 0.0],
+            diffuse_reflectivity: vec![0.0, 0.0, 0.0],
+            specular_reflectivity: vec![0.0, 0.0, 0.0],
+            shininess: 0.0,
+            transparency: 0.0,
+        }
     }
 }
 pub struct Color {
