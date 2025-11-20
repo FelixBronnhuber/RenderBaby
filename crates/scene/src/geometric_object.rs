@@ -12,8 +12,6 @@ pub trait GeometricObject {
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
     // todo color?
-    
-
 }
 
 pub trait FileObject: GeometricObject {
@@ -22,14 +20,13 @@ pub trait FileObject: GeometricObject {
     fn get_scale(&self) -> Vec3;
     fn get_translation(&self) -> Vec3;
     fn get_rotation(&self) -> Vec3;
-
 }
 pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material,
     color: [f32; 3],
-    attr: ObjConf
+    attr: ObjConf,
 }
 impl Sphere {
     pub fn set_color(&mut self, color: [f32; 3]) {
@@ -74,7 +71,7 @@ impl Sphere {
             radius,
             material,
             color,
-            attr: conf
+            attr: conf,
         }
     }
 }
@@ -95,19 +92,19 @@ impl GeometricObject for Sphere {
 }
 
 impl FileObject for Sphere {
-        fn get_path(&self) -> String {
+    fn get_path(&self) -> String {
         //self.attr.path
         todo!()
     }
-    
+
     fn get_scale(&self) -> Vec3 {
         self.attr.scale
     }
-    
+
     fn get_translation(&self) -> Vec3 {
         self.attr.translation
     }
-    
+
     fn get_rotation(&self) -> Vec3 {
         self.attr.translation
     }
@@ -115,7 +112,7 @@ impl FileObject for Sphere {
 
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
-    attr: ObjConf
+    attr: ObjConf,
 }
 // todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
@@ -140,18 +137,18 @@ impl GeometricObject for TriGeometry {
     }
 }
 impl FileObject for TriGeometry {
-        fn get_path(&self) -> String {
+    fn get_path(&self) -> String {
         todo!()
     }
-    
+
     fn get_scale(&self) -> Vec3 {
         todo!()
     }
-    
+
     fn get_translation(&self) -> Vec3 {
         todo!()
     }
-    
+
     fn get_rotation(&self) -> Vec3 {
         todo!()
     }
@@ -168,10 +165,12 @@ impl TriGeometry {
             path: Some("".to_owned()),
             scale: Vec3::new(0.0, 0.0, 0.0),
             translation: Vec3::new(0.0, 0.0, 0.0),
-            rotation: Vec3::new(0.0, 0.0, 0.0)
-
+            rotation: Vec3::new(0.0, 0.0, 0.0),
         };
-        TriGeometry { triangles, attr: conf }
+        TriGeometry {
+            triangles,
+            attr: conf,
+        }
     }
 }
 pub struct Triangle {
@@ -228,7 +227,7 @@ pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
     fov: f32,
-    resolution: [usize; 2]
+    resolution: [usize; 2],
 }
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
@@ -256,7 +255,12 @@ impl Camera {
         self.resolution = resolution
     }
     pub fn new(position: Vec3, rotation: Rotation) -> Self {
-        Camera { position, rotation, fov: 1.0, resolution: [1920, 1080] }
+        Camera {
+            position,
+            rotation,
+            fov: 1.0,
+            resolution: [1920, 1080],
+        }
     }
 }
 
@@ -288,7 +292,7 @@ pub struct LightSource {
     name: String,
     color: [f32; 3],
     rotation: Vec3,
-    light_type: LightType
+    light_type: LightType,
 }
 
 impl LightSource {
@@ -352,4 +356,3 @@ pub enum LightType {
     Point,
     Directional,
 }
-

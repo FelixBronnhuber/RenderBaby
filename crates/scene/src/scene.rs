@@ -3,7 +3,9 @@ use glam::Vec3;
 
 use crate::{
     action_stack::ActionStack,
-    geometric_object::{Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle},
+    geometric_object::{
+        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
+    },
     scene_graph::SceneGraph,
 };
 
@@ -44,8 +46,14 @@ impl Scene {
         self.add_object(Box::new(res));
         //Ok(&res)
         //todo: this is very ugly
-        Ok(self.get_objects().last().unwrap().as_ref().as_any().downcast_ref().unwrap())
-
+        Ok(self
+            .get_objects()
+            .last()
+            .unwrap()
+            .as_ref()
+            .as_any()
+            .downcast_ref()
+            .unwrap())
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
@@ -56,7 +64,8 @@ impl Scene {
             Vec3::new(0.0, 0.0, 3.0),
             0.0,
             [1.0, 1.0, 1.0],
-            "proto_light".to_owned());
+            "proto_light".to_owned(),
+        );
         self.add_object(Box::new(sphere));
         self.set_camera(cam);
         self.add_lightsource(light);
