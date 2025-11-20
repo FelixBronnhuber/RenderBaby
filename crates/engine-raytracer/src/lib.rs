@@ -8,20 +8,6 @@ pub struct Engine {
 
 impl Renderer for Engine {
     fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
-        self.render(rc)
-    }
-}
-
-impl Engine {
-    pub fn new(rc: RenderConfig) -> Self {
-        let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
-
-        Self {
-            gpu_wrapper: wrapper,
-        }
-    }
-
-    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
         self.gpu_wrapper.update(rc);
 
         self.gpu_wrapper.update_uniforms();
@@ -35,5 +21,15 @@ impl Engine {
             self.gpu_wrapper.get_height() as usize,
             pixels,
         ))
+    }
+}
+
+impl Engine {
+    pub fn new(rc: RenderConfig) -> Self {
+        let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
+
+        Self {
+            gpu_wrapper: wrapper,
+        }
     }
 }
