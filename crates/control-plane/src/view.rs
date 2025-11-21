@@ -23,7 +23,7 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        if self.at_start == true {
+        if self.at_start {
             self.on_start(ctx, _frame);
             self.at_start = false;
         }

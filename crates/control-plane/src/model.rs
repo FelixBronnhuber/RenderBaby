@@ -62,7 +62,6 @@ impl Model {
             height,
             // width: (fov as u32 * 400).clamp(128, 2046),
             // height: (fov as u32 * 400).clamp(128, 2046),
-            ..Default::default()
         };
         let rc = RenderConfigBuilder::new()
             .spheres(SPHERES.into())
