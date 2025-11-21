@@ -6,6 +6,8 @@ use eframe::{App, Frame};
 pub enum Event {
     DoRender,
     SetFov(f32),
+    SetWidth(u32),
+    SetHeight(u32),
 }
 
 pub trait ViewListener {
@@ -13,6 +15,7 @@ pub trait ViewListener {
 }
 
 pub struct View {
+    at_start: bool,
     listener: Option<Box<dyn ViewListener>>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
@@ -20,6 +23,11 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        if self.at_start {
+            self.on_start(ctx, _frame);
+            self.at_start = false;
+        }
+
         let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
         if let Some(output) = render_output_opt {
             self.set_image(
@@ -35,10 +43,7 @@ impl App for View {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.do_render();
                 }
 
                 let mut fov = self.pipeline.get_fov();
@@ -50,11 +55,30 @@ impl App for View {
                         .as_mut()
                         .unwrap()
                         .handle_event(Event::SetFov(fov));
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.do_render()
                 }
+
+                ui.horizontal(|ui| {
+                    ui.label("Width:");
+                    let mut width = self.pipeline.get_width();
+                    if ui.add(eframe::egui::DragValue::new(&mut width)).changed() {
+                        self.listener
+                            .as_mut()
+                            .unwrap()
+                            .handle_event(Event::SetWidth(width));
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Height:");
+                    let mut height = self.pipeline.get_height();
+                    if ui.add(eframe::egui::DragValue::new(&mut height)).changed() {
+                        self.listener
+                            .as_mut()
+                            .unwrap()
+                            .handle_event(Event::SetHeight(height));
+                    }
+                });
             });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
@@ -69,12 +93,17 @@ impl View {
             listener: None,
             texture: None,
             pipeline,
+            at_start: true,
         }
     }
 
     pub fn open(self) {
         let options = eframe::NativeOptions::default();
         let _ = eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
+    }
+
+    fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
+        self.do_render();
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
@@ -91,9 +120,22 @@ impl View {
 
     fn display_image(&mut self, ui: &mut Ui) {
         if let Some(image) = &self.texture {
-            ui.image((image.id(), image.size_vec2()));
+            let aspect = image.size_vec2().x / image.size_vec2().y;
+            let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
+                eframe::egui::vec2(ui.available_size().y * aspect, ui.available_size().y)
+            } else {
+                eframe::egui::vec2(ui.available_size().x, ui.available_size().x / aspect)
+            };
+            ui.image((image.id(), size_scaled));
         } else {
             ui.label("Render Output Area");
         }
+    }
+
+    fn do_render(&mut self) {
+        self.listener
+            .as_mut()
+            .unwrap()
+            .handle_event(Event::DoRender);
     }
 }

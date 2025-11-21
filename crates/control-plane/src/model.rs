@@ -18,14 +18,14 @@ impl Model {
         }
     }
 
-    pub fn generate_render_output(&mut self, fov: f32) -> RenderOutput {
+    pub fn generate_render_output(&mut self, fov: f32, width: u32, height: u32) -> RenderOutput {
         // TODO: Get this from the Data-Plane!
         let new_camera = Camera {
             fov,
-            // TODO: Camera Dimensions can also be set here
+            width,
+            height,
             // width: (fov as u32 * 400).clamp(128, 2046),
             // height: (fov as u32 * 400).clamp(128, 2046),
-            ..Default::default()
         };
         let mut builder = RenderConfigBuilder::new();
         builder
