@@ -17,7 +17,11 @@ impl ViewListener for Controller {
     fn handle_event(&mut self, event: Event) {
         match event {
             Event::DoRender => {
-                let output = self.model.generate_render_output(self.pipeline.get_fov());
+                let output = self.model.generate_render_output(
+                    self.pipeline.get_fov(),
+                    self.pipeline.get_width(),
+                    self.pipeline.get_height(),
+                );
                 if output.validate().is_ok() {
                     *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
                 }
@@ -25,6 +29,12 @@ impl ViewListener for Controller {
 
             Event::SetFov(fov) => {
                 self.pipeline.set_fov(fov);
+            }
+            Event::SetWidth(w) => {
+                self.pipeline.set_width(w);
+            }
+            Event::SetHeight(h) => {
+                self.pipeline.set_height(h);
             }
         }
     }
