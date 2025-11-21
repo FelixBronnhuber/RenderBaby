@@ -52,10 +52,14 @@ impl GpuWrapper {
 
         if self.rc.verticies.len() != rc.verticies.len() {
             self.buffer_wrapper.grow_verticies(&self.device, &rc);
+
+            changed = true;
         }
 
         if self.rc.triangles.len() != rc.triangles.len() {
             self.buffer_wrapper.grow_triangles(&self.device, &rc);
+
+            changed = true;
         }
 
         if changed {
@@ -67,7 +71,6 @@ impl GpuWrapper {
         }
 
         self.rc = rc;
-        //todo!("Also grow the size of the other buffers");
     }
 
     pub fn get_size(&self) -> u64 {
