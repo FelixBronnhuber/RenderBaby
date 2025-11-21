@@ -37,15 +37,39 @@ impl GpuWrapper {
 
     pub fn update(&mut self, rc: RenderConfig) {
         let new_size = (rc.camera.height as u64) * (rc.camera.width as u64);
+        let mut changed = false;
         if self.get_size() != new_size {
             self.buffer_wrapper
                 .grow_resolution(&self.device, new_size * 4);
+            changed = true;
+        }
+
+        if self.rc.spheres.len() != rc.spheres.len() {
+            self.buffer_wrapper.grow_spheres(&self.device, &rc);
+
+            changed = true;
+        }
+
+        if self.rc.verticies.len() != rc.verticies.len() {
+            self.buffer_wrapper.grow_verticies(&self.device, &rc);
+
+            changed = true;
+        }
+
+        if self.rc.triangles.len() != rc.triangles.len() {
+            self.buffer_wrapper.grow_triangles(&self.device, &rc);
+
+            changed = true;
+        }
+
+        if changed {
             self.bind_group_wrapper = BindGroup::new(
                 &self.device,
                 &self.buffer_wrapper,
                 self.get_bind_group_layout(),
-            )
+            );
         }
+
         self.rc = rc;
     }
 
@@ -146,6 +170,20 @@ impl GpuWrapper {
             &self.buffer_wrapper.spheres,
             0,
             bytemuck::cast_slice(&spheres),
+        );
+
+        let verticies = &self.rc.verticies;
+        self.queue.write_buffer(
+            &self.buffer_wrapper.verticies,
+            0,
+            bytemuck::cast_slice(verticies),
+        );
+
+        let triangles = &self.rc.triangles;
+        self.queue.write_buffer(
+            &self.buffer_wrapper.triangles,
+            0,
+            bytemuck::cast_slice(triangles),
         );
     }
 }
