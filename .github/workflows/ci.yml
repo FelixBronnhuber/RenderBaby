@@ -50,10 +50,3 @@ jobs:
 
       - name: Build Docs
         run: cargo doc --no-deps --document-private-items
-
-      - name: Upload build artifact
-        if: runner.os == 'Linux' # optional: only upload once
-        uses: actions/upload-artifact@v4
-        with:
-          name: rust-binaries
-          path: target/release/
