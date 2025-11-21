@@ -31,8 +31,8 @@ impl fmt::Display for CameraError {
 impl std::error::Error for CameraError {}
 
 impl Camera {
-    pub const DEFAULT_WIDTH: u32 = 1080;
-    pub const DEFAULT_HEIGHT: u32 = 720;
+    pub const DEFAULT_WIDTH: u32 = 400;
+    pub const DEFAULT_HEIGHT: u32 = 300;
     pub const DEFAULT_FOV: f32 = std::f32::consts::FRAC_PI_4;
 
     pub const MIN_WIDTH: u32 = 1;

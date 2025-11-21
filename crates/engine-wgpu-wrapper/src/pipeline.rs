@@ -18,14 +18,12 @@ impl ComputePipeline {
             push_constant_ranges: &[],
         });
 
-        //let shader = device.create_shader_module(wgpu::include_wgsl!("../../engine-raytracer/shader.wgsl"));
-
         let path_new: &str = &(env!("CARGO_MANIFEST_DIR").to_owned() + "/../" + path);
 
         let shader_path = Path::new(path_new);
 
-        let shader_source = fs::read_to_string(shader_path)
-            .unwrap_or_else(|_| panic!("Faile d to read shader file: {:?}", shader_path));
+        let shader_source = fs::read_to_string(shader_path).unwrap();
+        // .unwrap_or_else(|_| panic!("Failed to read shader file: {:?}", shader_path));
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some(&format!("{} shader", path)),
