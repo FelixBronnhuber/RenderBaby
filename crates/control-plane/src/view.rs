@@ -1,11 +1,13 @@
 use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
+use std::sync::{Arc, Mutex};
 
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
     SetFov(f32),
+    SetPath(String),
 }
 
 pub trait ViewListener {
@@ -17,6 +19,7 @@ pub struct View {
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
     bottom_visible: bool,
+    file_path: Arc<Mutex<Option<String>>>,
 }
 
 impl App for View {
@@ -36,6 +39,15 @@ impl App for View {
                 ui.label("Toolbar");
                 if ui.button("Toggle log-view").clicked() {
                     self.bottom_visible = !self.bottom_visible;
+                }
+                if ui.button("Import Files").clicked() {
+                    self.set_filepath(ctx);
+                }
+                if let Some(path) = self.file_path.lock().unwrap().take() {
+                    self.listener
+                        .as_mut()
+                        .unwrap()
+                        .handle_event(Event::SetPath(path.clone()));
                 }
             })
         });
@@ -92,6 +104,7 @@ impl View {
             texture: None,
             pipeline,
             bottom_visible: true,
+            file_path: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -118,5 +131,20 @@ impl View {
         } else {
             ui.label("Render Output Area");
         }
+    }
+
+    pub fn set_filepath(&mut self, ctx: &Context) {
+        let selected_path = self.file_path.clone();
+        let ctx = ctx.clone();
+
+        std::thread::spawn(move || {
+            if let Some(path) = rfd::FileDialog::new()
+                .add_filter("OBJ / MTL", &["obj", "mtl"])
+                .pick_file()
+            {
+                *selected_path.lock().unwrap() = Some(path.display().to_string());
+                ctx.request_repaint();
+            }
+        });
     }
 }
