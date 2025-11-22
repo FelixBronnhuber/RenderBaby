@@ -50,11 +50,7 @@ impl GpuBuffers {
         })
     }
 
-    fn create_storage_buffer<T: bytemuck::Pod>(
-        device: &Device,
-        label: &str,
-        data: &[T],
-    ) -> Buffer {
+    fn create_storage_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &[T]) -> Buffer {
         if data.is_empty() {
             Self::create_placeholder_buffer(device, label)
         } else {
