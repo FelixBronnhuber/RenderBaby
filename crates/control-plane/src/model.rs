@@ -37,6 +37,7 @@ impl Model {
             .add_vertex(0.0, 0.0, 1.0) // Bottom-left
             .add_vertex(1.0, 0.0, 1.0) // Bottom-right
             .add_vertex(1.0, 1.0, 1.0) // Top-right
+            // Alternatively call: .verticies(vec![...])
             .add_vertex(0.0, 1.0, 1.0) // Top-left
             .add_triangle(0, 1, 2) // First triangle
             .add_triangle(0, 2, 3); // Second triangle
