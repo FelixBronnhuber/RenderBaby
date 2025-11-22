@@ -76,12 +76,45 @@ impl RenderConfigBuilder {
     }
 
     pub fn build(self) -> Result<RenderConfig> {
-        // TODO: Instead of mandatory MissingErrors consider Logging for example:
-        // `MissingSpheresWarning` on build() and init with empty vector
-        let camera = self.camera.ok_or(RenderConfigBuilderError::MissingCamera)?;
-        let spheres = self.spheres.unwrap_or_default();
-        let verticies = self.verticies.unwrap_or_default();
-        let triangles = self.triangles.unwrap_or_default();
+        let camera = match self.camera {
+            Some(camera) => camera,
+            None => {
+                log::warn!(
+                    "MissingCameraWarning: No camera provided, initializing with default camera."
+                );
+                Camera::default() // Replace with your actual default if needed
+            }
+        };
+
+        let spheres = match self.spheres {
+            Some(spheres) => spheres,
+            None => {
+                log::warn!(
+                    "MissingSpheresWarning: No spheres provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
+
+        let verticies = match self.verticies {
+            Some(verticies) => verticies,
+            None => {
+                log::warn!(
+                    "MissingVerticiesWarning: No verticies provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
+
+        let triangles = match self.triangles {
+            Some(triangles) => triangles,
+            None => {
+                log::warn!(
+                    "MissingTrianglesWarning: No triangles provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
 
         let rc = RenderConfig {
             camera,
