@@ -36,7 +36,7 @@ impl GpuWrapper {
     }
 
     pub fn update(&mut self, rc: RenderConfig) {
-        let new_size = (rc.camera.height as u64) * (rc.camera.width as u64);
+        let new_size = (rc.uniforms.height as u64) * (rc.uniforms.width as u64);
         let mut changed = false;
         if self.get_size() != new_size {
             self.buffer_wrapper
@@ -74,15 +74,15 @@ impl GpuWrapper {
     }
 
     pub fn get_size(&self) -> u64 {
-        (self.rc.camera.width as u64) * (self.rc.camera.height as u64)
+        (self.rc.uniforms.width as u64) * (self.rc.uniforms.height as u64)
     }
 
     pub fn get_width(&self) -> u32 {
-        self.rc.camera.width
+        self.rc.uniforms.width
     }
 
     pub fn get_height(&self) -> u32 {
-        self.rc.camera.height
+        self.rc.uniforms.height
     }
 
     pub fn get_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
@@ -161,9 +161,15 @@ impl GpuWrapper {
     }
 
     pub fn update_uniforms(&self) {
-        let camera = &self.rc.camera;
-        self.queue
-            .write_buffer(&self.buffer_wrapper.camera, 0, bytemuck::bytes_of(camera));
+        let mut uniforms = self.rc.uniforms;
+        uniforms.spheres_count = self.rc.spheres.len() as u32;
+        uniforms.triangles_count = self.rc.triangles.len() as u32 / 3;
+
+        self.queue.write_buffer(
+            &self.buffer_wrapper.uniforms,
+            0,
+            bytemuck::bytes_of(&uniforms),
+        );
 
         let spheres: Vec<Sphere> = self.rc.spheres.clone();
         self.queue.write_buffer(

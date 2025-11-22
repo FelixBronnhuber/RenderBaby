@@ -704,6 +704,9 @@ dependencies = [
  "engine-config",
  "engine-main",
  "engine-wgpu-wrapper",
+ "env_logger",
+ "log",
+ "tobj",
 ]
 
 [[package]]
@@ -3007,6 +3010,15 @@ checksum = "42d3e9c45c09de15d06dd8acf5f4e0e399e85927b7f00711024eb7ae10fa4869"
 dependencies = [
  "displaydoc",
  "zerovec",
+]
+
+[[package]]
+name = "tobj"
+version = "3.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57381207291289bad19de63acd3fbf5948ff99b2868116c367b7224c37d55f90"
+dependencies = [
+ "ahash",
 ]
 
 [[package]]

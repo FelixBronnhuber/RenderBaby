@@ -1,10 +1,10 @@
-use engine_config::RenderConfig;
+use engine_config::{RenderConfig, Uniforms};
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
 
 pub struct GpuBuffers {
     pub spheres: Buffer,
-    pub camera: Buffer,
+    pub uniforms: Buffer,
     pub output: Buffer,
     pub staging: Buffer,
     pub verticies: Buffer,
@@ -13,11 +13,11 @@ pub struct GpuBuffers {
 
 impl GpuBuffers {
     pub fn new(rc: &RenderConfig, device: &Device) -> Self {
-        let size = (rc.camera.width * rc.camera.height * 4) as u64;
+        let size = (rc.uniforms.width * rc.uniforms.height * 4) as u64;
 
         Self {
             spheres: Self::create_storage_buffer(device, "Spheres Buffer", &rc.spheres),
-            camera: Self::create_uniform_buffer(device, &rc.camera),
+            uniforms: Self::create_uniform_buffer(device, "Uniforms Buffer", &rc.uniforms),
             output: Self::create_output_buffer(device, size),
             staging: Self::create_staging_buffer(device, size),
             verticies: Self::create_storage_buffer(device, "Verticies Buffer", &rc.verticies),
@@ -42,9 +42,9 @@ impl GpuBuffers {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", &rc.triangles);
     }
 
-    fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, data: &T) -> Buffer {
+    fn create_uniform_buffer(device: &Device, label: &str, data: &Uniforms) -> Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
+            label: Some(label),
             contents: bytemuck::bytes_of(data),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         })
@@ -52,7 +52,13 @@ impl GpuBuffers {
 
     fn create_storage_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &[T]) -> Buffer {
         if data.is_empty() {
-            Self::create_placeholder_buffer(device, label)
+            let size = std::mem::size_of::<T>() as u64;
+            device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some(label),
+                size: if size == 0 { 4 } else { size }, // Handle ZSTs, though Pod shouldn't be ZSTs.
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            })
         } else {
             device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(label),
@@ -76,15 +82,6 @@ impl GpuBuffers {
             label: Some("Staging Buffer"),
             size,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        })
-    }
-
-    fn create_placeholder_buffer(device: &Device, label: &str) -> Buffer {
-        device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some(label),
-            size: 4,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         })
     }

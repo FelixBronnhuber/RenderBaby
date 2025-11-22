@@ -1,7 +1,12 @@
-struct Camera {
+struct Uniforms {
     width: u32,
     height: u32,
     fov: f32,
+    spheres_count: u32,
+    triangles_count: u32,
+    _pad1: u32,
+    _pad2: u32,
+    _pad3: u32,
 };
 
 struct Sphere {
@@ -11,7 +16,7 @@ struct Sphere {
     _pad: u32, // 4 bytes padding for alignment
 };
 
-@group(0) @binding(0) var<uniform> camera: Camera;
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 
@@ -95,11 +100,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
 
-    let aspect = f32(camera.width) / f32(camera.height);
-    let u = ((f32(x) / f32(camera.width - 1u)) * 2.0 - 1.0) * aspect;
-    let v = (1.0 - f32(y) / f32(camera.height - 1u)) * 2.0 - 1.0;
+    let aspect = f32(uniforms.width) / f32(uniforms.height);
+    let u = ((f32(x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
+    let v = (1.0 - f32(y) / f32(uniforms.height - 1u)) * 2.0 - 1.0;
 
-    let camera_pos = vec3<f32>(0.0, 0.0, -camera.fov); // Camera behind the scene
+    let camera_pos = vec3<f32>(0.0, 0.0, -uniforms.fov); // Camera behind the scene
     let screen_z: f32 = 0.0;
 
     let ray_dir = normalize(vec3<f32>(u, v, screen_z - camera_pos.z));
@@ -111,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var min_t = 1e20;
 
     // Triangle intersection loop
-    for (var i = 0u; i < arrayLength(&triangles) / 3u; i = i + 1u) {
+    for (var i = 0u; i < uniforms.triangles_count; i = i + 1u) {
         let v0_idx = triangles[i * 3u];
         let v1_idx = triangles[i * 3u + 1u];
         let v2_idx = triangles[i * 3u + 2u];
@@ -130,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Sphere intersection loop
-    for (var i = 0u; i < arrayLength(&spheres); i = i + 1u) {
+    for (var i = 0u; i < uniforms.spheres_count; i = i + 1u) {
         let sphere = spheres[i];
         let t = intersect_sphere(camera_pos, ray_dir, sphere);
         if t > 0.0 && t < min_t {
@@ -139,6 +144,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let index: u32 = y * camera.width + x;
+    let index: u32 = y * uniforms.width + x;
     output[index] = color_map(hit_color);
 }

@@ -89,7 +89,7 @@ impl BindGroup {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffers.camera.as_entire_binding(),
+                    resource: buffers.uniforms.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,

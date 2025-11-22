@@ -6,7 +6,7 @@ use anyhow::Result;
 // This is a placeholder and should be granularized further into e.g:
 // CameraConfiguration, Scene, ...
 pub struct RenderConfig {
-    pub camera: Camera,
+    pub uniforms: Uniforms,
     pub spheres: Vec<Sphere>,
     pub verticies: Vec<f32>,
     pub triangles: Vec<u32>,
@@ -18,9 +18,9 @@ impl RenderConfig {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct RenderConfigBuilder {
-    camera: Option<Camera>,
+    uniforms: Option<Uniforms>,
     spheres: Option<Vec<Sphere>>,
     verticies: Option<Vec<f32>>,
     triangles: Option<Vec<u32>>,
@@ -29,15 +29,15 @@ pub struct RenderConfigBuilder {
 impl RenderConfigBuilder {
     pub fn new() -> Self {
         Self {
-            camera: None,
+            uniforms: None,
             spheres: None,
             verticies: None,
             triangles: None,
         }
     }
 
-    pub fn camera(mut self, camera: Camera) -> Self {
-        self.camera = Some(camera);
+    pub fn uniforms(mut self, uniforms: Uniforms) -> Self {
+        self.uniforms = Some(uniforms);
         self
     }
 
@@ -76,48 +76,36 @@ impl RenderConfigBuilder {
     }
 
     pub fn build(self) -> Result<RenderConfig> {
-        let camera = match self.camera {
-            Some(camera) => camera,
-            None => {
-                log::warn!(
-                    "MissingCameraWarning: No camera provided, initializing with default camera."
-                );
-                Camera::default() // Replace with your actual default if needed
-            }
-        };
+        let uniforms = self.uniforms.unwrap_or_else(|| {
+            log::warn!(
+                "MissingUniformsWarning: No uniforms provided, initializing with default uniforms."
+            );
+            Uniforms::default()
+        });
 
-        let spheres = match self.spheres {
-            Some(spheres) => spheres,
-            None => {
-                log::warn!(
-                    "MissingSpheresWarning: No spheres provided, initializing with empty vector."
-                );
-                Vec::new()
-            }
-        };
+        let spheres = self.spheres.unwrap_or_else(|| {
+            log::warn!(
+                "MissingSpheresWarning: No spheres provided, initializing with empty vector."
+            );
+            Vec::new()
+        });
 
-        let verticies = match self.verticies {
-            Some(verticies) => verticies,
-            None => {
-                log::warn!(
-                    "MissingVerticiesWarning: No verticies provided, initializing with empty vector."
-                );
-                Vec::new()
-            }
-        };
+        let verticies = self.verticies.unwrap_or_else(|| {
+            log::warn!(
+                "MissingVerticiesWarning: No verticies provided, initializing with empty vector."
+            );
+            Vec::new()
+        });
 
-        let triangles = match self.triangles {
-            Some(triangles) => triangles,
-            None => {
-                log::warn!(
-                    "MissingTrianglesWarning: No triangles provided, initializing with empty vector."
-                );
-                Vec::new()
-            }
-        };
+        let triangles = self.triangles.unwrap_or_else(|| {
+            log::warn!(
+                "MissingTrianglesWarning: No triangles provided, initializing with empty vector."
+            );
+            Vec::new()
+        });
 
         let rc = RenderConfig {
-            camera,
+            uniforms,
             spheres,
             verticies,
             triangles,
@@ -130,7 +118,7 @@ impl RenderConfigBuilder {
 #[derive(Debug)]
 pub enum RenderConfigBuilderError {
     FOVOutOfBounds,
-    MissingCamera,
+    MissingUniforms,
     MissingSpheres,
     MisingVerticies,
     MisingTriangles,
@@ -140,7 +128,7 @@ impl fmt::Display for RenderConfigBuilderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
-            RenderConfigBuilderError::MissingCamera => write!(f, "Camera is required"),
+            RenderConfigBuilderError::MissingUniforms => write!(f, "Uniforms are required"),
             RenderConfigBuilderError::MissingSpheres => write!(f, "Spheres are required"),
             RenderConfigBuilderError::MisingVerticies => write!(f, "Verticies are required"),
             RenderConfigBuilderError::MisingTriangles => write!(f, "Triangles are required"),
@@ -156,40 +144,30 @@ mod tests {
 
     #[test]
     fn builder_defaults() {
-        let camera = Camera::default();
-        let builder = RenderConfigBuilder::new().camera(camera).spheres(vec![]);
+        let uniforms = Uniforms::default();
+        let builder = RenderConfigBuilder::new()
+            .uniforms(uniforms)
+            .spheres(vec![]);
         let config = builder.build().unwrap();
-        assert_eq!(config.camera.width, Camera::DEFAULT_WIDTH);
-        assert_eq!(config.camera.height, Camera::DEFAULT_HEIGHT);
-        assert_eq!(config.camera.fov, Camera::DEFAULT_FOV);
+        assert_eq!(config.uniforms.width, Uniforms::default().width);
+        assert_eq!(config.uniforms.height, Uniforms::default().height);
+        assert_eq!(config.uniforms.fov, Uniforms::default().fov);
         assert!(config.spheres.is_empty());
     }
 
     #[test]
-    fn builder_sets_camera_and_spheres() {
-        let camera = Camera::new(800, 600, 1.0).unwrap();
+    fn builder_sets_uniforms_and_spheres() {
+        let uniforms = Uniforms::new(800, 600, 1.0, 0, 0);
         let sphere = Sphere::new(Vec3::new(1.0, 2.0, 3.0), 2.0, Vec3::ONE.scale(0.5)).unwrap();
         let builder = RenderConfigBuilder::new()
-            .camera(camera)
+            .uniforms(uniforms)
             .spheres(vec![sphere]);
         let config = builder.build().unwrap();
-        assert_eq!(config.camera.width, 800);
-        assert_eq!(config.camera.height, 600);
-        assert_eq!(config.camera.fov, 1.0);
+        assert_eq!(config.uniforms.width, 800);
+        assert_eq!(config.uniforms.height, 600);
+        assert_eq!(config.uniforms.fov, 1.0);
         assert_eq!(config.spheres.len(), 1);
         assert_eq!(config.spheres[0].radius, 2.0);
-    }
-
-    #[test]
-    fn camera_invalid_width() {
-        let result = Camera::new(0, 600, 1.0);
-        assert!(matches!(result, Err(CameraError::WidthOutOfBounds)));
-    }
-
-    #[test]
-    fn camera_invalid_fov() {
-        let result = Camera::new(800, 600, 100.0);
-        assert!(matches!(result, Err(CameraError::FOVOutOfBounds)));
     }
 
     #[test]
