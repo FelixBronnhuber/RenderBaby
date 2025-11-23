@@ -70,4 +70,9 @@ impl Model {
             .unwrap();
         self.engine.render(rc).expect("Render failed")
     }
+
+    pub fn set_import_path(&mut self, path: String) {
+        println!("Received path: {}", path);
+        scene::obj_parser::parseobj(path).expect("Error");
+    }
 }
