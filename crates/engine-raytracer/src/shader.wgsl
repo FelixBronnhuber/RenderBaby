@@ -20,8 +20,8 @@ struct Sphere {
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 
-@group(0) @binding(3) var<storage, read> verticies: array<f32>;
-@group(0) @binding(4) var<storage, read> triangles: array<u32>; // Indexes into verticies
+@group(0) @binding(3) var<storage, read> vertices: array<f32>;
+@group(0) @binding(4) var<storage, read> triangles: array<u32>; // Indexes into vertices
 
 fn color_map(color: vec3<f32>) -> u32 {
     let r: u32 = u32(color.x * 255.);
@@ -121,9 +121,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let v1_idx = triangles[i * 3u + 1u];
         let v2_idx = triangles[i * 3u + 2u];
 
-        let v0 = vec3<f32>(verticies[v0_idx * 3u], verticies[v0_idx * 3u + 1u], verticies[v0_idx * 3u + 2u]);
-        let v1 = vec3<f32>(verticies[v1_idx * 3u], verticies[v1_idx * 3u + 1u], verticies[v1_idx * 3u + 2u]);
-        let v2 = vec3<f32>(verticies[v2_idx * 3u], verticies[v2_idx * 3u + 1u], verticies[v2_idx * 3u + 2u]);
+        let v0 = vec3<f32>(vertices[v0_idx * 3u], vertices[v0_idx * 3u + 1u], vertices[v0_idx * 3u + 2u]);
+        let v1 = vec3<f32>(vertices[v1_idx * 3u], vertices[v1_idx * 3u + 1u], vertices[v1_idx * 3u + 2u]);
+        let v2 = vec3<f32>(vertices[v2_idx * 3u], vertices[v2_idx * 3u + 1u], vertices[v2_idx * 3u + 2u]);
 
         let tri = TriangleData(v0, v1, v2, 0u);
 

@@ -13,32 +13,52 @@ impl Model {
         let (models, _materials) = tobj::load_obj(
             "/Users/felixbronnhuber/thu.de-alias/Softwareprojekt/OBJ-Files/ferris3d_v1.0.obj",
             &tobj::LoadOptions {
-                triangulate: true,
+                triangulate: false,
                 ..Default::default()
             },
         )
         .expect("Failed to load obj file");
 
-        let mut all_positions = Vec::new();
-        let mut all_indices = Vec::new();
-        let mut vertex_offset = 0;
+        let mut builder = RenderConfigBuilder::new();
 
         for model in models {
             let mesh = &model.mesh;
-            all_positions.extend_from_slice(&mesh.positions);
-            for index in &mesh.indices {
-                all_indices.push(*index + vertex_offset);
+            let vertex_offset = builder.vertices.clone().unwrap_or_default().len() as u32 / 3;
+
+            for p in mesh.positions.chunks(3) {
+                builder.add_vertex(p[0], p[1], p[2]);
             }
-            vertex_offset += (mesh.positions.len() / 3) as u32;
+
+            let mut index_offset = 0;
+            for &face_arity in &mesh.face_arities {
+                match face_arity {
+                    3 => {
+                        builder.add_triangle(
+                            mesh.indices[index_offset] + vertex_offset,
+                            mesh.indices[index_offset + 1] + vertex_offset,
+                            mesh.indices[index_offset + 2] + vertex_offset,
+                        );
+                    }
+                    4 => {
+                        builder.add_quad(
+                            mesh.indices[index_offset] + vertex_offset,
+                            mesh.indices[index_offset + 1] + vertex_offset,
+                            mesh.indices[index_offset + 2] + vertex_offset,
+                            mesh.indices[index_offset + 3] + vertex_offset,
+                        );
+                    }
+                    _ => {
+                        // ignore other polygons for now
+                    }
+                }
+                index_offset += face_arity as usize;
+            }
         }
 
-        let mut builder = RenderConfigBuilder::new();
-        let num_verticies = &all_positions.len();
-        let num_triangles = &all_indices.len();
-        builder = builder.verticies(all_positions);
-        builder = builder.triangles(all_indices);
+        let num_vertices = builder.vertices.clone().unwrap_or_default().len();
+        let num_triangles = builder.triangles.clone().unwrap_or_default().len() / 3;
 
-        log::info!("Num Verticies: {}", num_verticies);
+        log::info!("Num Vertices: {}", num_vertices);
         log::info!("Num Triangles: {}", num_triangles);
 
         let rc = builder

@@ -42,7 +42,7 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                // Verticies Buffer
+                // Vertices Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 3,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -101,7 +101,7 @@ impl BindGroup {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: buffers.verticies.as_entire_binding(),
+                    resource: buffers.vertices.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 4,

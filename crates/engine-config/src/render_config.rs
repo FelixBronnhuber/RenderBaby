@@ -8,7 +8,7 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub uniforms: Uniforms,
     pub spheres: Vec<Sphere>,
-    pub verticies: Vec<f32>,
+    pub vertices: Vec<f32>,
     pub triangles: Vec<u32>,
 }
 
@@ -20,10 +20,10 @@ impl RenderConfig {
 
 #[derive(Default, Clone)]
 pub struct RenderConfigBuilder {
-    uniforms: Option<Uniforms>,
-    spheres: Option<Vec<Sphere>>,
-    verticies: Option<Vec<f32>>,
-    triangles: Option<Vec<u32>>,
+    pub uniforms: Option<Uniforms>,
+    pub spheres: Option<Vec<Sphere>>,
+    pub vertices: Option<Vec<f32>>,
+    pub triangles: Option<Vec<u32>>,
 }
 
 impl RenderConfigBuilder {
@@ -31,7 +31,7 @@ impl RenderConfigBuilder {
         Self {
             uniforms: None,
             spheres: None,
-            verticies: None,
+            vertices: None,
             triangles: None,
         }
     }
@@ -46,8 +46,8 @@ impl RenderConfigBuilder {
         self
     }
 
-    pub fn verticies(mut self, verticies: Vec<f32>) -> Self {
-        self.verticies = Some(verticies);
+    pub fn vertices(mut self, vertices: Vec<f32>) -> Self {
+        self.vertices = Some(vertices);
         self
     }
 
@@ -62,7 +62,7 @@ impl RenderConfigBuilder {
     }
 
     pub fn add_vertex(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
-        self.verticies
+        self.vertices
             .get_or_insert_with(Vec::new)
             .extend_from_slice(&[x, y, z]);
         self
@@ -72,6 +72,12 @@ impl RenderConfigBuilder {
         self.triangles
             .get_or_insert_with(Vec::new)
             .extend_from_slice(&[v0, v1, v2]);
+        self
+    }
+
+    pub fn add_quad(&mut self, v0: u32, v1: u32, v2: u32, v3: u32) -> &mut Self {
+        self.add_triangle(v0, v1, v2);
+        self.add_triangle(v0, v2, v3);
         self
     }
 
@@ -90,9 +96,9 @@ impl RenderConfigBuilder {
             Vec::new()
         });
 
-        let verticies = self.verticies.unwrap_or_else(|| {
+        let vertices = self.vertices.unwrap_or_else(|| {
             log::warn!(
-                "MissingVerticiesWarning: No verticies provided, initializing with empty vector."
+                "MissingVerticesWarning: No vertices provided, initializing with empty vector."
             );
             Vec::new()
         });
@@ -107,7 +113,7 @@ impl RenderConfigBuilder {
         let rc = RenderConfig {
             uniforms,
             spheres,
-            verticies,
+            vertices,
             triangles,
         };
 
@@ -120,8 +126,8 @@ pub enum RenderConfigBuilderError {
     FOVOutOfBounds,
     MissingUniforms,
     MissingSpheres,
-    MisingVerticies,
-    MisingTriangles,
+    MissingVertices,
+    MissingTriangles,
 }
 
 impl fmt::Display for RenderConfigBuilderError {
@@ -130,8 +136,8 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
             RenderConfigBuilderError::MissingUniforms => write!(f, "Uniforms are required"),
             RenderConfigBuilderError::MissingSpheres => write!(f, "Spheres are required"),
-            RenderConfigBuilderError::MisingVerticies => write!(f, "Verticies are required"),
-            RenderConfigBuilderError::MisingTriangles => write!(f, "Triangles are required"),
+            RenderConfigBuilderError::MissingVertices => write!(f, "Vertices are required"),
+            RenderConfigBuilderError::MissingTriangles => write!(f, "Triangles are required"),
         }
     }
 }

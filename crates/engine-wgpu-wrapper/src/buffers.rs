@@ -7,7 +7,7 @@ pub struct GpuBuffers {
     pub uniforms: Buffer,
     pub output: Buffer,
     pub staging: Buffer,
-    pub verticies: Buffer,
+    pub vertices: Buffer,
     pub triangles: Buffer,
 }
 
@@ -20,7 +20,7 @@ impl GpuBuffers {
             uniforms: Self::create_uniform_buffer(device, "Uniforms Buffer", &rc.uniforms),
             output: Self::create_output_buffer(device, size),
             staging: Self::create_staging_buffer(device, size),
-            verticies: Self::create_storage_buffer(device, "Verticies Buffer", &rc.verticies),
+            vertices: Self::create_storage_buffer(device, "Vertices Buffer", &rc.vertices),
             triangles: Self::create_storage_buffer(device, "Triangles Buffer", &rc.triangles),
         }
     }
@@ -34,8 +34,8 @@ impl GpuBuffers {
         self.spheres = Self::create_storage_buffer(device, "Spheres Buffer", &rc.spheres);
     }
 
-    pub fn grow_verticies(&mut self, device: &Device, rc: &RenderConfig) {
-        self.verticies = Self::create_storage_buffer(device, "Verticies Buffer", &rc.verticies);
+    pub fn grow_vertices(&mut self, device: &Device, rc: &RenderConfig) {
+        self.vertices = Self::create_storage_buffer(device, "Vertices Buffer", &rc.vertices);
     }
 
     pub fn grow_triangles(&mut self, device: &Device, rc: &RenderConfig) {

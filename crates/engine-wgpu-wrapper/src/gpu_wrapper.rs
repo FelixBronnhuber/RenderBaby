@@ -50,8 +50,8 @@ impl GpuWrapper {
             changed = true;
         }
 
-        if self.rc.verticies.len() != rc.verticies.len() {
-            self.buffer_wrapper.grow_verticies(&self.device, &rc);
+        if self.rc.vertices.len() != rc.vertices.len() {
+            self.buffer_wrapper.grow_vertices(&self.device, &rc);
 
             changed = true;
         }
@@ -178,11 +178,11 @@ impl GpuWrapper {
             bytemuck::cast_slice(&spheres),
         );
 
-        let verticies = &self.rc.verticies;
+        let vertices = &self.rc.vertices;
         self.queue.write_buffer(
-            &self.buffer_wrapper.verticies,
+            &self.buffer_wrapper.vertices,
             0,
-            bytemuck::cast_slice(verticies),
+            bytemuck::cast_slice(vertices),
         );
 
         let triangles = &self.rc.triangles;
