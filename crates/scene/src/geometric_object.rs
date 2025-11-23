@@ -147,14 +147,17 @@ impl FileObject for TriGeometry {
 
     fn get_scale(&self) -> Vec3 {
         //todo!()
+        Vec3::new(0.0,0.0,0.0)
     }
 
     fn get_translation(&self) -> Vec3 {
         //todo!()
+        Vec3::new(0.0,0.0,0.0)
     }
 
     fn get_rotation(&self) -> Vec3 {
         //todo!()
+        Vec3::new(0.0,0.0,0.0)
     }
 }
 impl TriGeometry {

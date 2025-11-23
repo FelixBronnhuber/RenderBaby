@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-computational-plane = { path = "crates/computational-plane" }
-data-plane = { path = "crates/data-plane" }
+#computational-plane = { path = "crates/computational-plane" }
+scene = { path = "crates/scene" }
 control-plane = { path = "crates/control-plane" }
 eframe = "0.33.0"
 egui = "0.33.0"
@@ -18,13 +18,13 @@ anyhow = "1.0.100"
 engine-wgpu-wrapper = { path = "crates/engine-wgpu-wrapper" }
 
 [workspace]
-members = [".", "crates/engine-pathtracer", 
-    "crates/engine-raytracer", 
-    "crates/engine-wgpu-wrapper", 
-    "crates/control-plane", 
-    "crates/engine-config", 
-    "crates/engine-main", 
-    "crates/scene-parser", 
-    "crates/scene", 
-    "crates/scene-obj-parser", 
+members = [".", "crates/engine-pathtracer",
+    "crates/engine-raytracer",
+    "crates/engine-wgpu-wrapper",
+    "crates/control-plane",
+    "crates/engine-config",
+    "crates/engine-main",
+    "crates/scene-parser",
+    "crates/scene",
+    "crates/scene-obj-parser",
     "crates/scene-initializer"]
