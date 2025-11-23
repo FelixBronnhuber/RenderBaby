@@ -1,9 +1,8 @@
-use std::path::Path;
-//use super::lib;
-use crate::geometric_object::{TriGeometry, Triangle};
+use crate::geometric_object::{GeometricObject, Material, TriGeometry, Triangle};
 use glam::Vec3;
-pub fn parseobj() {
-    let obj_path = Path::new("./test.obj");
+use std::path::Path;
+pub fn parseobj(obj_path: String) -> TriGeometry {
+    let obj_path = Path::new(&obj_path);
 
     // Load the OBJ file
     let (models, materials) = tobj::load_obj(
@@ -16,17 +15,12 @@ pub fn parseobj() {
     )
     .expect("error while trying to load obj file");
 
-    //models.iter().for_each(|model| { println!("{:?}{:?}", model.mesh.positions, model.mesh.indices); });
     let amount_models = models.len();
-    //let model = models.first().unwrap();
-    println!("model amount: {}", amount_models);
-    println!("{:?}", models);
-    //model.mesh.indices.iter().for_each(|index| {println!("{}", index+1);});
-    //let mut z = model.mesh.indices[0] as usize;
     let mut z: usize = 0;
+    let mut return_Triangles: Vec<Triangle> = Vec::new();
     models.iter().for_each(|model| {
         z = 0;
-        let triangles = TriGeometry::new(Vec::new());
+        let triangles = GeometricObject::Triangles(Vec::new());
         let mut vec: Vec<Vec3> = Vec::new();
         for i in 0..3 {
             while z < (model.mesh.positions.len() / 3) {
@@ -36,56 +30,45 @@ pub fn parseobj() {
                     model.mesh.positions[z * 3 + 2],
                 );
                 vec.push(point.into());
-                z += 1;
-                println!("point: {:?}", point);
+                z = z + 1;
             }
         }
-        println!("vec: {:?}", vec);
-        println!("indices: {:?}", model.mesh.indices);
-        let i = model.mesh.indices.len() / 3;
+
+        let mut i = (model.mesh.indices.len() / 3);
 
         for u in 0..i {
             let mut a = Triangle::new(Vec::new(), None);
             a.add_point(vec[model.mesh.indices[u * 3] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 1] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 2] as usize]);
-            println!("triangle: {:?}", a.get_points());
+            return_Triangles.push(a);
         }
+    });
 
-        //let a = Triangle::new(vec![Vec3::new(model.mesh.positions[z * 3], model.mesh.positions[z * 3 + 1], model.mesh.positions[z * 3 + 2])], None);
-    })
-    //
+    let mats: &tobj::Material;
+    let mut mat: Material = Material::default();
+    if let material = materials.unwrap() {
+        mats = material.first().unwrap();
+        mat = Material::new(
+            vec![
+                mats.ambient.unwrap()[0].into(),
+                mats.ambient.unwrap()[1].into(),
+                mats.ambient.unwrap()[2].into(),
+            ],
+            vec![
+                mats.diffuse.unwrap()[0].into(),
+                mats.diffuse.unwrap()[1].into(),
+                mats.diffuse.unwrap()[2].into(),
+            ],
+            vec![
+                mats.specular.unwrap()[0].into(),
+                mats.specular.unwrap()[1].into(),
+                mats.specular.unwrap()[2].into(),
+            ],
+            mats.shininess.unwrap().into(),
+            mats.dissolve.unwrap().into(),
+        );
+    }
 
-    /*
-    for i in model.mesh.indices.iter(){
-        println!("indiceloop {},{}",i,z);
-        Triangle::new(vec![Vec3::new(model.mesh.positions[z * 3], model.mesh.positions[z * 3 + 1], model.mesh.positions[z * 3 + 2])],None);
-        z = z+3;
-    }*/
-    /*
-    let a = GeometricObject::Triangles(vec![
-        for i in model.mesh.indices.iter().step_by(3) {
-            let b = Triangle::new(vec![
-                { Vec3::new(model.mesh.positions[i * 3], model.mesh.positions[i * 3 + 1], model.mesh.positions[i * 3 + 2]) }
-            ], None)
-        }]);
-    match a { GeometricObject::Triangles(v) => {v.iter().for_each(|v|println!("{:?}",v.get_points()));}
-                GeometricObject::Circle(c) => {}}
-                */
-    //let a = GeometricObject::Triangles(Triangle)//will vector of triangles
-
-    /*let a = Vec3 {
-        x: model.mesh.positions[i*3],
-        y: model.mesh.positions[i*3 + 1],
-        z: model.mesh.positions[i*3 + 2]
-    };
-    println!("{},{},{}",a.x,a.y,a.z);
-    let b = Vec3 {
-        x: model.mesh.positions[i*3+3],
-        y: model.mesh.positions[i*3 + 4],
-        z: model.mesh.positions[i*3 + 5]
-    };
-    println!("{},{},{}",b.x,b.y,b.z);
-    let a = Vec3::new(1.0, 0.0, 0.0);
-    */
+    TriGeometry::new(return_Triangles, mat)
 }

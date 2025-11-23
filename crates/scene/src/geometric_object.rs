@@ -113,6 +113,7 @@ impl FileObject for Sphere {
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
     attr: ObjConf,
+    material: Material
 }
 // todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
@@ -159,7 +160,7 @@ impl TriGeometry {
         // maybe one fn for mut, one for immut?
     }
 
-    pub fn new(triangles: Vec<Triangle>) -> Self {
+    pub fn new(triangles: Vec<Triangle>, material: Material) -> Self {
         let conf = ObjConf {
             name: "".to_owned(),
             path: Some("".to_owned()),
@@ -169,6 +170,7 @@ impl TriGeometry {
         };
         TriGeometry {
             triangles,
+            material,
             attr: conf,
         }
     }
@@ -355,4 +357,39 @@ pub enum LightType {
     Ambient,
     Point,
     Directional,
+}
+
+#[derive(Debug)]
+pub struct Material {
+    ambient_reflectivity: Vec<f64>,  //Ka
+    diffuse_reflectivity: Vec<f64>,  //Kd
+    specular_reflectivity: Vec<f64>, //Ks
+    shininess: f64,                  //Ns
+    transparency: f64,               //d
+}
+impl Material {
+    pub fn new(
+        ambient_reflectivity: Vec<f64>,
+        diffuse_reflectivity: Vec<f64>,
+        specular_reflectivity: Vec<f64>,
+        shininess: f64,
+        transparency: f64,
+    ) -> Self {
+        Material {
+            ambient_reflectivity,
+            diffuse_reflectivity,
+            specular_reflectivity,
+            shininess,
+            transparency,
+        }
+    }
+    pub fn default() -> Self {
+        Material {
+            ambient_reflectivity: vec![0.0, 0.0, 0.0],
+            diffuse_reflectivity: vec![0.0, 0.0, 0.0],
+            specular_reflectivity: vec![0.0, 0.0, 0.0],
+            shininess: 0.0,
+            transparency: 0.0,
+        }
+    }
 }

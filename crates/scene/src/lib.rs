@@ -56,8 +56,9 @@ mod tests {
         assert_eq!(scene.get_light_sources().len(), 1)
     }
 
-    /*     #[test]
-    fn parse() {
-        parseobj();
-    } */
+fn parse() {
+        let tri_geometry = parseobj(".".into());
+        let tris = tri_geometry.get_triangles();
+        let mut iterator = tris.into_iter();
+    }
 }
