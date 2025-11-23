@@ -15,6 +15,9 @@ struct Sphere {
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 
+@group(0) @binding(3) var<storage, read> verticies: array<f32>;
+@group(0) @binding(4) var<storage, read> triangles: array<u32>; // Indexes into verticies
+
 fn color_map(color: vec3<f32>) -> u32 {
     let r: u32 = u32(color.x * 255.);
     let g: u32 = u32(color.y * 255.);
@@ -34,6 +37,57 @@ fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -
         return -1.0;
     }
     return (-b - sqrt(discriminant)) / (2.0 * a);
+}
+
+struct TriangleData {
+    v0: vec3<f32>,
+    v1: vec3<f32>,
+    v2: vec3<f32>,
+    _pad: u32,
+};
+
+// Möller–Trumbore algorithm
+fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> f32 {
+    let edge1 = tri.v1 - tri.v0;
+    let edge2 = tri.v2 - tri.v0;
+    let h = cross(ray_dir, edge2);
+    let a = dot(edge1, h);
+
+    if abs(a) < 1e-6 {
+        return -1.0;
+    }
+
+    let f = 1.0 / a;
+    let s = ray_origin - tri.v0;
+    let u = f * dot(s, h);
+
+    if u < 0.0 || u > 1.0 {
+        return -1.0;
+    }
+
+    let q = cross(s, edge1);
+    let v = f * dot(ray_dir, q);
+
+    if v < 0.0 || u + v > 1.0 {
+        return -1.0;
+    }
+
+    let t = f * dot(edge2, q);
+
+    if t > 0.0 {
+        return t;
+    }
+
+    return -1.0;
+}
+
+// Knuth's multiplicative hash
+fn hash_to_color(n: u32) -> vec3<f32> {
+    let h = n * 2654435761u;
+    let r = f32(h % 41u) / 40.0;
+    let g = f32(h % 29u) / 28.0;
+    let b = f32(h % 19u) / 18.0;
+    return vec3<f32>(r, g, b);
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -56,6 +110,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var min_t = 1e20;
 
+    // Triangle intersection loop
+    for (var i = 0u; i < arrayLength(&triangles) / 3u; i = i + 1u) {
+        let v0_idx = triangles[i * 3u];
+        let v1_idx = triangles[i * 3u + 1u];
+        let v2_idx = triangles[i * 3u + 2u];
+
+        let v0 = vec3<f32>(verticies[v0_idx * 3u], verticies[v0_idx * 3u + 1u], verticies[v0_idx * 3u + 2u]);
+        let v1 = vec3<f32>(verticies[v1_idx * 3u], verticies[v1_idx * 3u + 1u], verticies[v1_idx * 3u + 2u]);
+        let v2 = vec3<f32>(verticies[v2_idx * 3u], verticies[v2_idx * 3u + 1u], verticies[v2_idx * 3u + 2u]);
+
+        let tri = TriangleData(v0, v1, v2, 0u);
+
+        let t_tri = intersect_triangle(camera_pos, ray_dir, tri);
+        if t_tri > 0.0 && t_tri < min_t {
+            min_t = t_tri;
+            hit_color = hash_to_color(i + 1u);
+        }
+    }
+
+    // Sphere intersection loop
     for (var i = 0u; i < arrayLength(&spheres); i = i + 1u) {
         let sphere = spheres[i];
         let t = intersect_sphere(camera_pos, ray_dir, sphere);

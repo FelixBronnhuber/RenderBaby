@@ -5,5 +5,6 @@ edition = "2024"
 
 [dependencies]
 eframe = "0.33.0"
-engine-raytracer = { path = "../engine-raytracer" }
+engine-config = { path = "../engine-config" }
+engine-main = { path = "../engine-main" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }
