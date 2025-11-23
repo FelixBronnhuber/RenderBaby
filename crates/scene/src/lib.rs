@@ -25,7 +25,7 @@ mod tests {
 
     #[test]
     fn parse() {
-        let triGeometry = parseobj("C:/Users/fucjo/RustroverProjects/Teapot.obj".into());
+        let triGeometry = parseobj(".".into());
         let tris = triGeometry.get_triangles();
         let mut iterator = tris.into_iter();
     }
