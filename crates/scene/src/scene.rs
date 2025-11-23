@@ -2,9 +2,9 @@ use crate::geometric_object::LightType;
 use crate::obj_parser::parseobj;
 use crate::{
     action_stack::ActionStack,
-    call_scene_parse,
+    //call_scene_parse,
     geometric_object::{
-        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
+        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry,
     },
     scene_graph::SceneGraph,
 };
@@ -32,12 +32,11 @@ impl Scene {
         //call_scene_parse()//to be fixed
         Scene::new()
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
         parseobj(path)
     }
-
     /*pub fn image_buffer(&self) -> Vec<u8> {
-        todo!()
+        //todo!()
         // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
     }*/
     pub fn proto_init(&mut self) {

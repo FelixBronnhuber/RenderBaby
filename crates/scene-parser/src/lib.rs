@@ -14,9 +14,7 @@ mod tests {
         assert_eq!(result, 4);
     }
     #[test]
-    fn parse_json() {
-
-    }
+    fn parse_json() {}
 }
 pub struct Scene_Call;
 impl Scene_Parse_Trait for Scene_Call {
