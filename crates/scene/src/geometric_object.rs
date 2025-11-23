@@ -95,7 +95,8 @@ impl GeometricObject for Sphere {
 impl FileObject for Sphere {
     fn get_path(&self) -> String {
         //self.attr.path
-        todo!()
+        //todo!()
+        "path".to_string()
     }
 
     fn get_scale(&self) -> Vec3 {
@@ -118,7 +119,6 @@ pub struct TriGeometry {
     name: String,
     material: Material,
 }
-// todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
         for tri in self.get_triangles() {
@@ -133,7 +133,7 @@ impl GeometricObject for TriGeometry {
     }
 
     fn rotate(&mut self, vec: Vec3) {
-        todo!()
+        //todo!()
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -146,15 +146,15 @@ impl FileObject for TriGeometry {
     }
 
     fn get_scale(&self) -> Vec3 {
-        todo!()
+        //todo!()
     }
 
     fn get_translation(&self) -> Vec3 {
-        todo!()
+        //todo!()
     }
 
     fn get_rotation(&self) -> Vec3 {
-        todo!()
+        //todo!()
     }
 }
 impl TriGeometry {
@@ -226,11 +226,11 @@ impl GeometricObject for Triangle {
     }
 
     fn scale(&mut self, factor: f32) {
-        todo!()
+        //todo!()
     }
 
     fn rotate(&mut self, vec: Vec3) {
-        todo!()
+        //todo!()
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -331,8 +331,9 @@ impl LightSource {
         self.rotation
     }
     pub fn rotate(&mut self, vec: Vec3) -> Vec3 {
-        todo!()
+        //todo!()
         // rotate and return new orientation?
+        Vec3::new(0.0,0.0,0.0)
     }
     pub fn get_name(&self) -> String {
         self.name.clone()
