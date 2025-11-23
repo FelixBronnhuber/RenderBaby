@@ -4,7 +4,6 @@ use engine_wgpu_wrapper::RenderOutput;
 
 type RBScene = scene::scene::Scene; // RenderBabyScene, es gibt auch eine egui scene
 
-
 // TODO: Remove this temporary Scene
 const SPHERES: [Sphere; 5] = [
     Sphere {
@@ -40,14 +39,14 @@ const SPHERES: [Sphere; 5] = [
 ];
 
 pub struct Model {
-    scene: RBScene
+    scene: RBScene,
 }
 
 impl Model {
     pub fn new() -> Self {
         let mut scene = RBScene::new();
         scene.proto_init();
-        Self {scene}
+        Self { scene }
     }
 
     pub fn generate_render_output(&mut self, fov: f32) -> RenderOutput {

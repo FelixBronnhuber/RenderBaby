@@ -54,7 +54,7 @@ impl Scene {
         //! calls the render engine for the scene self. Returns ...( will be changed)
         // todo: change return type to mask engine plane
         //todo: try to remove mut
-        
+
         let render_spheres = self.get_render_spheres();
         let camera = self.get_render_camera();
 

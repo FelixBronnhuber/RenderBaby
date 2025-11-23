@@ -1,5 +1,5 @@
 use anyhow::Error;
-use engine_main::{Engine};
+use engine_main::Engine;
 use glam::Vec3;
 
 use crate::{
