@@ -1,4 +1,5 @@
 use anyhow::Error;
+use engine_main::{Engine};
 use glam::Vec3;
 
 use crate::{
@@ -17,8 +18,10 @@ pub struct Scene {
     */
     scene_graph: SceneGraph,
     action_stack: ActionStack,
+    //render_engine: Engine::new(),
     background_color: [f32; 3],
     name: String,
+    render_engine: Option<Engine>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -70,7 +73,10 @@ impl Scene {
         self.set_camera(cam);
         self.add_lightsource(light);
     }
-    pub fn get_camera(&mut self) -> &mut Camera {
+    pub fn get_camera_mut(&mut self) -> &mut Camera {
+        self.scene_graph.get_camera_mut()
+    }
+    pub fn get_camera(&self) -> &Camera {
         self.scene_graph.get_camera()
     }
     /*pub fn set_camera_position(&mut self, pos: Vec<f32>) {
@@ -85,6 +91,7 @@ impl Scene {
             action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
+            render_engine: None,
         } // todo: allow name and color as param
     }
 
@@ -103,6 +110,15 @@ impl Scene {
     }
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         self.scene_graph.get_light_sources()
+    }
+    pub fn get_render_engine(&self) -> &Option<Engine> {
+        &self.render_engine
+    }
+    pub fn get_render_engine_mut(&mut self) -> &mut Option<Engine> {
+        &mut self.render_engine
+    }
+    pub fn set_render_engine(&mut self, engine: Engine) {
+        self.render_engine = Some(engine);
     }
 
     //action stack fns: currently empty

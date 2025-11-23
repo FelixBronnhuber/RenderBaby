@@ -227,7 +227,7 @@ pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
     fov: f32,
-    resolution: [usize; 2],
+    resolution: [u32; 2],
 }
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
@@ -248,10 +248,10 @@ impl Camera {
     pub fn set_fov(&mut self, fov: f32) {
         self.fov = fov;
     }
-    pub fn get_resolution(&self) -> [usize; 2] {
+    pub fn get_resolution(&self) -> [u32; 2] {
         self.resolution
     }
-    pub fn set_resolution(&mut self, resolution: [usize; 2]) {
+    pub fn set_resolution(&mut self, resolution: [u32; 2]) {
         self.resolution = resolution
     }
     pub fn new(position: Vec3, rotation: Rotation) -> Self {
