@@ -15,7 +15,7 @@ mod tests {
     }
     #[test]
     fn parse_json() {
-        //parse_scene("C:/Users/fucjo/RustroverProjects/json_file.json".to_string());
+
     }
 }
 pub struct Scene_Call;

@@ -62,11 +62,13 @@ mod tests {
     #[test]
     fn parse() {
         let mut scene = Scene::new();
-        let a = scene
-            .load_object_from_file("C:/Users/fucjo/RustroverProjects/Teapot.obj".to_string())
+        /*let a = scene
+            .load_object_from_file("".to_string())
             .unwrap();
         scene.add_object(Box::new(a));
+        */
     }
+
 }
 pub trait Scene_Parse_Trait {
     fn do_scene_parse(&self, path: String) -> Scene;
