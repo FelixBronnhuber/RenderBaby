@@ -1,10 +1,9 @@
 use crate::geometric_object::{GeometricObject, Material, TriGeometry, Triangle};
+use anyhow::Error;
 use glam::Vec3;
 use std::path::Path;
-
-
-/*
-pub fn parseobj(obj_path: String) -> TriGeometry {
+use tobj;
+pub fn parseobj(obj_path: String) -> Result<TriGeometry, Error> {
     let obj_path = Path::new(&obj_path);
 
     // Load the OBJ file
@@ -15,15 +14,13 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
             single_index: true,
             ..Default::default()
         },
-    )
-    .expect("error while trying to load obj file");
-
+    )?;
     let amount_models = models.len();
     let mut z: usize = 0;
     let mut return_Triangles: Vec<Triangle> = Vec::new();
     models.iter().for_each(|model| {
         z = 0;
-        let triangles = TriGeometry::triangles(Vec::new());
+        //let triangles = TriGeometry::triangles(Vec::new());
         let mut vec: Vec<Vec3> = Vec::new();
         for i in 0..3 {
             while z < (model.mesh.positions.len() / 3) {
@@ -73,5 +70,7 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
         );
     }
 
-    TriGeometry::new(return_Triangles, mat)
-}*/
+    let mut ret = TriGeometry::new(return_Triangles);
+    ret.set_material(mat);
+    Result::Ok(ret)
+}

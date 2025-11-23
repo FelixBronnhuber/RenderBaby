@@ -1,9 +1,16 @@
+use crate::geometric_object::LightType;
+use crate::obj_parser::parseobj;
+use crate::{
+    action_stack::ActionStack,
+    call_scene_parse,
+    geometric_object::{
+        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
+    },
+    scene_graph::SceneGraph,
+};
 use anyhow::Error;
 use glam::Vec3;
-use crate::{action_stack::ActionStack, call_scene_parse, geometric_object::{
-    Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
-}, scene_graph::SceneGraph};
-use crate::geometric_object::LightType;
+
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
     /*objects: Vec<GeometricObject>,
@@ -21,47 +28,22 @@ impl Default for Scene {
     }
 }
 impl Scene {
+    pub fn load_scene_from_file(&self, path: String) -> Scene {
+        //call_scene_parse()//to be fixed
+        Scene::new()
+    }
+    pub fn load_object_from_file(&mut self, path: String) -> Result<TriGeometry, Error> {
+        parseobj(path)
+    }
+
     /*pub fn image_buffer(&self) -> Vec<u8> {
         todo!()
         // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
     }*/
-    pub fn load_scene_from_file(&self, path: String) -> Scene{
-        //call_scene_parse()
-        Scene::new()
-    }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
-        
-        /*
-        //! loads object from file. Adds object to scene and returns object if successfull
-        //! Currently place holder!
-        let p0 = Vec3::new(0.0, 0.0, 0.0);
-        let p1 = Vec3::new(1.0, 0.0, 0.0);
-        let p2 = Vec3::new(0.0, 1.0, 0.0);
-        let p2 = Vec3::new(0.0, 0.0, 1.0);
-        // todo: color?
-        let t0 = Triangle::new(vec![], None);
-        let t1 = Triangle::new(vec![], None);
-        let t2 = Triangle::new(vec![], None);
-        let t3 = Triangle::new(vec![], None);
-        let res = TriGeometry::new(vec![t0, t1, t2, t3]);
-        self.add_object(Box::new(res));
-        //Ok(&res)
-        //todo: this is very ugly
-        Ok(self
-            .get_objects()
-            .last()
-            .unwrap()
-            .as_ref()
-            .as_any()
-            .downcast_ref()
-            .unwrap())
-
-         */
-    }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         let color = [0.0, 1.0, 0.0];
-        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, color);
+        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material::default(), color);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
@@ -69,7 +51,7 @@ impl Scene {
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
             Rotation::new(0.0, 0.0),
-            LightType::Ambient
+            LightType::Ambient,
         );
         self.add_object(Box::new(sphere));
         self.set_camera(cam);

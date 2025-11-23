@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tobj = "4.0.3"
+glam = { version = "0.30.9", default-features = false, features = ["libm"] }
+scene = {path = "../scene"}

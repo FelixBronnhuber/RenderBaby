@@ -1,9 +1,9 @@
 // This is for the scene file parser
 mod scene_parser;
 
-use scene::{Scene_Parse_Trait,call_scene_parse};
-use scene::scene::Scene;
 use crate::scene_parser::parse_scene;
+use scene::scene::Scene;
+use scene::{Scene_Parse_Trait, call_scene_parse};
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -14,8 +14,8 @@ mod tests {
         assert_eq!(result, 4);
     }
     #[test]
-    fn parse_json(){
-        parse_scene("C:/Users/fucjo/RustroverProjects/json_file.json".to_string());
+    fn parse_json() {
+        //parse_scene("C:/Users/fucjo/RustroverProjects/json_file.json".to_string());
     }
 }
 pub struct Scene_Call;

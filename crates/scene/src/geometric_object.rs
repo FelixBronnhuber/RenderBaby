@@ -1,7 +1,6 @@
 use glam::Vec3;
 use std::any::Any;
 
-
 /*pub enum GeometricObject{
     Triangles(Vec<Triangle>),
     Sphere(Sphere)
@@ -117,6 +116,7 @@ pub struct TriGeometry {
     attr: ObjConf,
     file_path: String,
     name: String,
+    material: Material,
 }
 // todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
@@ -139,7 +139,6 @@ impl GeometricObject for TriGeometry {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 impl FileObject for TriGeometry {
     fn get_path(&self) -> String {
@@ -163,13 +162,15 @@ impl TriGeometry {
         &mut self.triangles
         // maybe one fn for mut, one for immut?
     }
-    pub fn get_name(& self) -> String {
+    pub fn get_name(&self) -> String {
         self.name.clone()
     }
-    pub fn get_path(& self) -> String {
+    pub fn get_path(&self) -> String {
         self.file_path.clone()
     }
-
+    pub fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
     pub fn new(triangles: Vec<Triangle>) -> Self {
         let conf = ObjConf {
             name: "".to_owned(),
@@ -182,7 +183,8 @@ impl TriGeometry {
             triangles,
             attr: conf,
             file_path: " ".to_owned(),
-            name : "unnamed".to_owned(),
+            name: "unnamed".to_owned(),
+            material: Material::default(),
         }
     }
 }
@@ -234,14 +236,12 @@ impl GeometricObject for Triangle {
     fn as_any(&self) -> &dyn Any {
         self
     }
-
 }
 pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
     fov: f32,
     resolution: [usize; 2],
-
 }
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
@@ -278,7 +278,8 @@ impl Camera {
     }
 }
 
-pub struct Rotation {//no roll?
+pub struct Rotation {
+    //no roll?
     pitch: f32,
     yaw: f32,
 }
@@ -333,7 +334,7 @@ impl LightSource {
         todo!()
         // rotate and return new orientation?
     }
-    pub fn get_name(&self) -> String{
+    pub fn get_name(&self) -> String {
         self.name.clone()
     }
     pub fn get_color(&self) -> [f32; 3] {
@@ -343,7 +344,14 @@ impl LightSource {
         &self.light_type
     }
 
-    pub fn new(position: Vec3, luminosity: f32, color: [f32; 3], name: String, rotation: Rotation, light_type: LightType) -> Self {
+    pub fn new(
+        position: Vec3,
+        luminosity: f32,
+        color: [f32; 3],
+        name: String,
+        rotation: Rotation,
+        light_type: LightType,
+    ) -> Self {
         LightSource {
             position,
             luminosity,
@@ -355,8 +363,40 @@ impl LightSource {
     }
 }
 
-// Maybe Material/Color/Texture as enum?
-pub struct Material {}
+#[derive(Debug)]
+pub struct Material {
+    ambient_reflectivity: Vec<f64>,  //Ka
+    diffuse_reflectivity: Vec<f64>,  //Kd
+    specular_reflectivity: Vec<f64>, //Ks
+    shininess: f64,                  //Ns
+    transparency: f64,               //d
+}
+impl Material {
+    pub fn new(
+        ambient_reflectivity: Vec<f64>,
+        diffuse_reflectivity: Vec<f64>,
+        specular_reflectivity: Vec<f64>,
+        shininess: f64,
+        transparency: f64,
+    ) -> Self {
+        Material {
+            ambient_reflectivity,
+            diffuse_reflectivity,
+            specular_reflectivity,
+            shininess,
+            transparency,
+        }
+    }
+    pub fn default() -> Self {
+        Material {
+            ambient_reflectivity: vec![0.0, 0.0, 0.0],
+            diffuse_reflectivity: vec![0.0, 0.0, 0.0],
+            specular_reflectivity: vec![0.0, 0.0, 0.0],
+            shininess: 0.0,
+            transparency: 0.0,
+        }
+    }
+}
 pub struct Color {
     pub r: f32,
     pub g: f32,
