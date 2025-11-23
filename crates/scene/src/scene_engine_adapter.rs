@@ -6,6 +6,7 @@ use crate::{
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_main::{Engine, RenderEngine};
+use engine_wgpu_wrapper::RenderOutput;
 type RenderSphere = engine_config::Sphere;
 type RenderCamera = engine_config::Camera;
 impl Sphere {
@@ -49,7 +50,7 @@ impl Scene {
         self.get_camera().to_render_engine_camera().unwrap()
     }
 
-    pub fn render(&mut self) -> Result<(Vec<u8>, usize, usize), Error> {
+    pub fn render(&mut self) -> Result<RenderOutput, Error> {
         //! calls the render engine for the scene self. Returns ...( will be changed)
         // todo: change return type to mask engine plane
         //todo: try to remove mut
@@ -80,8 +81,9 @@ impl Scene {
             .build()
             .unwrap();
         let engine = self.get_render_engine_mut().as_mut().unwrap();
-        let res = engine.render(rc).unwrap();
-        Ok((res.pixels, res.width, res.height))
+        //let res = engine.render(rc).unwrap();
+        //Ok((res.pixels, res.width, res.height))
+        engine.render(rc)
     }
 }
 
