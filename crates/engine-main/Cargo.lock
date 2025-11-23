@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "computational-plane"
+name = "data-plane"
 version = "0.1.0"

@@ -1,0 +1,8 @@
+[package]
+name = "scene-initializer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+scene = {path = "../scene"}
+scene-parser = {path = "../scene-parser"}

@@ -1,6 +1,4 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+// todo: refactor all geometric objects here!
 
 #[cfg(test)]
 mod tests {
@@ -8,7 +6,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let result = add(2, 2);
+        let result = 4;
         assert_eq!(result, 4);
     }
 }

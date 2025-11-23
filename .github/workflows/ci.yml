@@ -2,9 +2,13 @@ name: Rust CI
 
 on:
   push:
-    branches: [ master ]
+    branches: 
+      - master
+      - 'sprint-[0-9]*'
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - 'sprint-[0-9]*'
 
 jobs:
   build-test-lint:
@@ -20,6 +24,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
 
       - name: Cache cargo registry
         uses: actions/cache@v4

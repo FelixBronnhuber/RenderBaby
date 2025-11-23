@@ -1,6 +1,9 @@
 use crate::geometric_object::{GeometricObject, Material, TriGeometry, Triangle};
 use glam::Vec3;
 use std::path::Path;
+
+
+/*
 pub fn parseobj(obj_path: String) -> TriGeometry {
     let obj_path = Path::new(&obj_path);
 
@@ -20,7 +23,7 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
     let mut return_Triangles: Vec<Triangle> = Vec::new();
     models.iter().for_each(|model| {
         z = 0;
-        let triangles = GeometricObject::Triangles(Vec::new());
+        let triangles = TriGeometry::triangles(Vec::new());
         let mut vec: Vec<Vec3> = Vec::new();
         for i in 0..3 {
             while z < (model.mesh.positions.len() / 3) {
@@ -71,4 +74,4 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
     }
 
     TriGeometry::new(return_Triangles, mat)
-}
+}*/
