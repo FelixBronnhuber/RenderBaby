@@ -1,7 +1,9 @@
 // TODO: Get this from the Data-Plane!
 use engine_config::*;
-use engine_main::{Engine, RenderEngine};
 use engine_wgpu_wrapper::RenderOutput;
+
+type RBScene = scene::scene::Scene; // RenderBabyScene, es gibt auch eine egui scene
+
 
 // TODO: Remove this temporary Scene
 const SPHERES: [Sphere; 5] = [
@@ -38,36 +40,18 @@ const SPHERES: [Sphere; 5] = [
 ];
 
 pub struct Model {
-    engine: Engine,
+    scene: RBScene
 }
 
 impl Model {
     pub fn new() -> Self {
-        // TODO: Get this from the Data-Plane!
-        let rc = RenderConfigBuilder::new()
-            .spheres(SPHERES.into())
-            .camera(Camera::default())
-            .build()
-            .unwrap();
-        Self {
-            engine: Engine::new(rc, RenderEngine::Raytracer),
-        }
+        let mut scene = RBScene::new();
+        scene.proto_init();
+        Self {scene}
     }
 
     pub fn generate_render_output(&mut self, fov: f32) -> RenderOutput {
         // TODO: Get this from the Data-Plane!
-        let new_camera = Camera {
-            fov,
-            // TODO: Camera Dimensions can also be set here
-            // width: (fov as u32 * 400).clamp(128, 2046),
-            // height: (fov as u32 * 400).clamp(128, 2046),
-            ..Default::default()
-        };
-        let rc = RenderConfigBuilder::new()
-            .spheres(SPHERES.into())
-            .camera(new_camera)
-            .build()
-            .unwrap();
-        self.engine.render(rc).expect("Render failed")
+        self.scene.render().unwrap()
     }
 }
