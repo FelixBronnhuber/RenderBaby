@@ -23,18 +23,8 @@ impl ViewListener for Controller {
                     self.pipeline.get_height(),
                 );
                 if output.validate().is_ok() {
-                    *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
+                    self.pipeline.submit_render_output(output);
                 }
-            }
-
-            Event::SetFov(fov) => {
-                self.pipeline.set_fov(fov);
-            }
-            Event::SetWidth(w) => {
-                self.pipeline.set_width(w);
-            }
-            Event::SetHeight(h) => {
-                self.pipeline.set_height(h);
             }
         }
     }
