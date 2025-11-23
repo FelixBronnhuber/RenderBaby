@@ -8,6 +8,8 @@ use anyhow::Result;
 pub struct RenderConfig {
     pub camera: Camera,
     pub spheres: Vec<Sphere>,
+    pub verticies: Vec<f32>,
+    pub triangles: Vec<u32>,
 }
 
 impl RenderConfig {
@@ -20,6 +22,8 @@ impl RenderConfig {
 pub struct RenderConfigBuilder {
     camera: Option<Camera>,
     spheres: Option<Vec<Sphere>>,
+    verticies: Option<Vec<f32>>,
+    triangles: Option<Vec<u32>>,
 }
 
 impl RenderConfigBuilder {
@@ -27,6 +31,8 @@ impl RenderConfigBuilder {
         Self {
             camera: None,
             spheres: None,
+            verticies: None,
+            triangles: None,
         }
     }
 
@@ -40,13 +46,82 @@ impl RenderConfigBuilder {
         self
     }
 
-    pub fn build(self) -> Result<RenderConfig> {
-        let camera = self.camera.ok_or(RenderConfigBuilderError::MissingCamera)?;
-        let spheres = self
-            .spheres
-            .ok_or(RenderConfigBuilderError::MissingSpheres)?;
+    pub fn verticies(mut self, verticies: Vec<f32>) -> Self {
+        self.verticies = Some(verticies);
+        self
+    }
 
-        let rc = RenderConfig { camera, spheres };
+    pub fn triangles(mut self, triangles: Vec<u32>) -> Self {
+        self.triangles = Some(triangles);
+        self
+    }
+
+    pub fn add_sphere(&mut self, sphere: Sphere) -> &mut Self {
+        self.spheres.get_or_insert_with(Vec::new).push(sphere);
+        self
+    }
+
+    pub fn add_vertex(&mut self, x: f32, y: f32, z: f32) -> &mut Self {
+        self.verticies
+            .get_or_insert_with(Vec::new)
+            .extend_from_slice(&[x, y, z]);
+        self
+    }
+
+    pub fn add_triangle(&mut self, v0: u32, v1: u32, v2: u32) -> &mut Self {
+        self.triangles
+            .get_or_insert_with(Vec::new)
+            .extend_from_slice(&[v0, v1, v2]);
+        self
+    }
+
+    pub fn build(self) -> Result<RenderConfig> {
+        let camera = match self.camera {
+            Some(camera) => camera,
+            None => {
+                log::warn!(
+                    "MissingCameraWarning: No camera provided, initializing with default camera."
+                );
+                Camera::default() // Replace with your actual default if needed
+            }
+        };
+
+        let spheres = match self.spheres {
+            Some(spheres) => spheres,
+            None => {
+                log::warn!(
+                    "MissingSpheresWarning: No spheres provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
+
+        let verticies = match self.verticies {
+            Some(verticies) => verticies,
+            None => {
+                log::warn!(
+                    "MissingVerticiesWarning: No verticies provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
+
+        let triangles = match self.triangles {
+            Some(triangles) => triangles,
+            None => {
+                log::warn!(
+                    "MissingTrianglesWarning: No triangles provided, initializing with empty vector."
+                );
+                Vec::new()
+            }
+        };
+
+        let rc = RenderConfig {
+            camera,
+            spheres,
+            verticies,
+            triangles,
+        };
 
         Ok(rc)
     }
@@ -57,6 +132,8 @@ pub enum RenderConfigBuilderError {
     FOVOutOfBounds,
     MissingCamera,
     MissingSpheres,
+    MisingVerticies,
+    MisingTriangles,
 }
 
 impl fmt::Display for RenderConfigBuilderError {
@@ -65,6 +142,8 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
             RenderConfigBuilderError::MissingCamera => write!(f, "Camera is required"),
             RenderConfigBuilderError::MissingSpheres => write!(f, "Spheres are required"),
+            RenderConfigBuilderError::MisingVerticies => write!(f, "Verticies are required"),
+            RenderConfigBuilderError::MisingTriangles => write!(f, "Triangles are required"),
         }
     }
 }
@@ -99,29 +178,6 @@ mod tests {
         assert_eq!(config.camera.fov, 1.0);
         assert_eq!(config.spheres.len(), 1);
         assert_eq!(config.spheres[0].radius, 2.0);
-    }
-
-    #[test]
-    fn builder_missing_camera() {
-        let builder = RenderConfigBuilder::new().spheres(vec![]);
-        let result = builder.build();
-        assert!(
-            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
-            .map(|e| matches!(e, RenderConfigBuilderError::MissingCamera))
-            .unwrap_or(false))
-        );
-    }
-
-    #[test]
-    fn builder_missing_spheres() {
-        let camera = Camera::default();
-        let builder = RenderConfigBuilder::new().camera(camera);
-        let result = builder.build();
-        assert!(
-            matches!(result, Err(e) if e.downcast_ref::<RenderConfigBuilderError>()
-            .map(|e| matches!(e, RenderConfigBuilderError::MissingSpheres))
-            .unwrap_or(false))
-        );
     }
 
     #[test]
