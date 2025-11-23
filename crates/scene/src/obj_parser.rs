@@ -1,4 +1,4 @@
-use crate::geometric_object::{GeometricObject, Material, TriGeometry, Triangle};
+use crate::geometric_object::{Material, TriGeometry, Triangle};
 use glam::Vec3;
 use std::path::Path;
 pub fn parseobj(obj_path: String) -> TriGeometry {
@@ -17,10 +17,10 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
 
     let amount_models = models.len();
     let mut z: usize = 0;
-    let mut return_Triangles: Vec<Triangle> = Vec::new();
+    let mut return_triangles: Vec<Triangle> = Vec::new();
     models.iter().for_each(|model| {
         z = 0;
-        let triangles = GeometricObject::Triangles(Vec::new());
+        let triangles = TriGeometry::new(Vec::new(), Material::default());
         let mut vec: Vec<Vec3> = Vec::new();
         for i in 0..3 {
             while z < (model.mesh.positions.len() / 3) {
@@ -30,18 +30,18 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
                     model.mesh.positions[z * 3 + 2],
                 );
                 vec.push(point.into());
-                z = z + 1;
+                z += 1;
             }
         }
 
-        let mut i = (model.mesh.indices.len() / 3);
+        let i = model.mesh.indices.len() / 3;
 
         for u in 0..i {
             let mut a = Triangle::new(Vec::new(), None);
             a.add_point(vec[model.mesh.indices[u * 3] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 1] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 2] as usize]);
-            return_Triangles.push(a);
+            return_triangles.push(a);
         }
     });
 
@@ -70,5 +70,5 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
         );
     }
 
-    TriGeometry::new(return_Triangles, mat)
+    TriGeometry::new(return_triangles, mat)
 }

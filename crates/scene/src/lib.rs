@@ -19,6 +19,7 @@ mod tests {
 
     use crate::{
         geometric_object::{Material, Sphere},
+        obj_parser::parseobj,
         scene::Scene,
     };
 
@@ -29,8 +30,12 @@ mod tests {
     fn it_works() {
         assert_eq!(4, 4);
         let color = [0.0, 1.0, 0.0];
-        let sphere =
-            geometric_object::Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material {}, color);
+        let sphere = geometric_object::Sphere::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            1.0,
+            Material::default(),
+            color,
+        );
         let radius = 1.0;
         assert_eq!(sphere.get_radius(), radius);
         let mut scene = Scene::new();
@@ -56,9 +61,9 @@ mod tests {
         assert_eq!(scene.get_light_sources().len(), 1)
     }
 
-fn parse() {
+    fn parse() {
         let tri_geometry = parseobj(".".into());
         let tris = tri_geometry.get_triangles();
-        let mut iterator = tris.into_iter();
+        let mut _iterator = tris.iter();
     }
 }

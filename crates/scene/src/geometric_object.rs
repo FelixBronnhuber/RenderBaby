@@ -113,18 +113,18 @@ impl FileObject for Sphere {
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
     attr: ObjConf,
-    material: Material
+    material: Option<Material>,
 }
 // todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
-        for tri in self.get_triangles() {
+        for tri in self.get_triangles_mut() {
             tri.scale(factor);
         }
     }
 
     fn translate(&mut self, vec: Vec3) {
-        for tri in self.get_triangles() {
+        for tri in self.get_triangles_mut() {
             tri.translate(vec);
         }
     }
@@ -155,9 +155,13 @@ impl FileObject for TriGeometry {
     }
 }
 impl TriGeometry {
-    pub fn get_triangles(&mut self) -> &mut Vec<Triangle> {
+    pub(crate) fn get_triangles_mut(&mut self) -> &mut Vec<Triangle> {
         &mut self.triangles
         // maybe one fn for mut, one for immut?
+    }
+
+    pub(crate) fn get_triangles(&self) -> &Vec<Triangle> {
+        &self.triangles
     }
 
     pub fn new(triangles: Vec<Triangle>, material: Material) -> Self {
@@ -170,7 +174,7 @@ impl TriGeometry {
         };
         TriGeometry {
             triangles,
-            material,
+            material: Some(material),
             attr: conf,
         }
     }
@@ -338,7 +342,7 @@ impl LightSource {
 }
 
 // Maybe Material/Color/Texture as enum?
-pub struct Material {}
+//pub struct Material {}
 pub struct Color {
     pub r: f32,
     pub g: f32,

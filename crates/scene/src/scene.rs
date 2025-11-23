@@ -3,11 +3,9 @@ use engine_main::Engine;
 use glam::Vec3;
 
 use crate::{
-    action_stack::ActionStack,
-    geometric_object::{
+    action_stack::ActionStack, geometric_object::{
         Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
-    },
-    scene_graph::SceneGraph,
+    }, obj_parser::parseobj, scene_graph::SceneGraph
 };
 
 /// The scene holds all relevant objects, lightsources, camera ...
@@ -35,8 +33,7 @@ impl Scene {
     }*/
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
         //! loads object from file. Adds object to scene and returns object if successfull
-        //! Currently place holder!
-        let p0 = Vec3::new(0.0, 0.0, 0.0);
+        /* let p0 = Vec3::new(0.0, 0.0, 0.0);
         let p1 = Vec3::new(1.0, 0.0, 0.0);
         let p2 = Vec3::new(0.0, 1.0, 0.0);
         let p2 = Vec3::new(0.0, 0.0, 1.0);
@@ -45,8 +42,9 @@ impl Scene {
         let t1 = Triangle::new(vec![], None);
         let t2 = Triangle::new(vec![], None);
         let t3 = Triangle::new(vec![], None);
-        let res = TriGeometry::new(vec![t0, t1, t2, t3]);
-        self.add_object(Box::new(res));
+        let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
+        let obj = parseobj(path);
+        self.add_object(Box::new(obj));
         //Ok(&res)
         //todo: this is very ugly
         Ok(self
@@ -61,7 +59,7 @@ impl Scene {
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         let color = [0.0, 1.0, 0.0];
-        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, color);
+        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material::default(), color);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
