@@ -9,3 +9,4 @@ rfd = "0.15.4"
 engine-config = { path = "../engine-config" }
 engine-main = { path = "../engine-main" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }
+scene = { path = "../scene" }

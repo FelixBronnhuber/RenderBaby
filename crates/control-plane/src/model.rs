@@ -73,5 +73,6 @@ impl Model {
 
     pub fn set_import_path(&mut self, path: String) {
         println!("Received path: {}", path);
+        scene::obj_parser::parseobj(path).expect("Error");
     }
 }

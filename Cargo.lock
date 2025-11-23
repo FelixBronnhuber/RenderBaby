@@ -758,6 +758,7 @@ dependencies = [
  "engine-main",
  "engine-wgpu-wrapper",
  "rfd",
+ "scene",
 ]
 
 [[package]]
