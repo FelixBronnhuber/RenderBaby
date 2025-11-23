@@ -27,6 +27,13 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Debug workspace
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE"
+          echo "root Cargo.lock exists?"; test -f Cargo.lock && echo yes || echo no
+          echo "print head of Cargo.lock"; head -n 20 Cargo.lock || true
+
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
