@@ -47,6 +47,7 @@ pub fn parseobj(obj_path: String) -> TriGeometry {
 
     let mats: &tobj::Material;
     let mut mat: Material = Material::default();
+    
     if let material = materials.unwrap() {
         mats = material.first().unwrap();
         mat = Material::new(

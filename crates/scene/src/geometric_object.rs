@@ -242,10 +242,10 @@ impl Camera {
     pub fn set_rotation(&mut self, pitch: f32, yaw: f32) {
         self.rotation = Rotation { pitch, yaw }
     }
-    pub fn position(&self) -> Vec3 {
+    pub fn get_position(&self) -> Vec3 {
         self.position
     }
-    pub fn rotation(&self) -> &Rotation {
+    pub fn get_getrotation(&self) -> &Rotation {
         &self.rotation
     }
     pub fn get_fov(&self) -> f32 {
@@ -254,6 +254,7 @@ impl Camera {
     pub fn set_fov(&mut self, fov: f32) {
         self.fov = fov;
     }
+    // todo: distinguish between pane and resolution?
     pub fn get_resolution(&self) -> [u32; 2] {
         self.resolution
     }
