@@ -197,7 +197,7 @@ impl View {
     }
 
     fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
-        //self.listener.handle_event(Event::DoRender);
+        self.listener.handle_event(Event::DoRender);
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
