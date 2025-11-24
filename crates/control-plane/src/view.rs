@@ -2,6 +2,22 @@ use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
 
+//Mockup Scene struct, remove later
+#[derive(Default)]
+pub struct SceneState {
+    pub cam_x: f32,
+    pub cam_y: f32,
+    pub cam_z: f32,
+    pub cam_yaw: f32,
+    pub cam_rot: f32,
+
+    pub ferris_x: f32,
+    pub ferris_y: f32,
+    pub ferris_z: f32,
+    pub ferris_yaw: f32,
+    pub ferris_rot: f32,
+}
+
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
@@ -22,6 +38,8 @@ pub struct View {
     listener: Box<dyn ViewListener>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
+    //remove Mockup Scene later
+    scene: SceneState,
 }
 
 impl App for View {
@@ -45,6 +63,82 @@ impl App for View {
             .resizable(true)
             .min_width(220.0)
             .show(ctx, |ui| {
+                //temporary mockup code for demo presentation
+                ui.separator();
+                ui.heading("Scene Explorer");
+                ui.collapsing("Scene", |ui| {
+                    ui.collapsing("Uniforms", |ui| {
+                        ui.collapsing("Camera", |ui| {
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.cam_x)
+                                    .speed(0.1)
+                                    .prefix("x: "),
+                            );
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.cam_y)
+                                    .speed(0.1)
+                                    .prefix("y: "),
+                            );
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.cam_z)
+                                    .speed(0.1)
+                                    .prefix("z: "),
+                            );
+
+                            ui.separator();
+                            ui.add(
+                                eframe::egui::Slider::new(&mut self.scene.cam_yaw, -180.0..=180.0)
+                                    .text("yaw"),
+                            );
+                            ui.add(
+                                eframe::egui::Slider::new(&mut self.scene.cam_rot, -180.0..=180.0)
+                                    .text("rotation"),
+                            );
+                        });
+                    });
+
+                    ui.collapsing("Lights", |ui| {
+                        ui.label("TODO: Light objects hinzufügen");
+                    });
+
+                    ui.collapsing("Objects", |ui| {
+                        ui.collapsing("ferris", |ui| {
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.ferris_x)
+                                    .speed(0.1)
+                                    .prefix("x: "),
+                            );
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.ferris_y)
+                                    .speed(0.1)
+                                    .prefix("y: "),
+                            );
+                            ui.add(
+                                eframe::egui::DragValue::new(&mut self.scene.ferris_z)
+                                    .speed(0.1)
+                                    .prefix("z: "),
+                            );
+
+                            ui.separator();
+                            ui.add(
+                                eframe::egui::Slider::new(
+                                    &mut self.scene.ferris_yaw,
+                                    -180.0..=180.0,
+                                )
+                                .text("yaw"),
+                            );
+                            ui.add(
+                                eframe::egui::Slider::new(
+                                    &mut self.scene.ferris_rot,
+                                    -180.0..=180.0,
+                                )
+                                .text("rotation"),
+                            )
+                        });
+                    });
+                });
+                ui.separator();
+
                 if ui.button("Render").clicked() {
                     self.do_render();
                 }
@@ -55,7 +149,7 @@ impl App for View {
                     .changed()
                 {
                     self.pipeline.set_fov(fov);
-                    self.listener.handle_event(Event::DoRender);
+                    //self.listener.handle_event(Event::DoRender); //Commented out so moving the slider doesn't render the picture, only render button
                 }
 
                 ui.horizontal(|ui| {
@@ -88,6 +182,8 @@ impl View {
             texture: None,
             pipeline,
             at_start: true,
+            //remove Mockup Struct later
+            scene: SceneState::default(),
         }
     }
 
