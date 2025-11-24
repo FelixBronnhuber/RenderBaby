@@ -3,9 +3,12 @@ use engine_main::Engine;
 use glam::Vec3;
 
 use crate::{
-    action_stack::ActionStack, geometric_object::{
-        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
-    }, obj_parser::parseobj, scene_graph::SceneGraph
+    action_stack::ActionStack,
+    geometric_object::{
+        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry,
+    },
+    obj_parser::parseobj,
+    scene_graph::SceneGraph,
 };
 
 /// The scene holds all relevant objects, lightsources, camera ...
