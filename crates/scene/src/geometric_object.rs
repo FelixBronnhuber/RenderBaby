@@ -388,6 +388,7 @@ impl Material {
             transparency,
         }
     }
+
     pub fn default() -> Self {
         Material {
             ambient_reflectivity: vec![0.0, 0.0, 0.0],

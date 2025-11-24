@@ -5,18 +5,21 @@ use eframe::{App, Frame};
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
-    SetFov(f32),
-    SetWidth(u32),
-    SetHeight(u32),
 }
 
 pub trait ViewListener {
     fn handle_event(&mut self, event: Event);
 }
 
+// to avoid having to do .as_mut().unwrap() everywhere with the listener
+pub struct NullListener;
+impl ViewListener for NullListener {
+    fn handle_event(&mut self, _event: Event) {}
+}
+
 pub struct View {
     at_start: bool,
-    listener: Option<Box<dyn ViewListener>>,
+    listener: Box<dyn ViewListener>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
 }
@@ -28,7 +31,7 @@ impl App for View {
             self.at_start = false;
         }
 
-        let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
+        let render_output_opt = self.pipeline.take_render_output();
         if let Some(output) = render_output_opt {
             self.set_image(
                 ctx,
@@ -51,21 +54,15 @@ impl App for View {
                     .add(eframe::egui::Slider::new(&mut fov, 0.1..=20.0).text("FOV"))
                     .changed()
                 {
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::SetFov(fov));
-                    self.do_render()
+                    self.pipeline.set_fov(fov);
+                    self.listener.handle_event(Event::DoRender);
                 }
 
                 ui.horizontal(|ui| {
                     ui.label("Width:");
                     let mut width = self.pipeline.get_width();
                     if ui.add(eframe::egui::DragValue::new(&mut width)).changed() {
-                        self.listener
-                            .as_mut()
-                            .unwrap()
-                            .handle_event(Event::SetWidth(width));
+                        self.pipeline.set_width(width);
                     }
                 });
 
@@ -73,10 +70,7 @@ impl App for View {
                     ui.label("Height:");
                     let mut height = self.pipeline.get_height();
                     if ui.add(eframe::egui::DragValue::new(&mut height)).changed() {
-                        self.listener
-                            .as_mut()
-                            .unwrap()
-                            .handle_event(Event::SetHeight(height));
+                        self.pipeline.set_height(height);
                     }
                 });
             });
@@ -90,7 +84,7 @@ impl App for View {
 impl View {
     pub fn new(pipeline: Pipeline) -> Self {
         View {
-            listener: None,
+            listener: Box::new(NullListener),
             texture: None,
             pipeline,
             at_start: true,
@@ -107,7 +101,7 @@ impl View {
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
-        self.listener = Some(listener);
+        self.listener = listener;
     }
 
     pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image: Vec<u8>) {
@@ -133,9 +127,6 @@ impl View {
     }
 
     fn do_render(&mut self) {
-        self.listener
-            .as_mut()
-            .unwrap()
-            .handle_event(Event::DoRender);
+        self.listener.handle_event(Event::DoRender);
     }
 }

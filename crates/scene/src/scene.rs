@@ -13,10 +13,6 @@ use crate::{
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
-    /*objects: Vec<GeometricObject>,
-    camera: Camera,
-    light_sources: Vec<LightSource>
-    */
     scene_graph: SceneGraph,
     action_stack: ActionStack,
     //render_engine: Engine::new(),
@@ -30,10 +26,6 @@ impl Default for Scene {
     }
 }
 impl Scene {
-    /*pub fn image_buffer(&self) -> Vec<u8> {
-        todo!()
-        // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
-    }*/
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
         //! loads object from file. Adds object to scene and returns object if successfull
         /* let p0 = Vec3::new(0.0, 0.0, 0.0);
@@ -70,10 +62,17 @@ impl Scene {
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
         );
+        let light = LightSource::new(
+            Vec3::new(0.0, 0.0, 3.0),
+            0.0,
+            [1.0, 1.0, 1.0],
+            "proto_light".to_owned(),
+        );
         self.add_object(Box::new(sphere));
         self.set_camera(cam);
         self.add_lightsource(light);
     }
+
     pub fn get_camera_mut(&mut self) -> &mut Camera {
         self.scene_graph.get_camera_mut()
     }
@@ -142,7 +141,3 @@ impl Scene {
         self.background_color = color;
     }
 }
-
-/* pub struct SceneConfig{
-    background_color: [f32; 3]
-} */
