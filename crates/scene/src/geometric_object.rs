@@ -377,16 +377,6 @@ pub struct Material {
     transparency: f64,               //d
 }
 impl Material {
-    pub fn clone(material: &Material) -> Material {
-        let a = Material {
-            ambient_reflectivity: material.ambient_reflectivity.clone(),
-            diffuse_reflectivity: material.diffuse_reflectivity.clone(),
-            specular_reflectivity: material.specular_reflectivity.clone(),
-            shininess: material.shininess.clone(),
-            transparency: material.transparency.clone(),
-        };
-        a
-    }
     pub fn new(
         ambient_reflectivity: Vec<f64>,
         diffuse_reflectivity: Vec<f64>,
@@ -402,7 +392,21 @@ impl Material {
             transparency,
         }
     }
-    pub fn default() -> Self {
+}
+impl Clone for Material {
+    fn clone(&self) -> Material {
+        Material {
+            ambient_reflectivity: self.ambient_reflectivity.clone(),
+            diffuse_reflectivity: self.diffuse_reflectivity.clone(),
+            specular_reflectivity: self.specular_reflectivity.clone(),
+            shininess: self.shininess,
+            transparency: self.transparency,
+        }
+    }
+}
+
+impl Default for Material {
+    fn default() -> Self {
         Material {
             ambient_reflectivity: vec![0.0, 0.0, 0.0],
             diffuse_reflectivity: vec![0.0, 0.0, 0.0],

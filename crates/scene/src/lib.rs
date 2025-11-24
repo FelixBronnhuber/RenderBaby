@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use crate::scene::Scene;
 mod action_stack;
 pub mod geometric_object;
 pub mod obj_parser;
@@ -17,7 +16,7 @@ mod tests {
     use glam::Vec3;
 
     use super::*;
-    use crate::obj_parser::parseobj;
+
     use crate::{
         geometric_object::{Material, Sphere},
         scene::Scene,
@@ -66,9 +65,9 @@ mod tests {
         //scene.add_object(Box::new(a));
     }
 }
-pub trait Scene_Parse_Trait {
+/* pub trait SceneParseTrait {
     fn do_scene_parse(&self, path: String) -> Scene;
 }
-pub fn call_scene_parse(f: &dyn Scene_Parse_Trait, path: String) {
+pub fn call_scene_parse(f: &dyn SceneParseTrait, path: String) {
     f.do_scene_parse(path);
-}
+} */

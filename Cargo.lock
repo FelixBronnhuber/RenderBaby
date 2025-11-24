@@ -1051,6 +1051,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "env_logger",
+ "log",
 ]
 
 [[package]]
@@ -2831,14 +2833,6 @@ dependencies = [
  "glam",
  "log",
  "tobj",
-]
-
-[[package]]
-name = "scene-initializer"
-version = "0.1.0"
-dependencies = [
- "scene",
- "scene-parser",
 ]
 
 [[package]]

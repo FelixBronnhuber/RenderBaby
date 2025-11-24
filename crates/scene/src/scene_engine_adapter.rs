@@ -1,7 +1,7 @@
-use crate::{geometric_object::Sphere, scene::Scene};
+//use crate::{geometric_object::Sphere, scene::Scene};
 /// Serves as an adpter between the scene plane and the render engine.
 //use std::fmt::Error;
-use anyhow::{Error, Result};
+//use anyhow::{Error, Result};
 /*
 use engine_config::RenderCommand;
 use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};

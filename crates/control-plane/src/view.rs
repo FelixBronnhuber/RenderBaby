@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
-    SetFov(f32),
+    //SetFov(f32),
     SetPath(String),
 }
 
@@ -14,8 +14,15 @@ pub trait ViewListener {
     fn handle_event(&mut self, event: Event);
 }
 
+// to avoid having to do .as_mut().unwrap() everywhere with the listener
+pub struct NullListener;
+impl ViewListener for NullListener {
+    fn handle_event(&mut self, _event: Event) {}
+}
+
 pub struct View {
-    listener: Option<Box<dyn ViewListener>>,
+    at_start: bool,
+    listener: Box<dyn ViewListener>,
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
     bottom_visible: bool,
@@ -24,7 +31,12 @@ pub struct View {
 
 impl App for View {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
-        let render_output_opt = self.pipeline.render_output_ppl.lock().unwrap().take();
+        if self.at_start {
+            self.on_start(ctx, _frame);
+            self.at_start = false;
+        }
+
+        let render_output_opt = self.pipeline.take_render_output();
         if let Some(output) = render_output_opt {
             self.set_image(
                 ctx,
@@ -46,7 +58,6 @@ impl App for View {
                 if let Some(path) = self.file_path.lock().unwrap().take() {
                     self.listener
                         .as_mut()
-                        .unwrap()
                         .handle_event(Event::SetPath(path.clone()));
                 }
             })
@@ -57,10 +68,7 @@ impl App for View {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.do_render();
                 }
 
                 let mut fov = self.pipeline.get_fov();
@@ -68,18 +76,25 @@ impl App for View {
                     .add(eframe::egui::Slider::new(&mut fov, 0.1..=20.0).text("FOV"))
                     .changed()
                 {
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::SetFov(fov));
-                    self.listener
-                        .as_mut()
-                        .unwrap()
-                        .handle_event(Event::DoRender);
+                    self.pipeline.set_fov(fov);
+                    self.listener.handle_event(Event::DoRender);
                 }
 
-                let available = ui.available_rect_before_wrap();
-                ui.allocate_rect(available, eframe::egui::Sense::drag());
+                ui.horizontal(|ui| {
+                    ui.label("Width:");
+                    let mut width = self.pipeline.get_width();
+                    if ui.add(eframe::egui::DragValue::new(&mut width)).changed() {
+                        self.pipeline.set_width(width);
+                    }
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Height:");
+                    let mut height = self.pipeline.get_height();
+                    if ui.add(eframe::egui::DragValue::new(&mut height)).changed() {
+                        self.pipeline.set_height(height);
+                    }
+                });
             });
 
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
@@ -100,11 +115,12 @@ impl App for View {
 impl View {
     pub fn new(pipeline: Pipeline) -> Self {
         View {
-            listener: None,
+            listener: Box::new(NullListener),
             texture: None,
             pipeline,
             bottom_visible: true,
             file_path: Arc::new(Mutex::new(None)),
+            at_start: true,
         }
     }
 
@@ -113,8 +129,12 @@ impl View {
         let _ = eframe::run_native("RenderBaby", options, Box::new(|_cc| Ok(Box::new(self))));
     }
 
+    fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
+        self.do_render();
+    }
+
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
-        self.listener = Some(listener);
+        self.listener = listener;
     }
 
     pub fn set_image(&mut self, ctx: &Context, width: u32, height: u32, image: Vec<u8>) {
@@ -127,7 +147,13 @@ impl View {
 
     fn display_image(&mut self, ui: &mut Ui) {
         if let Some(image) = &self.texture {
-            ui.image((image.id(), image.size_vec2()));
+            let aspect = image.size_vec2().x / image.size_vec2().y;
+            let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
+                eframe::egui::vec2(ui.available_size().y * aspect, ui.available_size().y)
+            } else {
+                eframe::egui::vec2(ui.available_size().x, ui.available_size().x / aspect)
+            };
+            ui.image((image.id(), size_scaled));
         } else {
             ui.label("Render Output Area");
         }
@@ -146,5 +172,9 @@ impl View {
                 ctx.request_repaint();
             }
         });
+    }
+
+    fn do_render(&mut self) {
+        self.listener.handle_event(Event::DoRender);
     }
 }

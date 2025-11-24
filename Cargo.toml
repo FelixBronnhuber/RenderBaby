@@ -26,5 +26,4 @@ members = [".", "crates/engine-pathtracer",
     "crates/engine-main",
     "crates/scene-parser",
     "crates/scene",
-    "crates/scene-obj-parser",
-    "crates/scene-initializer"]
+    "crates/scene-obj-parser"]

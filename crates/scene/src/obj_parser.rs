@@ -31,7 +31,7 @@ pub fn parseobj(obj_path: String) -> Result<Vec<TriGeometry>, Error> {
                     model.mesh.positions[z * 3 + 2],
                 );
                 vec.push(point.into());
-                z = z + 1;
+                z += 1;
             }
         }
         let i = model.mesh.indices.len() / 3;
@@ -52,22 +52,22 @@ pub fn parseobj(obj_path: String) -> Result<Vec<TriGeometry>, Error> {
     let mate: Material = Material::default();
     if let Ok(material) = materials {
         //println!("materials: {}",material.len());
-        let mats = material.iter().for_each(|mats| {
+        material.iter().for_each(|mats| {
             matvec.push(Material::new(
                 vec![
-                    mats.ambient.unwrap_or([0.0,0.0,0.0])[0].into(),
-                    mats.ambient.unwrap_or([0.0,0.0,0.0])[1].into(),
-                    mats.ambient.unwrap_or([0.0,0.0,0.0])[2].into(),
+                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[0].into(),
+                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[1].into(),
+                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[2].into(),
                 ],
                 vec![
-                    mats.diffuse.unwrap_or([0.0,0.0,0.0])[0].into(),
-                    mats.diffuse.unwrap_or([0.0,0.0,0.0])[1].into(),
-                    mats.diffuse.unwrap_or([0.0,0.0,0.0])[2].into(),
+                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[0].into(),
+                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[1].into(),
+                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[2].into(),
                 ],
                 vec![
-                    mats.specular.unwrap_or([0.0,0.0,0.0])[0].into(),
-                    mats.specular.unwrap_or([0.0,0.0,0.0])[1].into(),
-                    mats.specular.unwrap_or([0.0,0.0,0.0])[2].into(),
+                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[0].into(),
+                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[1].into(),
+                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[2].into(),
                 ],
                 mats.shininess.unwrap_or(0.0).into(),
                 mats.dissolve.unwrap_or(0.0).into(),
