@@ -111,7 +111,7 @@ impl FileObject for Sphere {
         self.attr.translation
     }
 }
-
+#[derive(Debug)]
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
     attr: ObjConf,
@@ -147,17 +147,17 @@ impl FileObject for TriGeometry {
 
     fn get_scale(&self) -> Vec3 {
         //todo!()
-        Vec3::new(0.0,0.0,0.0)
+        Vec3::new(0.0, 0.0, 0.0)
     }
 
     fn get_translation(&self) -> Vec3 {
         //todo!()
-        Vec3::new(0.0,0.0,0.0)
+        Vec3::new(0.0, 0.0, 0.0)
     }
 
     fn get_rotation(&self) -> Vec3 {
         //todo!()
-        Vec3::new(0.0,0.0,0.0)
+        Vec3::new(0.0, 0.0, 0.0)
     }
 }
 impl TriGeometry {
@@ -191,6 +191,7 @@ impl TriGeometry {
         }
     }
 }
+#[derive(Debug)]
 pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Option<Material>,
@@ -336,7 +337,7 @@ impl LightSource {
     pub fn rotate(&mut self, vec: Vec3) -> Vec3 {
         //todo!()
         // rotate and return new orientation?
-        Vec3::new(0.0,0.0,0.0)
+        Vec3::new(0.0, 0.0, 0.0)
     }
     pub fn get_name(&self) -> String {
         self.name.clone()
@@ -376,6 +377,16 @@ pub struct Material {
     transparency: f64,               //d
 }
 impl Material {
+    pub fn clone(material: &Material) -> Material {
+        let a = Material {
+            ambient_reflectivity: material.ambient_reflectivity.clone(),
+            diffuse_reflectivity: material.diffuse_reflectivity.clone(),
+            specular_reflectivity: material.specular_reflectivity.clone(),
+            shininess: material.shininess.clone(),
+            transparency: material.transparency.clone(),
+        };
+        a
+    }
     pub fn new(
         ambient_reflectivity: Vec<f64>,
         diffuse_reflectivity: Vec<f64>,
@@ -406,7 +417,7 @@ pub struct Color {
     pub g: f32,
     pub b: f32,
 }
-
+#[derive(Debug)]
 struct ObjConf {
     pub name: String,
     pub path: Option<String>,
