@@ -63,16 +63,16 @@ impl Pipeline {
         self.render_output_ppl.lock().unwrap().take()
     }
 
-    pub fn submit_obj_file_path(&self, path: String) {
-        *self.obj_file_path.lock().unwrap() = Some(path);
+    pub fn submit_obj_file_path(&self, path: Option<String>) {
+        *self.obj_file_path.lock().unwrap() = path;
     }
 
     pub fn take_obj_file_path(&self) -> Option<String> {
         self.obj_file_path.lock().unwrap().take()
     }
 
-    pub fn submit_scene_file_path(&self, path: String) {
-        *self.scene_file_path.lock().unwrap() = Some(path);
+    pub fn submit_scene_file_path(&self, path: Option<String>) {
+        *self.scene_file_path.lock().unwrap() = path;
     }
 
     pub fn take_scene_file_path(&self) -> Option<String> {

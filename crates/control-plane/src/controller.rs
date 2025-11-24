@@ -31,10 +31,12 @@ impl ViewListener for Controller {
                 self.pipeline.set_fov(fov);
             } */
             Event::ImportObj => {
-                self.model.import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
+                self.model
+                    .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
             }
             Event::ImportScene => {
-                self.model.import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
+                self.model
+                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
             }
         }
     }

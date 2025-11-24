@@ -1,6 +1,8 @@
 use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
+use egui_file_dialog::FileDialog;
+use std::path::PathBuf;
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
@@ -24,8 +26,10 @@ pub struct View {
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
     bottom_visible: bool,
-    obj_path: Option<String>,
-    scene_path: Option<String>,
+    file_dialog_obj: FileDialog,
+    file_dialog_scene: FileDialog,
+    obj_path: Option<PathBuf>,
+    scene_path: Option<PathBuf>,
 }
 
 impl App for View {
@@ -52,17 +56,21 @@ impl App for View {
                     self.bottom_visible = !self.bottom_visible;
                 }
                 if ui.button("Import Obj").clicked() {
+                    self.file_dialog_obj.pick_file();
+                }
+                if let Some(path) = self.file_dialog_obj.take_picked() {
+                    self.obj_path = Some(path.to_path_buf());
                     self.set_obj_filepath();
                 }
-                if let Some(path) = &self.obj_path {
-                    ui.label(format!("Gewählte Datei: {}", path));
-                }
+                self.file_dialog_obj.update(ctx);
                 if ui.button("Import Scene").clicked() {
+                    self.file_dialog_scene.pick_file();
+                }
+                if let Some(path) = self.file_dialog_scene.take_picked() {
+                    self.scene_path = Some(path.to_path_buf());
                     self.set_scene_filepath();
                 }
-                if let Some(path) = &self.scene_path {
-                    ui.label(format!("Gewählte Datei: {}", path));
-                }
+                self.file_dialog_scene.update(ctx);
             })
         });
 
@@ -123,6 +131,12 @@ impl View {
             pipeline,
             bottom_visible: true,
             at_start: true,
+            file_dialog_obj: FileDialog::new()
+                .add_file_filter_extensions("OBJ", vec!["obj"])
+                .default_file_filter("OBJ"),
+            file_dialog_scene: FileDialog::new()
+                .add_file_filter_extensions("JSON", vec!["json"])
+                .default_file_filter("JSON"),
             obj_path: None,
             scene_path: None,
         }
@@ -164,25 +178,25 @@ impl View {
     }
 
     pub fn set_obj_filepath(&mut self) {
-        if let Some(path) = rfd::FileDialog::new()
-            .add_filter("OBJ", &["obj"])
-            .pick_file()
-        {
-            self.obj_path = Some(path.display().to_string());
-            self.pipeline.submit_obj_file_path(path.display().to_string());
-        }
-        self.listener.handle_event(Event::ImportObj)
+        self.pipeline.submit_obj_file_path(Option::from(
+            self.obj_path
+                .clone()
+                .expect("REASON")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        self.listener.handle_event(Event::ImportObj);
     }
 
     pub fn set_scene_filepath(&mut self) {
-        if let Some(path) = rfd::FileDialog::new()
-            .add_filter("JSON", &["json"])
-            .pick_file()
-        {
-            self.scene_path = Some(path.display().to_string());
-            self.pipeline.submit_scene_file_path(path.display().to_string());
-        }
-        self.listener.handle_event(Event::ImportScene)
+        self.pipeline.submit_scene_file_path(Option::from(
+            self.scene_path
+                .clone()
+                .expect("REASON")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        self.listener.handle_event(Event::ImportScene);
     }
 
     fn do_render(&mut self) {
