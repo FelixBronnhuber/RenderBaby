@@ -704,6 +704,7 @@ dependencies = [
  "engine-config",
  "engine-main",
  "engine-wgpu-wrapper",
+ "scene",
 ]
 
 [[package]]
@@ -1339,6 +1340,15 @@ dependencies = [
  "khronos_api",
  "log",
  "xml-rs",
+]
+
+[[package]]
+name = "glam"
+version = "0.30.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd47b05dddf0005d850e5644cae7f2b14ac3df487979dbfff3b56f20b1a6ae46"
+dependencies = [
+ "libm",
 ]
 
 [[package]]
@@ -2670,6 +2680,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "engine-config",
+ "engine-main",
+ "engine-wgpu-wrapper",
+ "env_logger",
+ "glam",
+ "log",
+ "tobj",
+]
+
+[[package]]
 name = "scoped-tls"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3007,6 +3031,15 @@ checksum = "42d3e9c45c09de15d06dd8acf5f4e0e399e85927b7f00711024eb7ae10fa4869"
 dependencies = [
  "displaydoc",
  "zerovec",
+]
+
+[[package]]
+name = "tobj"
+version = "4.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04aca6092e5978e708ee784e8ab9b5cf3cdb598b28f99a2f257446e7081a7025"
+dependencies = [
+ "ahash",
 ]
 
 [[package]]

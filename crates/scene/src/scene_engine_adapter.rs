@@ -1,21 +1,36 @@
-use crate::{geometric_object::Sphere, scene::Scene};
+use crate::{
+    geometric_object::{Camera, Sphere},
+    scene::Scene,
+};
 /// Serves as an adpter between the scene plane and the render engine.
-//use std::fmt::Error;
 use anyhow::{Error, Result};
-use engine_config::RenderCommand;
-use engine_wgpu_wrapper::{EngineType, RenderOutput, WgpuWrapper};
+use engine_config::RenderConfigBuilder;
+use engine_main::{Engine, RenderEngine};
+use engine_wgpu_wrapper::RenderOutput;
 type RenderSphere = engine_config::Sphere;
+type RenderCamera = engine_config::Camera;
 impl Sphere {
     fn to_render_engine_sphere(&self) -> RenderSphere {
         //! Creates and returns a engine_wgpu_wrapper::Sphere from self
         let center = self.get_center();
-        RenderSphere::new(
-            [center.x, center.y, center.x],
+        let color = self.get_color();
+        let render_color = engine_config::Vec3::new(color[0], color[1], color[2]);
+        let res = RenderSphere::new(
+            engine_config::Vec3::new(center.x, center.y, center.x),
             self.get_radius(),
-            self.get_color().map(|x| x as f32),
-        )
-        //center.as_slice?
+            render_color,
+        );
+        res.unwrap()
         //todo: maybe do this when sphere is created/changed in scene to save preparation time when rendering
+        //todo: probably better as into
+    }
+}
+
+impl Camera {
+    fn to_render_engine_camera(&self) -> Result<RenderCamera, Error> {
+        let [width, heigt] = self.get_resolution();
+        let camera = RenderCamera::new(width, heigt, self.get_fov());
+        Ok(camera.unwrap())
     }
 }
 
@@ -30,27 +45,45 @@ impl Scene {
         }
         res
     }
+    fn get_render_camera(&self) -> RenderCamera {
+        //! Returns the camera as a enginge_config::camera
+        self.get_camera().to_render_engine_camera().unwrap()
+    }
 
-    pub fn render(&self) -> Result<RenderOutput, Error> {
-        // todo: change return type to mask engine plane
+    pub fn render(&mut self) -> Result<RenderOutput, Error> {
         //! calls the render engine for the scene self. Returns ...( will be changed)
-        // todo: get from camera
-        let width = 1920 / 2;
-        let height = 1080 / 2; // todo: add camera size / fov
-        let fov = 5.0; //?
+        // todo: change return type to mask engine plane
+        //todo: try to remove mut
+
         let render_spheres = self.get_render_spheres();
-        let rc = RenderCommand {
-            fov: Some(fov),
-            spheres: render_spheres,
-        };
-        let wgpu = WgpuWrapper::new(EngineType::Raytracer, width, height, fov);
-        /*let res = wgpu.unwrap().render(rc);
-        let res = res.unwrap(); // todo catch error...
-        //res.pixels
-        //(res.height, res.width, res.pixels)
-        res
-        */
-        wgpu.unwrap().render(rc)
+        let camera = self.get_render_camera();
+
+        // todo: probably do this once in new?
+        if let Some(engine) = self.get_render_engine() {
+        } else {
+            let rc = RenderConfigBuilder::new()
+                .spheres(render_spheres)
+                .camera(camera)
+                .build()
+                .unwrap();
+            let engine = Engine::new(rc, RenderEngine::Raytracer);
+            self.set_render_engine(engine);
+        }
+
+        //let rc_copy = rc;
+        //let render_spheres = self.get_render_spheres();
+        //let camera = self.get_render_camera();
+        let render_spheres = self.get_render_spheres();
+        let camera = self.get_render_camera();
+        let rc = RenderConfigBuilder::new()
+            .spheres(render_spheres)
+            .camera(camera)
+            .build()
+            .unwrap();
+        let engine = self.get_render_engine_mut().as_mut().unwrap();
+        //let res = engine.render(rc).unwrap();
+        //Ok((res.pixels, res.width, res.height))
+        engine.render(rc)
     }
 }
 

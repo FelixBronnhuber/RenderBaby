@@ -12,6 +12,7 @@ mod scene_graph;
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();
     objects.push(obj);
 }*/
+
 #[cfg(test)]
 mod tests {
     use glam::Vec3;
@@ -22,12 +23,12 @@ mod tests {
     };
 
     use super::*;
-    use crate::obj_parser::parseobj;
+    //use crate::obj_parser::parseobj;
 
     #[test]
     fn it_works() {
         assert_eq!(4, 4);
-        let color = [0, 128, 0];
+        let color = [0.0, 1.0, 0.0];
         let sphere =
             geometric_object::Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material {}, color);
         let radius = 1.0;
