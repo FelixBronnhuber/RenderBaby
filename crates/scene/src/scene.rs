@@ -12,13 +12,8 @@ use crate::{
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
-    /*objects: Vec<GeometricObject>,
-    camera: Camera,
-    light_sources: Vec<LightSource>
-    */
     scene_graph: SceneGraph,
     action_stack: ActionStack,
-    //render_engine: Engine::new(),
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
