@@ -5,13 +5,11 @@ use glam::Vec3;
 use crate::{
     action_stack::ActionStack,
     geometric_object::{
-        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry,
+        Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere, TriGeometry,
     },
     obj_parser::parseobj,
     scene_graph::SceneGraph,
 };
-use anyhow::Error;
-use glam::Vec3;
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
@@ -40,8 +38,11 @@ impl Scene {
         let t2 = Triangle::new(vec![], None);
         let t3 = Triangle::new(vec![], None);
         let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
-        let obj = parseobj(path);
-        self.add_object(Box::new(obj));
+        let objs = parseobj(path).unwrap();
+        for obj in objs {
+            self.add_object(Box::new(obj));
+        }
+
         //Ok(&res)
         //todo: this is very ugly
         Ok(self
@@ -65,13 +66,10 @@ impl Scene {
             0.0,
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
+            Rotation::new(0.0, 0.0),
+            LightType::Ambient,
         );
-        let light = LightSource::new(
-            Vec3::new(0.0, 0.0, 3.0),
-            0.0,
-            [1.0, 1.0, 1.0],
-            "proto_light".to_owned(),
-        );
+
         self.add_object(Box::new(sphere));
         self.set_camera(cam);
         self.add_lightsource(light);

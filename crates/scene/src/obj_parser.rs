@@ -45,7 +45,6 @@ pub fn parseobj(obj_path: String) -> Result<Vec<TriGeometry>, Error> {
             a.add_point(vec[model.mesh.indices[u * 3 + 1] as usize]);
             a.add_point(vec[model.mesh.indices[u * 3 + 2] as usize]);
             return_triangles.push(a);
-            return_triangles.push(a);
         }
         trivec.push(TriGeometry::new(return_triangles));
         modelmaterialids.push(model.mesh.material_id);

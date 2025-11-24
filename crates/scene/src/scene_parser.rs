@@ -1,11 +1,8 @@
+use crate::geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry};
+use crate::scene::Scene;
 use glam::Vec3;
-use scene::geometric_object::{
-    Camera, Color, FileObject, GeometricObject, LightSource, LightType, Material, Rotation,
-    TriGeometry, Triangle,
-};
-use scene::scene::Scene;
 use serde::{Deserialize, Serialize};
-use serde_json;
+//use serde_json;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
@@ -43,7 +40,7 @@ struct FileCamera {
     up: Vec3d, //roll
     pane_distance: f32,
     pane_width: f32,
-    resolution: HashMap<String, usize>,
+    resolution: HashMap<String, u32>,
 }
 #[derive(Serialize, Deserialize, Debug)]
 struct FileColor {
@@ -103,7 +100,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
             file.camera.position.y,
             file.camera.position.z,
         ),
-        Rotation::new(pitch.into(), yaw.into()),
+        Rotation::new(pitch, yaw),
     ));
     //
 
@@ -147,7 +144,7 @@ pub fn serialize_scene(sc: &mut Scene) {
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     sc.get_light_sources().iter().for_each(|light_source| {
         lightarr.push(FileLightSource {
-            name: light_source.get_name(),
+            name: light_source.get_name().to_string(),
             r#type: match light_source.get_light_type() {
                 LightType::Ambient => "ambient".to_owned(),
                 LightType::Point => "point".to_owned(),
@@ -182,9 +179,9 @@ pub fn serialize_scene(sc: &mut Scene) {
         lights: lightarr,
         camera: FileCamera {
             position: Vec3d {
-                x: sc.get_camera().position().x,
-                y: sc.get_camera().position().y,
-                z: sc.get_camera().position().z,
+                x: sc.get_camera().get_position().x,
+                y: sc.get_camera().get_position().y,
+                z: sc.get_camera().get_position().z,
             },
             look_at: Vec3d {
                 x: 0.0,

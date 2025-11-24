@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn parse() {
         let tri_geometry = parseobj(".".into());
-        let tris = tri_geometry.get_triangles();
+        let tris = tri_geometry.as_ref();
         let mut _iterator = tris.iter();
     }
 }

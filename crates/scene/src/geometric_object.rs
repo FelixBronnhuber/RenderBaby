@@ -1,14 +1,7 @@
 use glam::Vec3;
 use std::any::Any;
 
-/*pub enum GeometricObject{
-    Triangles(Vec<Triangle>),
-    Sphere(Sphere)
-}*/
-
-//marker for now
 pub trait GeometricObject {
-    fn scale(&mut self, factor: f32); // todo: scale 3d?
     fn scale(&mut self, factor: f32); // todo: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
@@ -28,8 +21,6 @@ pub struct Sphere {
     center: Vec3,
     radius: f32,
     material: Material,
-    color: [f32; 3],
-    attr: ObjConf,
     color: [f32; 3],
     attr: ObjConf,
 }
@@ -77,7 +68,6 @@ impl Sphere {
             material,
             color,
             attr: conf,
-            attr: conf,
         }
     }
 }
@@ -123,8 +113,7 @@ pub struct TriGeometry {
     file_path: String,
     name: String,
     material: Material,
-    attr: ObjConf,
-    material: Option<Material>,
+    //material: Option<Material>,
 }
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
@@ -197,6 +186,7 @@ impl TriGeometry {
     }
 }
 
+#[derive(Debug)]
 pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Option<Material>,
@@ -251,8 +241,6 @@ pub struct Camera {
     rotation: Rotation, // fov: f32 ?
     fov: f32,
     resolution: [u32; 2],
-    fov: f32,
-    resolution: [usize; 2],
 }
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
@@ -278,18 +266,6 @@ impl Camera {
         self.resolution
     }
     pub fn set_resolution(&mut self, resolution: [u32; 2]) {
-        self.resolution = resolution
-    }
-    pub fn get_fov(&self) -> f32 {
-        self.fov
-    }
-    pub fn set_fov(&mut self, fov: f32) {
-        self.fov = fov;
-    }
-    pub fn get_resolution(&self) -> [usize; 2] {
-        self.resolution
-    }
-    pub fn set_resolution(&mut self, resolution: [usize; 2]) {
         self.resolution = resolution
     }
     pub fn new(position: Vec3, rotation: Rotation) -> Self {
@@ -361,6 +337,19 @@ impl LightSource {
     pub fn get_light_type(&self) -> &LightType {
         &self.light_type
     }
+    pub fn get_color(&self) -> [f32; 3] {
+        self.color
+    }
+    pub fn set_color(&mut self, color: [f32; 3]) {
+        self.color = color;
+    }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+    // todo LightSource should also be a FileObject!
     pub fn new(
         position: Vec3,
         luminosity: f32,
@@ -376,14 +365,10 @@ impl LightSource {
             color,
             rotation: Vec3::new(0.0, 0.0, 0.0), // some types have no ratation
             light_type: LightType::Ambient,
-            name,
-            color,
-            rotation: Vec3::new(0.0, 0.0, 0.0), // some types have no ratation
-            light_type: LightType::Ambient,
         }
     }
 }
-
+#[derive(Debug)]
 struct ObjConf {
     pub name: String,
     pub path: Option<String>,
