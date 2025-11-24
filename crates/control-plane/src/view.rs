@@ -1,13 +1,13 @@
 use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
-use std::sync::{Arc, Mutex};
-
+use egui_file_dialog::FileDialog;
+use std::path::PathBuf;
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
-    //SetFov(f32),
-    SetPath(String),
+    ImportObj,
+    ImportScene,
 }
 
 pub trait ViewListener {
@@ -26,7 +26,10 @@ pub struct View {
     texture: Option<TextureHandle>,
     pipeline: Pipeline,
     bottom_visible: bool,
-    file_path: Arc<Mutex<Option<String>>>,
+    file_dialog_obj: FileDialog,
+    file_dialog_scene: FileDialog,
+    obj_path: Option<PathBuf>,
+    scene_path: Option<PathBuf>,
 }
 
 impl App for View {
@@ -52,14 +55,22 @@ impl App for View {
                 if ui.button("Toggle log-view").clicked() {
                     self.bottom_visible = !self.bottom_visible;
                 }
-                if ui.button("Import Files").clicked() {
-                    self.set_filepath(ctx);
+                if ui.button("Import Obj").clicked() {
+                    self.file_dialog_obj.pick_file();
                 }
-                if let Some(path) = self.file_path.lock().unwrap().take() {
-                    self.listener
-                        .as_mut()
-                        .handle_event(Event::SetPath(path.clone()));
+                if let Some(path) = self.file_dialog_obj.take_picked() {
+                    self.obj_path = Some(path.to_path_buf());
+                    self.set_obj_filepath();
                 }
+                self.file_dialog_obj.update(ctx);
+                if ui.button("Import Scene").clicked() {
+                    self.file_dialog_scene.pick_file();
+                }
+                if let Some(path) = self.file_dialog_scene.take_picked() {
+                    self.scene_path = Some(path.to_path_buf());
+                    self.set_scene_filepath();
+                }
+                self.file_dialog_scene.update(ctx);
             })
         });
 
@@ -119,8 +130,15 @@ impl View {
             texture: None,
             pipeline,
             bottom_visible: true,
-            file_path: Arc::new(Mutex::new(None)),
             at_start: true,
+            file_dialog_obj: FileDialog::new()
+                .add_file_filter_extensions("OBJ", vec!["obj"])
+                .default_file_filter("OBJ"),
+            file_dialog_scene: FileDialog::new()
+                .add_file_filter_extensions("JSON", vec!["json"])
+                .default_file_filter("JSON"),
+            obj_path: None,
+            scene_path: None,
         }
     }
 
@@ -159,19 +177,26 @@ impl View {
         }
     }
 
-    pub fn set_filepath(&mut self, ctx: &Context) {
-        let selected_path = self.file_path.clone();
-        let ctx = ctx.clone();
+    pub fn set_obj_filepath(&mut self) {
+        self.pipeline.submit_obj_file_path(Option::from(
+            self.obj_path
+                .clone()
+                .expect("REASON")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        self.listener.handle_event(Event::ImportObj);
+    }
 
-        std::thread::spawn(move || {
-            if let Some(path) = rfd::FileDialog::new()
-                .add_filter("OBJ / MTL", &["obj", "mtl"])
-                .pick_file()
-            {
-                *selected_path.lock().unwrap() = Some(path.display().to_string());
-                ctx.request_repaint();
-            }
-        });
+    pub fn set_scene_filepath(&mut self) {
+        self.pipeline.submit_scene_file_path(Option::from(
+            self.scene_path
+                .clone()
+                .expect("REASON")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        self.listener.handle_event(Event::ImportScene);
     }
 
     fn do_render(&mut self) {
