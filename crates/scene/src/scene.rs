@@ -1,7 +1,3 @@
-use anyhow::Error;
-use engine_main::Engine;
-use glam::Vec3;
-
 use crate::{
     action_stack::ActionStack,
     geometric_object::{
@@ -9,6 +5,10 @@ use crate::{
     },
     scene_graph::SceneGraph,
 };
+use anyhow::Error;
+use engine_config::RenderConfigBuilder;
+use engine_main::{Engine, RenderEngine};
+use glam::Vec3;
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
@@ -86,7 +86,10 @@ impl Scene {
             action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
-            render_engine: None,
+            render_engine: Option::from(Engine::new(
+                RenderConfigBuilder::new().build().unwrap(),
+                RenderEngine::Raytracer,
+            )),
         } // todo: allow name and color as param
     }
 
@@ -106,11 +109,11 @@ impl Scene {
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         self.scene_graph.get_light_sources()
     }
-    pub fn get_render_engine(&self) -> &Option<Engine> {
-        &self.render_engine
+    pub fn get_render_engine(&self) -> &Engine {
+        self.render_engine.as_ref().expect("No render engine found")
     }
-    pub fn get_render_engine_mut(&mut self) -> &mut Option<Engine> {
-        &mut self.render_engine
+    pub fn get_render_engine_mut(&mut self) -> &mut Engine {
+        self.render_engine.as_mut().expect("No render engine found")
     }
     pub fn set_render_engine(&mut self, engine: Engine) {
         self.render_engine = Some(engine);
@@ -132,7 +135,7 @@ impl Scene {
     pub fn get_background_color(&self) -> [f32; 3] {
         self.background_color
     }
-    pub fn set_backgroubd_color(&mut self, color: [f32; 3]) {
+    pub fn set_background_color(&mut self, color: [f32; 3]) {
         self.background_color = color;
     }
 }
