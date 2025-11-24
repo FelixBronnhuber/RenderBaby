@@ -46,8 +46,12 @@ impl Model {
         self.engine.render(rc).expect("Render failed")
     }
 
-    pub fn set_import_path(&mut self, path: String) {
-        println!("Received path: {}", path);
-        scene::obj_parser::parseobj(path).expect("Error");
+    pub fn import_obj(&mut self, obj_file_path: &str) {
+        println!("Received path (obj): {}", obj_file_path);
+
+    }
+
+    pub fn import_scene(&mut self, scene_file_path: &str) {
+        println!("Received path (scene): {}", scene_file_path);
     }
 }
