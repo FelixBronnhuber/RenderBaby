@@ -9,10 +9,10 @@ if [ -z "$staged_files" ]; then
     exit 0
 fi
 
-while IFS= read -r file; do
+echo "$staged_files" | while IFS= read -r file; do
     rustfmt "$file"
-done <<< "$staged_files"
+done
 
-git add "$staged_files"
+echo "$staged_files" | xargs git add
 
 echo "Finished running pre-commit hook."
