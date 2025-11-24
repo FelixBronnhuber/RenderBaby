@@ -22,6 +22,13 @@ impl ViewListener for Controller {
                     self.pipeline.submit_render_output(output);
                 }
             }
+
+            /*             Event::SetFov(fov) => {
+                self.pipeline.set_fov(fov);
+            } */
+            Event::SetPath(path) => {
+                self.model.set_import_path(path);
+            }
         }
     }
 }

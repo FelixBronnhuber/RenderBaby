@@ -18,4 +18,9 @@ impl Model {
         // TODO: Get this from the Data-Plane!
         self.scene.render().unwrap()
     }
+
+    pub fn set_import_path(&mut self, path: String) {
+        println!("Received path: {}", path);
+        scene::obj_parser::parseobj(path).expect("Error");
+    }
 }

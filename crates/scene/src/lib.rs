@@ -3,16 +3,15 @@
 
 mod action_stack;
 pub mod geometric_object;
-mod obj_parser;
+pub mod obj_parser;
 pub mod scene;
 pub mod scene_engine_adapter;
 mod scene_graph;
-
+mod scene_parser;
 /*pub fn test_dyn(obj: Box<dyn GeometricObject>) {
     let mut objects: Vec<Box<dyn GeometricObject>> = Vec::new();
     objects.push(obj);
 }*/
-
 #[cfg(test)]
 mod tests {
     use glam::Vec3;
@@ -29,6 +28,13 @@ mod tests {
     #[test]
     fn it_works() {
         assert_eq!(4, 4);
+        let color = [0.0, 1.0, 0.0];
+        let sphere = geometric_object::Sphere::new(
+            Vec3::new(0.0, 0.0, 0.0),
+            1.0,
+            Material::default(),
+            color,
+        );
         let color = [0.0, 1.0, 0.0];
         let sphere = geometric_object::Sphere::new(
             Vec3::new(0.0, 0.0, 0.0),
@@ -61,6 +67,7 @@ mod tests {
         assert_eq!(scene.get_light_sources().len(), 1)
     }
 
+    #[test]
     fn parse() {
         let tri_geometry = parseobj(".".into());
         let tris = tri_geometry.get_triangles();

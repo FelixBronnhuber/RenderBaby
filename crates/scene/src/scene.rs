@@ -10,6 +10,8 @@ use crate::{
     obj_parser::parseobj,
     scene_graph::SceneGraph,
 };
+use anyhow::Error;
+use glam::Vec3;
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
@@ -53,6 +55,8 @@ impl Scene {
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
+        let color = [0.0, 1.0, 0.0];
+        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material::default(), color);
         let color = [0.0, 1.0, 0.0];
         let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material::default(), color);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
