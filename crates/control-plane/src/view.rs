@@ -21,6 +21,8 @@ pub struct SceneState {
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
+    UpdateResolution,
+    UpdateFOV,
 }
 
 pub trait ViewListener {
@@ -140,7 +142,7 @@ impl App for View {
                 ui.separator();
 
                 if ui.button("Render").clicked() {
-                    self.do_render();
+                    self.listener.handle_event(Event::DoRender);
                 }
 
                 let mut fov = self.pipeline.get_fov();
@@ -149,7 +151,7 @@ impl App for View {
                     .changed()
                 {
                     self.pipeline.set_fov(fov);
-                    //self.listener.handle_event(Event::DoRender); //Commented out so moving the slider doesn't render the picture, only render button
+                    self.listener.handle_event(Event::UpdateFOV);
                 }
 
                 ui.horizontal(|ui| {
@@ -157,6 +159,7 @@ impl App for View {
                     let mut width = self.pipeline.get_width();
                     if ui.add(eframe::egui::DragValue::new(&mut width)).changed() {
                         self.pipeline.set_width(width);
+                        self.listener.handle_event(Event::UpdateResolution);
                     }
                 });
 
@@ -165,6 +168,7 @@ impl App for View {
                     let mut height = self.pipeline.get_height();
                     if ui.add(eframe::egui::DragValue::new(&mut height)).changed() {
                         self.pipeline.set_height(height);
+                        self.listener.handle_event(Event::UpdateResolution);
                     }
                 });
             });
@@ -193,7 +197,7 @@ impl View {
     }
 
     fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
-        self.do_render();
+        //self.listener.handle_event(Event::DoRender);
     }
 
     pub fn set_listener(&mut self, listener: Box<dyn ViewListener>) {
@@ -220,9 +224,5 @@ impl View {
         } else {
             ui.label("Render Output Area");
         }
-    }
-
-    fn do_render(&mut self) {
-        self.listener.handle_event(Event::DoRender);
     }
 }

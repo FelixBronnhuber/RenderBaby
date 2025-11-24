@@ -1,24 +1,36 @@
-// TODO: Get this from the Data-Plane!
-use engine_config::*;
-use engine_main::{Engine, RenderEngine};
 use engine_wgpu_wrapper::RenderOutput;
+use scene::scene::Scene;
 
 pub struct Model {
-    engine: Engine,
+    scene: Scene,
 }
 
 impl Model {
     pub fn new() -> Self {
         // TODO: Get this from the Data-Plane!
+        /*
         let builder = RenderConfigBuilder::new();
 
         let rc = builder.camera(Camera::default()).build().unwrap();
         Self {
             engine: Engine::new(rc, RenderEngine::Raytracer),
-        }
+        }*/
+        let mut scene = Scene::new();
+        scene.proto_init(); // remove this later when we have proper fixtures
+
+        Self { scene }
     }
 
-    pub fn generate_render_output(&mut self, fov: f32, width: u32, height: u32) -> RenderOutput {
+    pub fn set_fov(&mut self, fov: f32) {
+        self.scene.get_camera_mut().set_fov(fov);
+    }
+
+    pub fn set_resolution(&mut self, width: u32, height: u32) {
+        self.scene.get_camera_mut().set_resolution([width, height]);
+    }
+
+    pub fn generate_render_output(&mut self) -> RenderOutput {
+        /*
         // TODO: Get this from the Data-Plane!
         let new_camera = Camera {
             fov,
@@ -43,6 +55,7 @@ impl Model {
             .add_triangle(0, 2, 3); // Second triangle
 
         let rc = builder.camera(new_camera).build().unwrap();
-        self.engine.render(rc).expect("Render failed")
+        self.engine.render(rc).expect("Render failed");*/
+        self.scene.render().unwrap()
     }
 }
