@@ -6,6 +6,9 @@ use buffers::GpuBuffers;
 use engine_config::{RenderConfig, Sphere};
 use pipeline::ComputePipeline;
 
+const DISPATCH_WORK_GROUP_WIDTH: u32 = 16;
+const DISPATCH_WORK_GROUP_HEIGHT: u32 = 16;
+
 pub struct GpuWrapper {
     buffer_wrapper: GpuBuffers,
     bind_group_wrapper: BindGroup,
@@ -111,8 +114,8 @@ impl GpuWrapper {
             pass.set_pipeline(self.get_pipeline());
             pass.set_bind_group(0, self.get_bind_group(), &[]);
             pass.dispatch_workgroups(
-                self.get_width().div_ceil(8),
-                self.get_height().div_ceil(8),
+                self.get_width().div_ceil(DISPATCH_WORK_GROUP_WIDTH),
+                self.get_height().div_ceil(DISPATCH_WORK_GROUP_HEIGHT),
                 1,
             );
         }

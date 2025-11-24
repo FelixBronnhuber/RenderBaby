@@ -14,8 +14,8 @@ impl Pipeline {
         Self {
             render_output_ppl: Arc::new(Mutex::new(None)),
             fov: Arc::new(Mutex::new(std::f32::consts::FRAC_PI_4)),
-            width: Arc::new(Mutex::new(500)),
-            height: Arc::new(Mutex::new(500)),
+            width: Arc::new(Mutex::new(512)),
+            height: Arc::new(Mutex::new(512)),
         }
     }
 
