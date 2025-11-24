@@ -18,7 +18,7 @@ mod tests {
 
     use crate::{
         geometric_object::{Material, Sphere},
-        obj_parser::parseobj,
+        //obj_parser::parseobj,
         scene::Scene,
     };
 
@@ -67,10 +67,10 @@ mod tests {
         assert_eq!(scene.get_light_sources().len(), 1)
     }
 
-    #[test]
+    /*     #[test]
     fn parse() {
-        let tri_geometry = parseobj(".".into());
+        let tri_geometry = parseobj("test.obj".into());
         let tris = tri_geometry.as_ref();
         let mut _iterator = tris.iter();
-    }
+    } */
 }

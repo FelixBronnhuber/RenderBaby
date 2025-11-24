@@ -74,10 +74,9 @@ fn transform_to_scene(file: SceneFile) -> Scene {
             light.luminosity,
             [light.color.r, light.color.g, light.color.b],
             light.name.clone(),
-            if let rota = light.rotation.clone().unwrap() {
-                Rotation::new(rota.y, rota.z)
-            } else {
-                Rotation::new(0.0, 0.0)
+            {
+                let rotation = light.rotation.clone().unwrap();
+                Vec3::new(rotation.x, rotation.y, rotation.z)
             },
             match light.r#type.as_str() {
                 "ambient" => LightType::Ambient,

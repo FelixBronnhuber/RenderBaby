@@ -66,7 +66,7 @@ impl Scene {
             0.0,
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
-            Rotation::new(0.0, 0.0),
+            Vec3::default(),
             LightType::Ambient,
         );
 

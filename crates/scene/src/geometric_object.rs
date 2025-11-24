@@ -355,7 +355,7 @@ impl LightSource {
         luminosity: f32,
         color: [f32; 3],
         name: String,
-        rotation: Rotation,
+        rotation: Vec3,
         light_type: LightType,
     ) -> Self {
         LightSource {
@@ -363,7 +363,7 @@ impl LightSource {
             luminosity,
             name,
             color,
-            rotation: Vec3::new(0.0, 0.0, 0.0), // some types have no ratation
+            rotation, // some types have no ratation
             light_type: LightType::Ambient,
         }
     }
