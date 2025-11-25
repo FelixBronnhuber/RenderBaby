@@ -7,6 +7,8 @@ pub struct Pipeline {
     fov: Arc<Mutex<f32>>,
     width: Arc<Mutex<u32>>,
     height: Arc<Mutex<u32>>,
+    obj_file_path: Arc<Mutex<Option<String>>>,
+    scene_file_path: Arc<Mutex<Option<String>>>,
 }
 
 impl Pipeline {
@@ -14,8 +16,10 @@ impl Pipeline {
         Self {
             render_output_ppl: Arc::new(Mutex::new(None)),
             fov: Arc::new(Mutex::new(std::f32::consts::FRAC_PI_4)),
-            width: Arc::new(Mutex::new(512)),
-            height: Arc::new(Mutex::new(512)),
+            width: Arc::new(Mutex::new(500)),
+            height: Arc::new(Mutex::new(500)),
+            obj_file_path: Arc::new(Mutex::new(None)),
+            scene_file_path: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -57,5 +61,21 @@ impl Pipeline {
 
     pub fn take_render_output(&self) -> Option<RenderOutput> {
         self.render_output_ppl.lock().unwrap().take()
+    }
+
+    pub fn submit_obj_file_path(&self, path: Option<String>) {
+        *self.obj_file_path.lock().unwrap() = path;
+    }
+
+    pub fn take_obj_file_path(&self) -> Option<String> {
+        self.obj_file_path.lock().unwrap().take()
+    }
+
+    pub fn submit_scene_file_path(&self, path: Option<String>) {
+        *self.scene_file_path.lock().unwrap() = path;
+    }
+
+    pub fn take_scene_file_path(&self) -> Option<String> {
+        self.scene_file_path.lock().unwrap().take()
     }
 }

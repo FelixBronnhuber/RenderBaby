@@ -5,9 +5,8 @@ edition = "2024"
 
 [dependencies]
 eframe = "0.33.0"
+egui-file-dialog = "0.12.0"
 engine-config = { path = "../engine-config" }
 engine-main = { path = "../engine-main" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }
-tobj = "3.0.0"
-log = "0.4"
-env_logger = "0.11"
+scene = { path = "../scene" }
