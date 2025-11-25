@@ -57,7 +57,21 @@ impl Scene {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         let green = [0.0, 1.0, 0.0];
         let white = [1.0, 1.0, 1.0];
-        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, green);
+        let black = [0.0, 0.0, 0.0];
+
+        let sphere0 = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, green);
+        let sphere1 = Sphere::new(Vec3::new(-2.0, 0.0, 0.0), 1.0, Material {}, white);
+        let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material {}, black);
+
+        let p0 = Vec3::new(0.0, 0.0, 0.0);
+        let p1 = Vec3::new(1.0, 0.0, 0.0);
+        let p2 = Vec3::new(0.0, 1.0, 0.0);
+        let p2 = Vec3::new(0.0, 0.0, 1.0);
+        let t0 = Triangle::new(vec![], None);
+        let t1 = Triangle::new(vec![], None);
+        let t2 = Triangle::new(vec![], None);
+        let t3 = Triangle::new(vec![], None);
+        let tri = TriGeometry::new(vec![t0, t1, t2, t3]);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
@@ -65,7 +79,11 @@ impl Scene {
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
         );
-        self.add_object(Box::new(sphere));
+        self.add_object(Box::new(sphere0));
+        self.add_object(Box::new(sphere1));
+        self.add_object(Box::new(sphere2));
+        self.add_object(Box::new(tri));
+
         self.set_camera(cam);
         self.add_lightsource(light);
     }
