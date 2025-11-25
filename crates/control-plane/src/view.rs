@@ -197,6 +197,8 @@ impl View {
     }
 
     fn on_start(&mut self, _ctx: &Context, _frame: &mut Frame) {
+        self.listener.handle_event(Event::UpdateResolution);
+        self.listener.handle_event(Event::UpdateFOV);
         self.listener.handle_event(Event::DoRender);
     }
 
