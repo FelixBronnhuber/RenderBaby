@@ -58,10 +58,16 @@ impl Scene {
         let green = [0.0, 1.0, 0.0];
         let white = [1.0, 1.0, 1.0];
         let black = [0.0, 0.0, 0.0];
+        let magenta = [1.0, 0.0, 1.0];
+        let red = [1.0, 0.0, 0.0];
+        let blue = [0.0, 0.0, 1.0];
+        let cyan = [0.0, 1.0, 1.0];
 
-        let sphere0 = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, green);
-        let sphere1 = Sphere::new(Vec3::new(-2.0, 0.0, 0.0), 1.0, Material {}, white);
-        //let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 0.0), 0.5, Material {}, black);
+        let sphere0 = Sphere::new(Vec3::new(0.0, 0.6, 1.0), 0.5, Material {}, magenta);
+        let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, Material {}, green);
+        let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 1.0), 0.5, Material {}, red);
+        let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, Material {}, blue);
+        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 1.0), 0.5, Material {}, cyan);
 
         let p0 = Vec3::new(0.0, 0.0, 0.0);
         let p1 = Vec3::new(1.0, 0.0, 0.0);
