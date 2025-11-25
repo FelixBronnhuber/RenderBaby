@@ -18,7 +18,7 @@ impl Sphere {
         let render_color = engine_config::Vec3::new(color[0], color[1], color[2]);
 
         let res = RenderSphere::new(
-            engine_config::Vec3::new(center.x, center.y, center.x),
+            engine_config::Vec3::new(center.x, center.y, center.z),
             self.get_radius(),
             render_color,
         );
