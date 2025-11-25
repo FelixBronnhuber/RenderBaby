@@ -55,8 +55,9 @@ impl Scene {
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
-        let color = [0.0, 1.0, 0.0];
-        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, color);
+        let green = [0.0, 1.0, 0.0];
+        let white = [1.0, 1.0, 1.0];
+        let sphere = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, green);
         let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
