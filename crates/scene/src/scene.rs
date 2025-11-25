@@ -61,7 +61,7 @@ impl Scene {
 
         let sphere0 = Sphere::new(Vec3::new(2.0, 0.0, 0.0), 1.0, Material {}, green);
         let sphere1 = Sphere::new(Vec3::new(-2.0, 0.0, 0.0), 1.0, Material {}, white);
-        let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 0.0), 1.0, Material {}, black);
+        //let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 0.0), 0.5, Material {}, black);
 
         let p0 = Vec3::new(0.0, 0.0, 0.0);
         let p1 = Vec3::new(1.0, 0.0, 0.0);
@@ -81,7 +81,7 @@ impl Scene {
         );
         self.add_object(Box::new(sphere0));
         self.add_object(Box::new(sphere1));
-        self.add_object(Box::new(sphere2));
+        //self.add_object(Box::new(sphere2));
         self.add_object(Box::new(tri));
 
         self.set_camera(cam);
