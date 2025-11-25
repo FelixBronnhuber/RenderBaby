@@ -1,11 +1,6 @@
 use glam::Vec3;
 use std::any::Any;
-/*pub enum GeometricObject{
-    Triangles(Vec<Triangle>),
-    Sphere(Sphere)
-}*/
 
-//marker for now
 pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // todo: scale 3d?
     fn translate(&mut self, vec: Vec3);
@@ -20,6 +15,7 @@ pub trait FileObject: GeometricObject {
     fn get_scale(&self) -> Vec3;
     fn get_translation(&self) -> Vec3;
     fn get_rotation(&self) -> Vec3;
+    // todo color?
 }
 pub struct Sphere {
     center: Vec3,
@@ -84,7 +80,7 @@ impl GeometricObject for Sphere {
         self.center += vec;
         //self.center
     }
-    fn rotate(&mut self, vec: Vec3) {}
+    fn rotate(&mut self, _vec: Vec3) {}
 
     fn as_any(&self) -> &dyn Any {
         self
@@ -110,25 +106,29 @@ impl FileObject for Sphere {
     }
 }
 
+#[derive(Debug)]
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
     attr: ObjConf,
+    file_path: String,
+    name: String,
+    material: Material,
+    //material: Option<Material>,
 }
-// todo: divide GeometricObject and Geometry!
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
-        for tri in self.get_triangles() {
+        for tri in self.get_triangles_mut() {
             tri.scale(factor);
         }
     }
 
     fn translate(&mut self, vec: Vec3) {
-        for tri in self.get_triangles() {
+        for tri in self.get_triangles_mut() {
             tri.translate(vec);
         }
     }
 
-    fn rotate(&mut self, vec: Vec3) {
+    fn rotate(&mut self, _vec: Vec3) {
         todo!()
     }
 
@@ -153,12 +153,23 @@ impl FileObject for TriGeometry {
         todo!()
     }
 }
-impl TriGeometry {
-    pub fn get_triangles(&mut self) -> &mut Vec<Triangle> {
-        &mut self.triangles
-        // maybe one fn for mut, one for immut?
-    }
 
+impl TriGeometry {
+    pub fn get_triangles_mut(&mut self) -> &mut Vec<Triangle> {
+        &mut self.triangles
+    }
+    pub fn get_triangles(&self) -> &Vec<Triangle> {
+        &self.triangles
+    }
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    pub fn get_path(&self) -> String {
+        self.file_path.clone()
+    }
+    pub fn set_material(&mut self, material: Material) {
+        self.material = material;
+    }
     pub fn new(triangles: Vec<Triangle>) -> Self {
         let conf = ObjConf {
             name: "".to_owned(),
@@ -170,9 +181,14 @@ impl TriGeometry {
         TriGeometry {
             triangles,
             attr: conf,
+            file_path: " ".to_owned(),
+            name: "unnamed".to_owned(),
+            material: Material::default(),
         }
     }
 }
+
+#[derive(Debug)]
 pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Option<Material>,
@@ -210,11 +226,11 @@ impl GeometricObject for Triangle {
         //self.get_points()
     }
 
-    fn scale(&mut self, factor: f32) {
+    fn scale(&mut self, _factor: f32) {
         todo!()
     }
 
-    fn rotate(&mut self, vec: Vec3) {
+    fn rotate(&mut self, _vec: Vec3) {
         todo!()
     }
 
@@ -222,7 +238,6 @@ impl GeometricObject for Triangle {
         self
     }
 }
-
 pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
@@ -236,10 +251,10 @@ impl Camera {
     pub fn set_rotation(&mut self, pitch: f32, yaw: f32) {
         self.rotation = Rotation { pitch, yaw }
     }
-    pub fn position(&self) -> Vec3 {
+    pub fn get_position(&self) -> Vec3 {
         self.position
     }
-    pub fn rotation(&self) -> &Rotation {
+    pub fn get_getrotation(&self) -> &Rotation {
         &self.rotation
     }
     pub fn get_fov(&self) -> f32 {
@@ -248,6 +263,7 @@ impl Camera {
     pub fn set_fov(&mut self, fov: f32) {
         self.fov = fov;
     }
+    // todo: distinguish between pane and resolution?
     pub fn get_resolution(&self) -> [u32; 2] {
         self.resolution
     }
@@ -265,6 +281,7 @@ impl Camera {
 }
 
 pub struct Rotation {
+    //no roll?
     pitch: f32,
     yaw: f32,
 }
@@ -315,34 +332,45 @@ impl LightSource {
     pub fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
-    pub fn rotate(&mut self, vec: Vec3) -> Vec3 {
+    pub fn rotate(&mut self, _vec: Vec3) -> Vec3 {
         todo!()
         // rotate and return new orientation?
     }
     pub fn get_light_type(&self) -> &LightType {
         &self.light_type
     }
-
-    pub fn new(position: Vec3, luminosity: f32, color: [f32; 3], name: String) -> Self {
+    pub fn get_color(&self) -> [f32; 3] {
+        self.color
+    }
+    pub fn set_color(&mut self, color: [f32; 3]) {
+        self.color = color;
+    }
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+    // todo LightSource should also be a FileObject!
+    pub fn new(
+        position: Vec3,
+        luminosity: f32,
+        color: [f32; 3],
+        name: String,
+        rotation: Vec3,
+        light_type: LightType,
+    ) -> Self {
         LightSource {
             position,
             luminosity,
             name,
             color,
-            rotation: Vec3::new(0.0, 0.0, 0.0), // some types have no ratation
-            light_type: LightType::Ambient,
+            rotation, // some types have no ratation
+            light_type,
         }
     }
 }
-
-// Maybe Material/Color/Texture as enum?
-pub struct Material {}
-pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
-}
-
+#[derive(Debug)]
 struct ObjConf {
     pub name: String,
     pub path: Option<String>,
@@ -355,4 +383,53 @@ pub enum LightType {
     Ambient,
     Point,
     Directional,
+}
+
+#[derive(Debug)]
+pub struct Material {
+    ambient_reflectivity: Vec<f64>,  //Ka
+    diffuse_reflectivity: Vec<f64>,  //Kd
+    specular_reflectivity: Vec<f64>, //Ks
+    shininess: f64,                  //Ns
+    transparency: f64,               //d
+}
+impl Material {
+    pub fn new(
+        ambient_reflectivity: Vec<f64>,
+        diffuse_reflectivity: Vec<f64>,
+        specular_reflectivity: Vec<f64>,
+        shininess: f64,
+        transparency: f64,
+    ) -> Self {
+        Material {
+            ambient_reflectivity,
+            diffuse_reflectivity,
+            specular_reflectivity,
+            shininess,
+            transparency,
+        }
+    }
+}
+impl Clone for Material {
+    fn clone(&self) -> Material {
+        Material {
+            ambient_reflectivity: self.ambient_reflectivity.clone(),
+            diffuse_reflectivity: self.diffuse_reflectivity.clone(),
+            specular_reflectivity: self.specular_reflectivity.clone(),
+            shininess: self.shininess,
+            transparency: self.transparency,
+        }
+    }
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Material {
+            ambient_reflectivity: vec![0.0, 0.0, 0.0],
+            diffuse_reflectivity: vec![0.0, 0.0, 0.0],
+            specular_reflectivity: vec![0.0, 0.0, 0.0],
+            shininess: 0.0,
+            transparency: 0.0,
+        }
+    }
 }
