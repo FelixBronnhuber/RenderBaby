@@ -1,5 +1,8 @@
 use engine_wgpu_wrapper::RenderOutput;
+// TODO: Get this from the Data-Plane!
 use scene::scene::Scene;
+
+//type RBScene = scene::scene::Scene; // RenderBabyScene, es gibt auch eine egui scene
 
 pub struct Model {
     scene: Scene,
@@ -8,11 +11,22 @@ pub struct Model {
 impl Model {
     pub fn new() -> Self {
         let mut scene = Scene::new();
-        scene.proto_init(); // remove this later when we have proper fixtures
-
+        scene.proto_init();
         Self { scene }
     }
 
+    pub fn import_obj(&mut self, obj_file_path: &str) {
+        println!("Received path (obj): {}", obj_file_path);
+
+        let _ = self.scene.load_object_from_file(obj_file_path.to_string());
+        //todo trigger events
+    }
+
+    pub fn import_scene(&mut self, scene_file_path: &str) {
+        println!("Received path (scene): {}", scene_file_path);
+        self.scene = Scene::load_scene_from_file(scene_file_path.to_string());
+        //todo trigger events
+    }
     pub fn set_fov(&mut self, fov: f32) {
         self.scene.get_camera_mut().set_fov(fov);
     }

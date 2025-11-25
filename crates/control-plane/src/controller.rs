@@ -22,6 +22,18 @@ impl ViewListener for Controller {
                     self.pipeline.submit_render_output(output);
                 }
             }
+
+            /*             Event::SetFov(fov) => {
+                self.pipeline.set_fov(fov);
+            } */
+            Event::ImportObj => {
+                self.model
+                    .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
+            }
+            Event::ImportScene => {
+                self.model
+                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
+            }
             Event::UpdateResolution => {
                 self.model
                     .set_resolution(self.pipeline.get_width(), self.pipeline.get_height());

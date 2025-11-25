@@ -1,5 +1,5 @@
 use crate::{
-    geometric_object::{Camera, Sphere},
+    geometric_object::{Camera, Sphere, TriGeometry},
     scene::Scene,
 };
 /// Serves as an adpter between the scene plane and the render engine.
@@ -37,6 +37,26 @@ impl Camera {
     }
 }
 
+impl TriGeometry {
+    fn to_render_engine_tri(&self) -> (Vec<f32>, Vec<u32>) {
+        let mut res_points = vec![];
+        let mut res_tri = vec![];
+        let mut count = 0u32;
+        for tri in self.get_triangles() {
+            for point in tri.get_points() {
+                res_points.push(point.x);
+                res_points.push(point.y);
+                res_points.push(point.z);
+            }
+            res_tri.push(count);
+            res_tri.push(count + 1);
+            res_tri.push(count + 2);
+            count += 3;
+        }
+        (res_points, res_tri)
+    }
+}
+
 impl Scene {
     pub(crate) fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! Returns a Vec that contains all Scene spheres as engine_config::Sphere
@@ -53,17 +73,33 @@ impl Scene {
         self.get_camera().to_render_engine_camera().unwrap()
     }
 
+    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
+        //! Returns all TriGeometries of the scene, each representet as a touple of a vector of vertices and a vector of triangles
+        let mut res = vec![];
+        for obj in self.get_objects() {
+            if let Some(tri) = obj.as_any().downcast_ref::<TriGeometry>() {
+                res.push(tri.to_render_engine_tri());
+                //break;
+            }
+        }
+        res
+    }
+
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
         //! calls the render engine for the scene self. Returns ...( will be changed)
         // todo: change return type to mask engine plane
-
-        let rc = RenderConfigBuilder::new()
-            .spheres(self.get_render_spheres())
-            .camera(self.get_render_camera())
-            .build()?;
-
+        let render_spheres = self.get_render_spheres();
+        let camera = self.get_render_camera();
+        let mut rcb = RenderConfigBuilder::new()
+            .spheres(render_spheres)
+            .camera(camera);
+        for tri in self.get_render_tris() {
+            rcb = rcb.verticies(tri.0.clone()).triangles(tri.1.clone());
+        }
+        let rc = rcb.build().unwrap();
         let engine = self.get_render_engine_mut();
-
+        //let res = engine.render(rc).unwrap();
+        //Ok((res.pixels, res.width, res.height))
         engine.render(rc)
     }
 }

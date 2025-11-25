@@ -1,9 +1,12 @@
 use crate::{
     action_stack::ActionStack,
     geometric_object::{
-        Camera, GeometricObject, LightSource, Material, Rotation, Sphere, TriGeometry, Triangle,
+        Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere, TriGeometry,
+        Triangle,
     },
+    obj_parser::parseobj,
     scene_graph::SceneGraph,
+    scene_parser::parse_scene,
 };
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
@@ -14,6 +17,7 @@ use glam::Vec3;
 pub struct Scene {
     scene_graph: SceneGraph,
     action_stack: ActionStack,
+    //render_engine: Engine::new(),
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
@@ -24,14 +28,12 @@ impl Default for Scene {
     }
 }
 impl Scene {
-    /*pub fn image_buffer(&self) -> Vec<u8> {
-        todo!()
-        // render engine uses Vec<u8>, with 4 entries beeing one pixel. We might transform this to something else?
-    }*/
+    pub fn load_scene_from_file(path: String) -> Scene {
+        parse_scene(path)
+    }
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
         //! loads object from file. Adds object to scene and returns object if successfull
-        //! Currently place holder!
-        let p0 = Vec3::new(0.0, 0.0, 0.0);
+        /* let p0 = Vec3::new(0.0, 0.0, 0.0);
         let p1 = Vec3::new(1.0, 0.0, 0.0);
         let p2 = Vec3::new(0.0, 1.0, 0.0);
         let p2 = Vec3::new(0.0, 0.0, 1.0);
@@ -40,8 +42,12 @@ impl Scene {
         let t1 = Triangle::new(vec![], None);
         let t2 = Triangle::new(vec![], None);
         let t3 = Triangle::new(vec![], None);
-        let res = TriGeometry::new(vec![t0, t1, t2, t3]);
-        self.add_object(Box::new(res));
+        let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
+        let objs = parseobj(path).unwrap();
+        for obj in objs {
+            self.add_object(Box::new(obj));
+        }
+
         //Ok(&res)
         //todo: this is very ugly
         Ok(self
@@ -61,11 +67,11 @@ impl Scene {
         let blue = [0.0, 0.0, 1.0];
         let cyan = [0.0, 1.0, 1.0];
 
-        let sphere0 = Sphere::new(Vec3::new(0.0, 0.6, 1.0), 0.5, Material {}, magenta);
-        let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, Material {}, green);
-        let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 1.0), 0.5, Material {}, red);
-        let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, Material {}, blue);
-        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 1.0), 0.5, Material {}, cyan);
+        let sphere0 = Sphere::new(Vec3::new(0.0, 0.6, 1.0), 0.5, Material::default(), magenta);
+        let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 1.0), 0.5, Material::default(), green);
+        let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 1.0), 0.5, Material::default(), red);
+        let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 1.0), 0.5, Material::default(), blue);
+        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 1.0), 0.5, Material::default(), cyan);
 
         let p0 = Vec3::new(0.0, 0.0, 0.0);
         let p1 = Vec3::new(1.0, 0.0, 0.0);
@@ -82,6 +88,8 @@ impl Scene {
             0.0,
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
+            Vec3::default(),
+            LightType::Ambient,
         );
         self.add_object(Box::new(sphere0));
         self.add_object(Box::new(sphere1));
@@ -94,6 +102,7 @@ impl Scene {
         self.set_camera(cam);
         self.add_lightsource(light);
     }
+
     pub fn get_camera_mut(&mut self) -> &mut Camera {
         self.scene_graph.get_camera_mut()
     }
@@ -165,7 +174,3 @@ impl Scene {
         self.background_color = color;
     }
 }
-
-/* pub struct SceneConfig{
-    background_color: [f32; 3]
-} */
