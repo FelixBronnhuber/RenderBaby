@@ -29,6 +29,7 @@ impl ViewListener for Controller {
             Event::ImportObj => {
                 self.model
                     .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
+                self.handle_event(Event::DoRender);
             }
             Event::ImportScene => {
                 self.model

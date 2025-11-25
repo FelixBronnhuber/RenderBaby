@@ -366,7 +366,7 @@ impl LightSource {
             name,
             color,
             rotation, // some types have no ratation
-            light_type: light_type,
+            light_type,
         }
     }
 }
