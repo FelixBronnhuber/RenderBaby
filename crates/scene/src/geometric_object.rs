@@ -84,7 +84,7 @@ impl GeometricObject for Sphere {
         self.center += vec;
         //self.center
     }
-    fn rotate(&mut self, vec: Vec3) {}
+    fn rotate(&mut self, _vec: Vec3) {}
 
     fn as_any(&self) -> &dyn Any {
         self
@@ -128,7 +128,7 @@ impl GeometricObject for TriGeometry {
         }
     }
 
-    fn rotate(&mut self, vec: Vec3) {
+    fn rotate(&mut self, _vec: Vec3) {
         todo!()
     }
 
@@ -210,11 +210,11 @@ impl GeometricObject for Triangle {
         //self.get_points()
     }
 
-    fn scale(&mut self, factor: f32) {
+    fn scale(&mut self, _factor: f32) {
         todo!()
     }
 
-    fn rotate(&mut self, vec: Vec3) {
+    fn rotate(&mut self, _vec: Vec3) {
         todo!()
     }
 
@@ -315,7 +315,7 @@ impl LightSource {
     pub fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
-    pub fn rotate(&mut self, vec: Vec3) -> Vec3 {
+    pub fn rotate(&mut self, _vec: Vec3) -> Vec3 {
         todo!()
         // rotate and return new orientation?
     }

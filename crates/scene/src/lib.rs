@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-#![allow(unused_variables)]
+//#![allow(unused_variables)]
 
 mod action_stack;
 pub mod geometric_object;
