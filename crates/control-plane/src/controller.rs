@@ -34,6 +34,8 @@ impl ViewListener for Controller {
             Event::ImportScene => {
                 self.model
                     .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
+                self.handle_event(Event::DoRender);
+                // todo: also set all sliders, update tree ...
             }
             Event::UpdateResolution => {
                 self.model
