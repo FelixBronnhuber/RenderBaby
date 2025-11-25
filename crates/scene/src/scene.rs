@@ -76,7 +76,7 @@ impl Scene {
         let t2 = Triangle::new(vec![p1, p3, p0], None);
         let t3 = Triangle::new(vec![p0, p2, p3], None);
         let tri = TriGeometry::new(vec![t0, t1, t2, t3]);
-        let cam = Camera::new(Vec3::new(2.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
+        let cam = Camera::new(Vec3::new(4.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,
