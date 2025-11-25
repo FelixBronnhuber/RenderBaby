@@ -2,7 +2,6 @@ use crate::{
     action_stack::ActionStack,
     geometric_object::{
         Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere, TriGeometry,
-        Triangle,
     },
     obj_parser::parseobj,
     scene_graph::SceneGraph,
