@@ -73,13 +73,6 @@ impl Scene {
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
-        let p0 = Vec3::new(0.0, 0.0, 1.0);
-        let p1 = Vec3::new(1.0, 0.0, 1.0);
-        let p2 = Vec3::new(1.0, 1.0, 1.0);
-        let p3 = Vec3::new(0.0, 1.0, 1.0);
-        let t0 = Triangle::new(vec![p0, p1, p2], None);
-        let t1 = Triangle::new(vec![p0, p2, p3], None);
-        let tri = TriGeometry::new(vec![t0, t1]);
         let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
@@ -94,8 +87,6 @@ impl Scene {
         self.add_object(Box::new(sphere2));
         self.add_object(Box::new(sphere3));
         self.add_object(Box::new(sphere4));
-
-        self.add_object(Box::new(tri));
 
         self.set_camera(cam);
         self.add_lightsource(light);
