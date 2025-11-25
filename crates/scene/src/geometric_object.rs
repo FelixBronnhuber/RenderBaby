@@ -155,9 +155,11 @@ impl FileObject for TriGeometry {
 }
 
 impl TriGeometry {
-    pub(crate) fn get_triangles_mut(&mut self) -> &mut Vec<Triangle> {
+    pub fn get_triangles_mut(&mut self) -> &mut Vec<Triangle> {
         &mut self.triangles
-        // maybe one fn for mut, one for immut?
+    }
+    pub fn get_triangles(&self) -> &Vec<Triangle> {
+        &self.triangles
     }
     pub fn get_name(&self) -> String {
         self.name.clone()
