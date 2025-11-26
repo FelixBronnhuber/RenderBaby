@@ -1,10 +1,13 @@
 use crate::bind_group;
-use crate::{GpuDevice, buffers, pipeline};
-use anyhow::{Result, anyhow};
+use crate::{buffers, pipeline, GpuDevice};
+use anyhow::{anyhow, Result};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
 use engine_config::{RenderConfig, Sphere};
 use pipeline::ComputePipeline;
+
+const DISPATCH_WORK_GROUP_WIDTH: u32 = 16;
+const DISPATCH_WORK_GROUP_HEIGHT: u32 = 16;
 
 pub struct GpuWrapper {
     buffer_wrapper: GpuBuffers,
@@ -36,7 +39,7 @@ impl GpuWrapper {
     }
 
     pub fn update(&mut self, rc: RenderConfig) {
-        let new_size = (rc.camera.height as u64) * (rc.camera.width as u64);
+        let new_size = (rc.uniforms.height as u64) * (rc.uniforms.width as u64);
         let mut changed = false;
         if self.get_size() != new_size {
             self.buffer_wrapper
@@ -50,8 +53,8 @@ impl GpuWrapper {
             changed = true;
         }
 
-        if self.rc.verticies.len() != rc.verticies.len() {
-            self.buffer_wrapper.grow_verticies(&self.device, &rc);
+        if self.rc.vertices.len() != rc.vertices.len() {
+            self.buffer_wrapper.grow_vertices(&self.device, &rc);
 
             changed = true;
         }
@@ -74,15 +77,15 @@ impl GpuWrapper {
     }
 
     pub fn get_size(&self) -> u64 {
-        (self.rc.camera.width as u64) * (self.rc.camera.height as u64)
+        (self.rc.uniforms.width as u64) * (self.rc.uniforms.height as u64)
     }
 
     pub fn get_width(&self) -> u32 {
-        self.rc.camera.width
+        self.rc.uniforms.width
     }
 
     pub fn get_height(&self) -> u32 {
-        self.rc.camera.height
+        self.rc.uniforms.height
     }
 
     pub fn get_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
@@ -111,8 +114,8 @@ impl GpuWrapper {
             pass.set_pipeline(self.get_pipeline());
             pass.set_bind_group(0, self.get_bind_group(), &[]);
             pass.dispatch_workgroups(
-                self.get_width().div_ceil(8),
-                self.get_height().div_ceil(8),
+                self.get_width().div_ceil(DISPATCH_WORK_GROUP_WIDTH),
+                self.get_height().div_ceil(DISPATCH_WORK_GROUP_HEIGHT),
                 1,
             );
         }
@@ -161,9 +164,15 @@ impl GpuWrapper {
     }
 
     pub fn update_uniforms(&self) {
-        let camera = &self.rc.camera;
-        self.queue
-            .write_buffer(&self.buffer_wrapper.camera, 0, bytemuck::bytes_of(camera));
+        let mut uniforms = self.rc.uniforms;
+        uniforms.spheres_count = self.rc.spheres.len() as u32;
+        uniforms.triangles_count = self.rc.triangles.len() as u32 / 3;
+
+        self.queue.write_buffer(
+            &self.buffer_wrapper.uniforms,
+            0,
+            bytemuck::bytes_of(&uniforms),
+        );
 
         let spheres: Vec<Sphere> = self.rc.spheres.clone();
         self.queue.write_buffer(
@@ -172,11 +181,11 @@ impl GpuWrapper {
             bytemuck::cast_slice(&spheres),
         );
 
-        let verticies = &self.rc.verticies;
+        let vertices = &self.rc.vertices;
         self.queue.write_buffer(
-            &self.buffer_wrapper.verticies,
+            &self.buffer_wrapper.vertices,
             0,
-            bytemuck::cast_slice(verticies),
+            bytemuck::cast_slice(vertices),
         );
 
         let triangles = &self.rc.triangles;

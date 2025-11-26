@@ -38,6 +38,3 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 ```
-
-Temporary change to trigger CI.
-TODO: Remove this!

@@ -8,7 +8,7 @@ use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
 
 type RenderSphere = engine_config::Sphere;
-type RenderCamera = engine_config::Camera;
+type RenderUniforms = engine_config::Uniforms;
 
 impl Sphere {
     fn to_render_engine_sphere(&self) -> RenderSphere {
@@ -30,10 +30,20 @@ impl Sphere {
 }
 
 impl Camera {
-    fn to_render_engine_camera(&self) -> Result<RenderCamera, Error> {
+    fn to_render_engine_uniforms(
+        &self,
+        spheres_count: u32,
+        triangles_count: u32,
+    ) -> Result<RenderUniforms, Error> {
         let [width, height] = self.get_resolution();
-        let camera = RenderCamera::new(width, height, self.get_fov());
-        Ok(camera?)
+        let uniforms = RenderUniforms::new(
+            width,
+            height,
+            self.get_fov(),
+            spheres_count,
+            triangles_count,
+        );
+        Ok(uniforms)
     }
 }
 
@@ -68,9 +78,15 @@ impl Scene {
         }
         res
     }
-    pub(crate) fn get_render_camera(&self) -> RenderCamera {
-        //! Returns the camera as a enginge_config::camera
-        self.get_camera().to_render_engine_camera().unwrap()
+    pub(crate) fn get_render_uniforms(
+        &self,
+        spheres_count: u32,
+        triangles_count: u32,
+    ) -> RenderUniforms {
+        //! Returns the uniforms including camera settings
+        self.get_camera()
+            .to_render_engine_uniforms(spheres_count, triangles_count)
+            .unwrap()
     }
 
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
@@ -89,12 +105,20 @@ impl Scene {
         //! calls the render engine for the scene self. Returns ...( will be changed)
         // todo: change return type to mask engine plane
         let render_spheres = self.get_render_spheres();
-        let camera = self.get_render_camera();
+        let render_tris = self.get_render_tris();
+
+        let spheres_count = render_spheres.len() as u32;
+        let triangles_count = render_tris
+            .iter()
+            .map(|(_, tri)| tri.len() as u32 / 3)
+            .sum();
+
+        let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
         let mut rcb = RenderConfigBuilder::new()
-            .spheres(render_spheres)
-            .camera(camera);
-        for tri in self.get_render_tris() {
-            rcb = rcb.verticies(tri.0.clone()).triangles(tri.1.clone());
+            .uniforms(uniforms)
+            .spheres(render_spheres);
+        for tri in render_tris {
+            rcb = rcb.vertices(tri.0.clone()).triangles(tri.1.clone());
         }
         let rc = rcb.build().unwrap();
         let engine = self.get_render_engine_mut();
