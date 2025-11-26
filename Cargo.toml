@@ -26,5 +26,5 @@ members = [
     "crates/engine-main",
     "crates/scene-parser",
     "crates/scene",
-    "crates/scene-obj-parser"]
+    "crates/scene-obj-parser", "crates/mvc"]
 
