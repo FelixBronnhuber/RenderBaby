@@ -23,9 +23,6 @@ impl ViewListener for Controller {
                 }
             }
 
-            /*             Event::SetFov(fov) => {
-                self.pipeline.set_fov(fov);
-            } */
             Event::ImportObj => {
                 self.model
                     .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
@@ -35,7 +32,7 @@ impl ViewListener for Controller {
                 self.model
                     .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
                 self.handle_event(Event::DoRender);
-                // todo: also set all sliders, update tree ...
+                // todo!("also set all sliders, update tree ..."
             }
             Event::UpdateResolution => {
                 self.model

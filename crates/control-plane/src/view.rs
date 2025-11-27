@@ -300,8 +300,4 @@ impl View {
         ));
         self.listener.handle_event(Event::ImportScene);
     }
-
-    /*     fn do_render(&mut self) {
-        self.listener.handle_event(Event::DoRender);
-    } */
 }
