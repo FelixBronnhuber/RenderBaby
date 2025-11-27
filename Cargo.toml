@@ -25,4 +25,3 @@ members = [
     "crates/scene-obj-parser",
     "crates/mvc-view-wrappers",
 ]
-
