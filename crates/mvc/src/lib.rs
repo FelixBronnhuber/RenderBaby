@@ -1,2 +1,2 @@
 mod egui_view;
-mod traits;
+mod view;
