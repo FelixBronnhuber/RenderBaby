@@ -17,4 +17,10 @@ done
 
 echo "$staged_files" | xargs git add
 
+echo "Put formatted Rust files back to the staging area."
+
+clippy_output=$(cargo clippy --all-targets --all-features --message-format short 2>&1 || true)
+
+echo "$clippy_output" | grep -Ff <(echo "$staged_files") || true
+
 echo "Finished running pre-commit hook."
