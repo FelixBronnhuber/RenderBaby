@@ -1,6 +1,8 @@
-use crate::model::*;
-use crate::pipeline::Pipeline;
-use crate::view::*;
+use crate::control_plane::gui::{
+    model::Model,
+    pipeline::Pipeline,
+    view::{Event, ViewListener},
+};
 
 pub struct Controller {
     model: Model,
@@ -23,9 +25,6 @@ impl ViewListener for Controller {
                 }
             }
 
-            /*             Event::SetFov(fov) => {
-                self.pipeline.set_fov(fov);
-            } */
             Event::ImportObj => {
                 self.model
                     .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));

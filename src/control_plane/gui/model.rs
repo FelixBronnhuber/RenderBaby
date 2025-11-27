@@ -1,8 +1,6 @@
 use engine_wgpu_wrapper::RenderOutput;
-// TODO: Get this from the Data-Plane!
-use scene::scene::Scene;
 
-//type RBScene = scene::scene::Scene; // RenderBabyScene, es gibt auch eine egui scene
+use crate::data_plane::scene::_scene::Scene;
 
 pub struct Model {
     scene: Scene,

@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-use crate::geometric_object::{Camera, GeometricObject, LightSource, Rotation};
+use crate::data_plane::scene::geometric_object::{Camera, GeometricObject, LightSource, Rotation};
 
 pub(crate) struct SceneGraph {
     objects: Vec<Box<dyn GeometricObject>>,

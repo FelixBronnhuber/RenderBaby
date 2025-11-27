@@ -1,9 +1,10 @@
-use crate::pipeline::Pipeline;
 use eframe::egui::{Context, TextureHandle, TextureOptions, Ui};
 use eframe::{App, Frame};
 use egui_file_dialog::FileDialog;
 use std::path::PathBuf;
-//Mockup Scene struct, remove later
+
+use crate::control_plane::gui::pipeline::Pipeline;
+
 #[derive(Default)]
 pub struct SceneState {
     pub cam_x: f32,
@@ -32,7 +33,7 @@ pub trait ViewListener {
     fn handle_event(&mut self, event: Event);
 }
 
-// to avoid having to do .as_mut().unwrap() everywhere with the listener
+// TODO: avoid having to do .as_mut().unwrap() everywhere with the listener
 pub struct NullListener;
 impl ViewListener for NullListener {
     fn handle_event(&mut self, _event: Event) {}

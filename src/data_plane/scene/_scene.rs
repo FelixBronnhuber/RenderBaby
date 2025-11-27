@@ -1,22 +1,25 @@
-use crate::{
-    action_stack::ActionStack,
-    geometric_object::{
-        Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere, TriGeometry,
-    },
-    obj_parser::parseobj,
-    scene_graph::SceneGraph,
-    scene_parser::parse_scene,
-};
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
-use engine_main::{Engine, RenderEngine};
 use glam::Vec3;
+
+use crate::{
+    compute_plane::{engine::Engine, render_engine::RenderEngine},
+    data_plane::{
+        scene::{
+            geometric_object::{
+                Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere,
+                TriGeometry,
+            },
+            scene_graph::SceneGraph,
+        },
+        scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
+    },
+};
 
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
     scene_graph: SceneGraph,
-    action_stack: ActionStack,
-    //render_engine: Engine::new(),
+    //action_stack: ActionStack,
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
@@ -106,7 +109,7 @@ impl Scene {
     pub fn new() -> Self {
         Self {
             scene_graph: SceneGraph::new(),
-            action_stack: ActionStack::new(),
+            // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
@@ -119,9 +122,11 @@ impl Scene {
     pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
         self.scene_graph.add_object(obj);
     }
+
     pub fn add_lightsource(&mut self, light: LightSource) {
         self.scene_graph.add_lightsource(light);
     }
+
     pub fn set_camera(&mut self, camera: Camera) {
         self.scene_graph.set_camera(camera);
     }
@@ -129,35 +134,42 @@ impl Scene {
     pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
         self.scene_graph.get_objects()
     }
+
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         self.scene_graph.get_light_sources()
     }
+
     pub fn get_render_engine(&self) -> &Engine {
         self.render_engine.as_ref().expect("No render engine found")
     }
+
     pub fn get_render_engine_mut(&mut self) -> &mut Engine {
         self.render_engine.as_mut().expect("No render engine found")
     }
+
     pub fn set_render_engine(&mut self, engine: Engine) {
         self.render_engine = Some(engine);
     }
 
-    //action stack fns: currently empty
-    pub fn undo(&mut self) {
-        self.action_stack.undo();
-    }
-    pub fn redo(&mut self) {
-        self.action_stack.redo();
-    }
+    // TODO: Action stack functions: currently empty
+    // pub fn undo(&mut self) {
+    //     self.action_stack.undo();
+    // }
+    // pub fn redo(&mut self) {
+    //     self.action_stack.redo();
+    // }
     pub fn get_name(&self) -> &String {
         &self.name
     }
+
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
+
     pub fn get_background_color(&self) -> [f32; 3] {
         self.background_color
     }
+
     pub fn set_background_color(&mut self, color: [f32; 3]) {
         self.background_color = color;
     }

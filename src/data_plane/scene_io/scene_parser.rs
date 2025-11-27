@@ -1,12 +1,15 @@
-use crate::geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry};
-use crate::scene::Scene;
-use glam::Vec3;
-use serde::{Deserialize, Serialize};
-//use serde_json;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::path::Path;
+
+use glam::Vec3;
+use serde::{Deserialize, Serialize};
+
+use crate::data_plane::scene::{
+    _scene::Scene,
+    geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry},
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct SceneFile {
@@ -16,6 +19,7 @@ struct SceneFile {
     camera: FileCamera,
     background_color: FileColor,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct ParsingObject {
     name: String,
@@ -24,6 +28,7 @@ struct ParsingObject {
     translation: Vec3d,
     rotation: Vec3d, //x = roll, y = pitch, z = yaw
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct FileLightSource {
     name: String,
@@ -33,6 +38,7 @@ struct FileLightSource {
     color: FileColor,
     rotation: Option<Vec3d>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct FileCamera {
     position: Vec3d,
@@ -42,6 +48,7 @@ struct FileCamera {
     pane_width: f32,
     resolution: HashMap<String, u32>,
 }
+
 #[derive(Serialize, Deserialize, Debug)]
 struct FileColor {
     r: f32,
@@ -49,12 +56,14 @@ struct FileColor {
     b: f32,
     a: Option<f32>, //ungenutzt
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Vec3d {
     x: f32,
     y: f32,
     z: f32,
 }
+
 impl From<Vec3> for Vec3d {
     fn from(v: Vec3) -> Vec3d {
         Vec3d {
@@ -101,10 +110,8 @@ fn transform_to_scene(file: SceneFile) -> Scene {
         ),
         Rotation::new(pitch, yaw),
     ));
-    //
 
-    //obj parsen
-    scene.add_object(Box::new(TriGeometry::new(Vec::new()))); //obj adden
+    scene.add_object(Box::new(TriGeometry::new(Vec::new())));
     scene.set_background_color([
         file.background_color.r,
         file.background_color.g,
@@ -205,13 +212,14 @@ pub fn serialize_scene(sc: &mut Scene) {
     };
 
     let output = File::create("out.json").expect("Could not create file");
-    serde_json::to_writer_pretty(output, &file).expect("Could not write into file");
+    // serde_json::to_writer_pretty(output, &file).expect("Could not write into file");
+    todo!("Fix serde_json");
 }
 
 pub fn parse_scene(scene_path: String) -> Scene {
     let scene_path = Path::new(&scene_path);
     let json_content = fs::read_to_string(scene_path).unwrap();
-    let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();
-    transform_to_scene(read)
-    //println!("{:#?}", read);
+    // let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();
+    // transform_to_scene(read)
+    todo!("Fix serde_json");
 }

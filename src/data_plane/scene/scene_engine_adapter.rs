@@ -1,11 +1,9 @@
-use crate::{
-    geometric_object::{Camera, Sphere, TriGeometry},
-    scene::Scene,
-};
 /// Serves as an adpter between the scene plane and the render engine.
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
+
+use crate::data_plane::scene::{_scene::Scene, geometric_object::*};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;

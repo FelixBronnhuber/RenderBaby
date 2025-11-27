@@ -2,11 +2,11 @@ use glam::Vec3;
 use std::any::Any;
 
 pub trait GeometricObject {
-    fn scale(&mut self, factor: f32); // todo: scale 3d?
+    fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
     fn as_any(&self) -> &dyn Any;
-    // todo color?
+    // TODO: color?
 }
 
 pub trait FileObject: GeometricObject {
@@ -17,6 +17,7 @@ pub trait FileObject: GeometricObject {
     fn get_rotation(&self) -> Vec3;
     // todo color?
 }
+
 pub struct Sphere {
     center: Vec3,
     radius: f32,
@@ -24,6 +25,7 @@ pub struct Sphere {
     color: [f32; 3],
     attr: ObjConf,
 }
+
 impl Sphere {
     pub fn set_color(&mut self, color: [f32; 3]) {
         self.color = color;
