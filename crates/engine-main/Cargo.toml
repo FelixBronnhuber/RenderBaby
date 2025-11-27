@@ -4,3 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+engine-raytracer = {path = "../engine-raytracer"}
+engine-pathtracer = {path = "../engine-pathtracer"}
+anyhow = "1.0.100"
+engine-config = { path = "../engine-config"}
+engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper" }

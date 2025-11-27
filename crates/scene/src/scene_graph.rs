@@ -31,8 +31,11 @@ impl SceneGraph {
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         &self.light_sources
     }
-    pub fn get_camera(&mut self) -> &mut Camera {
+    pub fn get_camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
+    }
+    pub fn get_camera(&self) -> &Camera {
+        &self.camera
     }
 
     // todo return value

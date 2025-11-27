@@ -17,14 +17,32 @@ impl ViewListener for Controller {
     fn handle_event(&mut self, event: Event) {
         match event {
             Event::DoRender => {
-                let output = self.model.generate_render_output(self.pipeline.get_fov());
+                let output = self.model.generate_render_output();
                 if output.validate().is_ok() {
-                    *self.pipeline.render_output_ppl.lock().unwrap() = Some(output);
+                    self.pipeline.submit_render_output(output);
                 }
             }
 
-            Event::SetFov(fov) => {
+            /*             Event::SetFov(fov) => {
                 self.pipeline.set_fov(fov);
+            } */
+            Event::ImportObj => {
+                self.model
+                    .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
+                self.handle_event(Event::DoRender);
+            }
+            Event::ImportScene => {
+                self.model
+                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
+                self.handle_event(Event::DoRender);
+                // todo: also set all sliders, update tree ...
+            }
+            Event::UpdateResolution => {
+                self.model
+                    .set_resolution(self.pipeline.get_width(), self.pipeline.get_height());
+            }
+            Event::UpdateFOV => {
+                self.model.set_fov(self.pipeline.get_fov());
             }
         }
     }
