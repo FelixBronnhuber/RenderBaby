@@ -697,18 +697,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "control-plane"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui-file-dialog",
- "engine-config",
- "engine-main",
- "engine-wgpu-wrapper",
- "scene",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1942,7 +1930,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mvc"
+name = "mvc-view-wrappers"
 version = "0.1.0"
 dependencies = [
  "eframe",
@@ -2700,16 +2688,13 @@ checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 name = "renderbaby"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "control-plane",
  "eframe",
  "egui",
- "engine-config",
- "engine-main",
- "engine-raytracer",
+ "egui-file-dialog",
  "engine-wgpu-wrapper",
  "env_logger",
- "log",
+ "mvc-view-wrappers",
+ "scene",
 ]
 
 [[package]]

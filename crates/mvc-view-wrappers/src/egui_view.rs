@@ -1,8 +1,8 @@
-use crate::view::View;
+use crate::ViewWrapper;
 use eframe::egui::Context;
 use eframe::{App, CreationContext, Frame};
 
-pub trait EframeView<E, P>: View<E, P> + App + 'static {
+pub trait EframeViewWrapper<E, P>: ViewWrapper<E, P> + App + 'static {
     fn on_start(&mut self, ctx: &Context, frame: &mut Frame);
 
     fn open_native(self, app_name: &str) {
@@ -11,7 +11,7 @@ pub trait EframeView<E, P>: View<E, P> + App + 'static {
             app_name,
             options,
             Box::new(move |_cc: &CreationContext| -> Result<Box<dyn App>, Box<dyn std::error::Error + Send + Sync>> {
-                struct Wrapper<T: App + EframeView<E, P>, E, P> {
+                struct Wrapper<T: App + EframeViewWrapper<E, P>, E, P> {
                     inner: T,
                     started: bool,
                     _phantom: std::marker::PhantomData<(E, P)>,
@@ -19,7 +19,7 @@ pub trait EframeView<E, P>: View<E, P> + App + 'static {
 
                 impl<T, E, P> App for Wrapper<T, E, P>
                 where
-                    T: App + EframeView<E, P>,
+                    T: App + EframeViewWrapper<E, P>,
                 {
                     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
                         if !self.started {

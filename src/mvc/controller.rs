@@ -1,47 +1,39 @@
-use crate::model::*;
-use crate::pipeline::Pipeline;
-use crate::view::*;
+use crate::mvc::*;
 
 pub struct Controller {
-    model: Model,
-    pipeline: Pipeline,
+    model: model::Model,
+    pipeline: pipeline::Pipeline,
 }
 
 impl Controller {
-    pub fn new(pipeline: Pipeline, model: Model) -> Self {
+    pub fn new(model: model::Model, pipeline: pipeline::Pipeline) -> Self {
         Self { model, pipeline }
     }
-}
 
-impl ViewListener for Controller {
-    fn handle_event(&mut self, event: Event) {
+    pub fn handle_event(&mut self, event: view::Event) {
         match event {
-            Event::DoRender => {
+            view::Event::DoRender => {
                 let output = self.model.generate_render_output();
                 if output.validate().is_ok() {
                     self.pipeline.submit_render_output(output);
                 }
             }
-
-            /*             Event::SetFov(fov) => {
-                self.pipeline.set_fov(fov);
-            } */
-            Event::ImportObj => {
+            view::Event::ImportObj => {
                 self.model
                     .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
-                self.handle_event(Event::DoRender);
+                self.handle_event(view::Event::DoRender);
             }
-            Event::ImportScene => {
+            view::Event::ImportScene => {
                 self.model
                     .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
-                self.handle_event(Event::DoRender);
+                self.handle_event(view::Event::DoRender);
                 // todo: also set all sliders, update tree ...
             }
-            Event::UpdateResolution => {
+            view::Event::UpdateResolution => {
                 self.model
                     .set_resolution(self.pipeline.get_width(), self.pipeline.get_height());
             }
-            Event::UpdateFOV => {
+            view::Event::UpdateFOV => {
                 self.model.set_fov(self.pipeline.get_fov());
             }
         }

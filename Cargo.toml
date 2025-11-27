@@ -4,16 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-control-plane = { path = "crates/control-plane" }
+mvc-view-wrappers = { path = "crates/mvc-view-wrappers" }
 eframe = "0.33.0"
 egui = "0.33.0"
-engine-main = { path = "crates/engine-main" }
-engine-raytracer = { path = "crates/engine-raytracer"}
-engine-config = { path = "crates/engine-config" }
 env_logger = "0.11.8"
-log = "0.4.28"
-anyhow = "1.0.100"
 engine-wgpu-wrapper = { path = "crates/engine-wgpu-wrapper" }
+scene = { path = "crates/scene" }
+egui-file-dialog = "0.12.0"
 
 [workspace]
 members = [
@@ -21,10 +18,11 @@ members = [
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
-    "crates/control-plane",
     "crates/engine-config",
     "crates/engine-main",
     "crates/scene-parser",
     "crates/scene",
-    "crates/scene-obj-parser", "crates/mvc"]
+    "crates/scene-obj-parser",
+    "crates/mvc-view-wrappers",
+]
 

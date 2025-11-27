@@ -1,8 +1,8 @@
-use control_plane::App;
+mod mvc;
 
 fn main() {
     env_logger::init();
 
-    let app = App::new();
+    let app = mvc::App::new();
     app.show();
 }
