@@ -49,7 +49,9 @@ do
 
     echo "[pre-push] Running rustfmt on changed files..."
     while IFS= read -r file; do
-        rustfmt --check "$file"
+        if [ -f "$file" ]; then
+            rustfmt --check "$file"
+        fi
     done <<< "$files_to_check"
 
     echo "[pre-push] Running cargo clippy..."

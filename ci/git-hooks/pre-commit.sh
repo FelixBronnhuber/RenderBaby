@@ -10,7 +10,9 @@ if [ -z "$staged_files" ]; then
 fi
 
 echo "$staged_files" | while IFS= read -r file; do
-    rustfmt "$file"
+    if [ -f "$file" ]; then
+        rustfmt "$file"
+    fi
 done
 
 echo "$staged_files" | xargs git add
