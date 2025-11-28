@@ -7,7 +7,7 @@ pub(crate) struct SceneGraph {
     light_sources: Vec<LightSource>,
     camera: Camera,
 }
-
+#[allow(dead_code)]
 impl SceneGraph {
     pub fn new() -> Self {
         Self {
@@ -38,7 +38,6 @@ impl SceneGraph {
         &self.camera
     }
 
-    // todo return value
     pub fn remove_object(&mut self, index: usize) {
         self.objects.remove(index);
     }

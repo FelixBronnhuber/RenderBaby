@@ -1,6 +1,6 @@
 use glam::Vec3;
 use std::any::Any;
-
+#[allow(dead_code)]
 pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
@@ -8,7 +8,7 @@ pub trait GeometricObject {
     fn as_any(&self) -> &dyn Any;
     // TODO: color?
 }
-
+#[allow(dead_code)]
 pub trait FileObject: GeometricObject {
     fn get_path(&self) -> String;
     //fn set_path(&mut self, path: String);
@@ -17,7 +17,7 @@ pub trait FileObject: GeometricObject {
     fn get_rotation(&self) -> Vec3;
     // todo color?
 }
-
+#[allow(dead_code)]
 pub struct Sphere {
     center: Vec3,
     radius: f32,
@@ -25,7 +25,7 @@ pub struct Sphere {
     color: [f32; 3],
     attr: ObjConf,
 }
-
+#[allow(dead_code)]
 impl Sphere {
     pub fn set_color(&mut self, color: [f32; 3]) {
         self.color = color;
@@ -107,7 +107,7 @@ impl FileObject for Sphere {
         self.attr.translation
     }
 }
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
@@ -155,7 +155,7 @@ impl FileObject for TriGeometry {
         todo!()
     }
 }
-
+#[allow(dead_code)]
 impl TriGeometry {
     pub fn get_triangles_mut(&mut self) -> &mut Vec<Triangle> {
         &mut self.triangles
@@ -189,12 +189,13 @@ impl TriGeometry {
         }
     }
 }
-
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Option<Material>,
 }
+#[allow(dead_code)]
 impl Triangle {
     pub fn new(points: Vec<Vec3>, material: Option<Material>) -> Self {
         Triangle { points, material }
@@ -240,12 +241,14 @@ impl GeometricObject for Triangle {
         self
     }
 }
+#[allow(dead_code)]
 pub struct Camera {
     position: Vec3,
     rotation: Rotation, // fov: f32 ?
     fov: f32,
     resolution: [u32; 2],
 }
+#[allow(dead_code)]
 impl Camera {
     pub fn set_position(&mut self, position: Vec3) {
         self.position = position;
@@ -281,12 +284,13 @@ impl Camera {
         }
     }
 }
-
+#[allow(dead_code)]
 pub struct Rotation {
     //no roll?
     pitch: f32,
     yaw: f32,
 }
+#[allow(dead_code)]
 impl Rotation {
     pub fn set(&mut self, pitch: f32, yaw: f32) {
         self.pitch = pitch;
@@ -305,6 +309,7 @@ impl Rotation {
         Rotation { pitch, yaw }
     }
 }
+#[allow(dead_code)]
 pub struct LightSource {
     position: Vec3,
     luminosity: f32,
@@ -313,7 +318,7 @@ pub struct LightSource {
     rotation: Vec3,
     light_type: LightType,
 }
-
+#[allow(dead_code)]
 impl LightSource {
     pub fn get_position(&self) -> Vec3 {
         self.position
@@ -373,6 +378,7 @@ impl LightSource {
     }
 }
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ObjConf {
     pub name: String,
     pub path: Option<String>,
@@ -380,7 +386,7 @@ struct ObjConf {
     pub translation: Vec3,
     pub rotation: Vec3,
 }
-
+#[allow(dead_code)]
 pub enum LightType {
     Ambient,
     Point,
