@@ -1,6 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use engine_wgpu_wrapper::RenderOutput;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct Pipeline {
@@ -24,13 +23,12 @@ impl Pipeline {
         }
     }
 
-    /*
-     * TODO:
-     * Distinguish between set/get and submit/take:
-     * - set/get: shared variable
-     * - submit/take: one-time transfer
-     *
-     * Always keep variables private and create methods to access them as intended.
+    /* Distinguish between set/get and submit/take:
+
+    set/get: shared variable
+    submit/take: one-time transfer
+
+    Always keep variables private and create methods to access them as intended.
      */
 
     pub fn set_fov(&self, v: f32) {
