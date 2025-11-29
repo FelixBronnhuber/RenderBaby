@@ -241,6 +241,22 @@ impl GeometricObject for Triangle {
         self
     }
 }
+
+pub struct ImageResolution;
+
+impl ImageResolution {
+    pub const MIN: [u32; 2] = [50, 50];
+    pub const MAX: [u32; 2] = [5000, 5000];
+    /* Could also make this more convenient later with:
+    pub const RES_360P: [u32; 2] = [320, 180];
+    pub const RES_480P: [u32; 2] = [640, 480];
+    pub const RES_720P: [u32; 2] = [1280, 720];
+    pub const RES_1080P: [u32; 2] = [1920, 1080];
+    pub const RES_2K: [u32; 2] = [2560, 1440];
+    pub const RES_4K: [u32; 2] = [3840, 2160];
+     */
+}
+
 #[allow(dead_code)]
 pub struct Camera {
     position: Vec3,

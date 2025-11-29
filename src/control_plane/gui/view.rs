@@ -6,6 +6,7 @@ use egui_file_dialog;
 use std::path::PathBuf;
 use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::ViewWrapper;
+use crate::data_plane::scene::geometric_object::ImageResolution;
 
 // E FRAME VIEW:
 
@@ -242,7 +243,13 @@ impl eframe::App for View {
                 ui.horizontal(|ui| {
                     ui.label("Width:");
                     let mut width = self.pipeline.get_width();
-                    if ui.add(egui::DragValue::new(&mut width)).changed() {
+                    if ui
+                        .add(
+                            egui::DragValue::new(&mut width)
+                                .range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
+                        )
+                        .changed()
+                    {
                         self.pipeline.set_width(width);
                         (self.handler)(Event::UpdateResolution);
                     }
@@ -251,7 +258,13 @@ impl eframe::App for View {
                 ui.horizontal(|ui| {
                     ui.label("Height:");
                     let mut height = self.pipeline.get_height();
-                    if ui.add(egui::DragValue::new(&mut height)).changed() {
+                    if ui
+                        .add(
+                            egui::DragValue::new(&mut height)
+                                .range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
+                        )
+                        .changed()
+                    {
                         self.pipeline.set_height(height);
                         (self.handler)(Event::UpdateResolution);
                     }
