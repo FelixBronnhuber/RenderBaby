@@ -1,6 +1,4 @@
-use crate::control_plane::gui::{
-    controller::Controller, model::Model, pipeline::Pipeline, view::View,
-};
+use crate::control_plane::gui::{controller::Controller, model::Model, pipeline::Pipeline, view::View};
 
 pub struct App {
     view: View,
