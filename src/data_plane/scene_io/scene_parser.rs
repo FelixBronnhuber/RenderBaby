@@ -10,7 +10,7 @@ use crate::data_plane::scene::{
     _scene::Scene,
     geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry},
 };
-
+#[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug)]
 struct SceneFile {
     scene_name: String,
@@ -73,7 +73,7 @@ impl From<Vec3> for Vec3d {
         }
     }
 }
-
+#[allow(dead_code)]
 fn transform_to_scene(file: SceneFile) -> Scene {
     let mut scene = Scene::new();
     scene.set_name(file.scene_name);
@@ -119,7 +119,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
     ]);
     scene
 }
-
+#[allow(dead_code)]
 pub fn serialize_scene(sc: &mut Scene) {
     //if let Some(p) = obj.as_any().downcast_ref::<Player>() ;
     //let scene_file = Scene_File{scene_name : sc.get_name().to_string(),objects : sc.get_objects().for_each().,camera: sc.get_camera(), lights: sc.get_light_sources(), background_color: sc.get_background_color()};
@@ -179,7 +179,7 @@ pub fn serialize_scene(sc: &mut Scene) {
     let mut map = HashMap::with_capacity(2);
     map.insert("x".to_owned(), sc.get_camera().get_resolution()[0]);
     map.insert("y".to_owned(), sc.get_camera().get_resolution()[1]);
-    let file = SceneFile {
+    let _file = SceneFile {
         scene_name: sc.get_name().to_string(),
         objects: objectarr,
         lights: lightarr,
@@ -211,14 +211,14 @@ pub fn serialize_scene(sc: &mut Scene) {
         },
     };
 
-    let output = File::create("out.json").expect("Could not create file");
+    let _output = File::create("out.json").expect("Could not create file");
     // serde_json::to_writer_pretty(output, &file).expect("Could not write into file");
     todo!("Fix serde_json");
 }
 
 pub fn parse_scene(scene_path: String) -> Scene {
     let scene_path = Path::new(&scene_path);
-    let json_content = fs::read_to_string(scene_path).unwrap();
+    let _json_content = fs::read_to_string(scene_path).unwrap();
     // let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();
     // transform_to_scene(read)
     todo!("Fix serde_json");

@@ -1,33 +1,27 @@
-use crate::control_plane::gui::{controller::Controller, model::Model, pipeline::Pipeline, view::View};
+use crate::control_plane::gui::*;
+use view_wrappers::ViewWrapper;
 
 pub struct App {
-    view: View,
+    view: view::View,
 }
 
 impl App {
     pub fn new() -> Self {
-        App::create_egui_app()
+        Self::new_eframe_app()
     }
 
-    pub fn create_egui_app() -> Self {
-        let pipeline = Pipeline::new();
+    fn new_eframe_app() -> Self {
+        let pipeline = pipeline::Pipeline::new();
+        let mut controller = controller::Controller::new(model::Model::new(), pipeline.clone());
 
-        let model = Model::new();
-        let controller = Controller::new(pipeline.clone(), model);
-        let mut view = View::new(pipeline);
+        let handler = Box::new(move |event| controller.handle_event(event));
 
-        view.set_listener(Box::new(controller));
+        let view = view::View::new(pipeline, handler);
 
-        Self { view }
+        App { view }
     }
 
     pub fn show(self) {
         self.view.open();
-    }
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
     }
 }

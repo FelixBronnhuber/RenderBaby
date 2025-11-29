@@ -1,6 +1,5 @@
-use engine_wgpu_wrapper::RenderOutput;
-
 use crate::data_plane::scene::_scene::Scene;
+use engine_wgpu_wrapper::RenderOutput;
 
 pub struct Model {
     scene: Scene,

@@ -15,7 +15,6 @@ use crate::{
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
-
 /// The scene holds all relevant objects, lightsources, camera ...
 pub struct Scene {
     scene_graph: SceneGraph,
@@ -29,6 +28,7 @@ impl Default for Scene {
         Self::new()
     }
 }
+#[allow(unused)]
 impl Scene {
     pub fn load_scene_from_file(path: String) -> Scene {
         parse_scene(path)
@@ -151,13 +151,6 @@ impl Scene {
         self.render_engine = Some(engine);
     }
 
-    // TODO: Action stack functions: currently empty
-    // pub fn undo(&mut self) {
-    //     self.action_stack.undo();
-    // }
-    // pub fn redo(&mut self) {
-    //     self.action_stack.redo();
-    // }
     pub fn get_name(&self) -> &String {
         &self.name
     }

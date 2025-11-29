@@ -26,6 +26,7 @@ impl Engine {
         self.renderer.render(rc)
     }
 
+    #[allow(dead_code)]
     pub fn switch_engine(&mut self, rc: RenderConfig, engine_type: RenderEngine) {
         self.renderer = match engine_type {
             RenderEngine::Raytracer => Box::new(engine_raytracer::Engine::new(rc)),
@@ -34,6 +35,7 @@ impl Engine {
         self.engine_type = engine_type;
     }
 
+    #[allow(dead_code)]
     pub fn current_engine(&self) -> RenderEngine {
         self.engine_type
     }
