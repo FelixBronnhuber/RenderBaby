@@ -18,6 +18,7 @@ engine-wgpu-wrapper = { version = "0.1.0", path = "crates/engine-wgpu-wrapper" }
 engine-pathtracer = { version = "0.1.0", path = "crates/engine-pathtracer" }
 engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
 view-wrappers = { path = "crates/view-wrappers" }
+scene-objects = { path = "crates/scene-objects"}
 
 [workspace]
 members = [
@@ -25,5 +26,8 @@ members = [
     "crates/engine-pathtracer",
     "crates/engine-raytracer",
     "crates/engine-wgpu-wrapper",
-    "crates/engine-config", "crates/view-wrappers",
+    "crates/engine-config",
+    "crates/view-wrappers",
+    "crates/scene-objects",
+
 ]

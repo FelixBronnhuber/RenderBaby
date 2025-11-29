@@ -1,0 +1,28 @@
+use glam::Vec3;
+
+#[allow(dead_code)]
+pub trait GeometricObject {
+    fn scale(&mut self, factor: f32); // TODO: scale 3d?
+    fn translate(&mut self, vec: Vec3);
+    fn rotate(&mut self, vec: Vec3);
+}
+
+#[allow(dead_code)]
+pub trait SceneObject: GeometricObject {
+    fn get_path(&self) -> String;
+    //fn set_path(&mut self, path: String);
+    fn get_scale(&self) -> Vec3;
+    fn get_translation(&self) -> Vec3;
+    fn get_rotation(&self) -> Vec3;
+    // todo color?
+}
+
+#[allow(dead_code)]
+#[derive(Debug)]
+pub(crate) struct SceneObjectAttributes {
+    pub name: String,
+    pub path: Option<String>,
+    pub scale: Vec3,
+    pub translation: Vec3,
+    pub rotation: Vec3,
+}
