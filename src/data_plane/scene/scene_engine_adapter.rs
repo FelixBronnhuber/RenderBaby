@@ -2,13 +2,13 @@
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
-
-use crate::data_plane::scene::{_scene::Scene, geometric_object::*};
+use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
+use crate::data_plane::scene::{scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 
-impl Sphere {
+/* impl Sphere {
     fn to_render_engine_sphere(&self) -> RenderSphere {
         //! Creates and returns an engine_wgpu_wrapper::Sphere from self
         let center = self.get_center();
@@ -25,9 +25,24 @@ impl Sphere {
         //todo: maybe do this when sphere is created/changed in scene to save preparation time when rendering
         //todo: probably better as into
     }
+} */
+fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
+    RenderSphere::new(
+        {
+            let center = sphere.get_center();
+            engine_config::Vec3::new(center.x, center.y, center.z)
+        },
+        sphere.get_radius(),
+        {
+            let color = sphere.get_color();
+            engine_config::Vec3::new(color[0], color[1], color[2])
+        },
+    )
+    .unwrap()
+    //todo error handling
 }
 
-impl Camera {
+/* impl Camera {
     fn to_render_engine_uniforms(
         &self,
         spheres_count: u32,
@@ -43,9 +58,24 @@ impl Camera {
         );
         Ok(uniforms)
     }
+} */
+fn camera_to_render_uniforms(
+    camera: &Camera,
+    spheres_count: u32,
+    triangles_count: u32,
+) -> Result<RenderUniforms, Error> {
+    let [width, height] = camera.get_resolution();
+    let uniforms = RenderUniforms::new(
+        width,
+        height,
+        camera.get_fov(),
+        spheres_count,
+        triangles_count,
+    );
+    Ok(uniforms)
 }
 
-impl TriGeometry {
+/* impl TriGeometry {
     fn to_render_engine_tri(&self) -> (Vec<f32>, Vec<u32>) {
         let mut res_points = vec![];
         let mut res_tri = vec![];
@@ -63,6 +93,23 @@ impl TriGeometry {
         }
         (res_points, res_tri)
     }
+} */
+fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
+    let mut res_points = vec![];
+    let mut res_tri = vec![];
+    let mut count = 0u32;
+    for tri in tri_geom.get_triangles() {
+        for point in tri.get_points() {
+            res_points.push(point.x);
+            res_points.push(point.y);
+            res_points.push(point.z);
+        }
+        res_tri.push(count);
+        res_tri.push(count + 1);
+        res_tri.push(count + 2);
+        count += 3;
+    }
+    (res_points, res_tri)
 }
 
 impl Scene {
@@ -71,7 +118,7 @@ impl Scene {
         let mut res = vec![];
         for obj in self.get_objects() {
             if let Some(sphere) = obj.as_any().downcast_ref::<Sphere>() {
-                res.push(sphere.to_render_engine_sphere());
+                res.push(sphere_to_render_sphere(sphere));
             }
         }
         res
@@ -82,9 +129,7 @@ impl Scene {
         triangles_count: u32,
     ) -> RenderUniforms {
         //! Returns the uniforms including camera settings
-        self.get_camera()
-            .to_render_engine_uniforms(spheres_count, triangles_count)
-            .unwrap()
+        camera_to_render_uniforms(self.get_camera(), spheres_count, triangles_count).unwrap()
     }
 
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
@@ -92,7 +137,7 @@ impl Scene {
         let mut res = vec![];
         for obj in self.get_objects() {
             if let Some(tri) = obj.as_any().downcast_ref::<TriGeometry>() {
-                res.push(tri.to_render_engine_tri());
+                res.push(tri_geometry_to_render_tri(tri));
                 //break;
             }
         }

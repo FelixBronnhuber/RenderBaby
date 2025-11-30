@@ -7,7 +7,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::scene::{
-    _scene::Scene,
+    scene::Scene,
     geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry},
 };
 #[allow(dead_code)]

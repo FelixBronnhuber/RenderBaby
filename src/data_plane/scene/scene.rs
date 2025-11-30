@@ -1,17 +1,19 @@
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
 use glam::Vec3;
+use scene_objects::{
+    camera::Camera,
+    geometric_object::GeometricObject,
+    light_source::{LightSource, LightType},
+    material::Material,
+    sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::{
-            geometric_object::{
-                Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere,
-                TriGeometry,
-            },
-            scene_graph::SceneGraph,
-        },
+        scene::{scene_graph::SceneGraph},
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
@@ -75,7 +77,7 @@ impl Scene {
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
-        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
+        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Vec3::default());
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,

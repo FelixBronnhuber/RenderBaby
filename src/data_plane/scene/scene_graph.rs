@@ -1,6 +1,5 @@
 use glam::Vec3;
-
-use crate::data_plane::scene::geometric_object::{Camera, GeometricObject, LightSource, Rotation};
+use scene_objects::{camera::Camera, geometric_object::GeometricObject, light_source::LightSource};
 
 pub(crate) struct SceneGraph {
     objects: Vec<Box<dyn GeometricObject>>,
@@ -13,7 +12,7 @@ impl SceneGraph {
         Self {
             objects: Vec::new(),
             light_sources: Vec::new(),
-            camera: Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0)),
+            camera: Camera::new(Vec3::new(0.0, 0.0, 0.0), Vec3::default()),
         }
     }
     pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
