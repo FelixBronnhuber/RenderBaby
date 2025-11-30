@@ -42,3 +42,14 @@ impl Camera {
         }
     }
 }
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            position: Vec3::default(),
+            rotation: Vec3::default(),
+            fov: 1.0,
+            resolution: [1920, 1080],
+        }
+    }
+}
