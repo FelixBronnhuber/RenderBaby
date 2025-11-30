@@ -129,6 +129,9 @@ impl eframe::App for View {
                 }
                 if let Some(path) = self.file_dialog_scene.take_picked() {
                     self.scene_path = Some(path.to_path_buf());
+                    if let Ok(text) = std::fs::read_to_string(&path) {
+                        self.json_text = text;
+                    }
                     self.set_scene_filepath();
                 }
                 self.file_dialog_scene.update(ctx);
