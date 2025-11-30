@@ -4,12 +4,15 @@ use std::fs::File;
 use std::path::Path;
 
 use glam::Vec3;
+use scene_objects::{
+    camera::Camera,
+    geometric_object::SceneObject,
+    light_source::{LightSource, LightType},
+    tri_geometry::TriGeometry,
+};
 use serde::{Deserialize, Serialize};
 
-use crate::data_plane::scene::{
-    scene::Scene,
-    geometric_object::{Camera, FileObject, LightSource, LightType, Rotation, TriGeometry},
-};
+use crate::data_plane::scene::{render_scene::Scene};
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug)]
 struct SceneFile {
@@ -108,7 +111,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
             file.camera.position.y,
             file.camera.position.z,
         ),
-        Rotation::new(pitch, yaw),
+        Vec3::new(pitch, yaw, 0.0),
     ));
 
     scene.add_object(Box::new(TriGeometry::new(Vec::new())));
