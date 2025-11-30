@@ -38,8 +38,8 @@ fn camera_to_render_uniforms(
     //! converts the given scene_object::camera::Camera to a render_config::Uniforms
     //! so that it can be passed to the render engine
     //! ## Parameter
-    //! 'camera': scene_object::camer::Camera to be converted
-    //! 'spheres_count': Number of spheres to be rendered
+    //! 'camera': scene_object::camer::Camera to be converted <br>
+    //! 'spheres_count': Number of spheres to be rendered <br>
     //! 'triangles_count': Number of triangles to be rendered
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
@@ -134,8 +134,7 @@ impl Scene {
         }
         let rc = rcb.build().unwrap();
         let engine = self.get_render_engine_mut();
-        //let res = engine.render(rc).unwrap();
-        //Ok((res.pixels, res.width, res.height))
+
         engine.render(rc)
     }
 }

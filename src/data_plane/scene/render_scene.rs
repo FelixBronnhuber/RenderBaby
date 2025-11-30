@@ -37,28 +37,15 @@ impl Scene {
         parse_scene(path)
     }
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
-        //! loads object from file. Adds object to scene and returns object if successfull
-        //! ## Arguments
-        //! 'path': Path to the file that is to be loaded
+        //! Adds new object from a obj file at path
+        //! ## Parameter
+        //! 'path': Path to the obj file
         //! ## Returns
-        //! Result with either a reference to the new object or an error
-        /* let p0 = Vec3::new(0.0, 0.0, 0.0);
-        let p1 = Vec3::new(1.0, 0.0, 0.0);
-        let p2 = Vec3::new(0.0, 1.0, 0.0);
-        let p2 = Vec3::new(0.0, 0.0, 1.0);
-        // todo: color?
-        let t0 = Triangle::new(vec![], None);
-        let t1 = Triangle::new(vec![], None);
-        let t2 = Triangle::new(vec![], None);
-        let t3 = Triangle::new(vec![], None);
-        let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
+        //! Result of either a reference to the new object or an error
         let objs = parseobj(path).unwrap();
         for obj in objs {
             self.add_object(Box::new(obj));
         }
-
-        //Ok(&res)
-        //todo: this is very ugly
         Ok(self
             .get_objects()
             .last()
