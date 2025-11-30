@@ -175,11 +175,15 @@ impl eframe::App for View {
                 ui.separator();
 
                 ui.label("Scene JSON:");
-                ui.add(
-                    egui::TextEdit::multiline(&mut self.json_text)
-                        .desired_rows(20)
-                        .desired_width(f32::INFINITY),
-                );
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.json_text)
+                                .frame(true)
+                                .lock_focus(true),
+                        );
+                    });
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
