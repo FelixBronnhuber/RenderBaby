@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use glam::Vec3;
 
 use crate::{
@@ -29,6 +31,9 @@ impl GeometricObject for TriGeometry {
 
     fn rotate(&mut self, _vec: Vec3) {
         todo!()
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 impl SceneObject for TriGeometry {
@@ -128,5 +133,8 @@ impl GeometricObject for Triangle {
 
     fn rotate(&mut self, _vec: Vec3) {
         todo!()
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

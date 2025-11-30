@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use glam::Vec3;
 
 #[allow(dead_code)]
@@ -5,6 +7,7 @@ pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[allow(dead_code)]

@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use glam::Vec3;
 
 use crate::{
@@ -71,6 +73,9 @@ impl GeometricObject for Sphere {
         //self.center
     }
     fn rotate(&mut self, _vec: Vec3) {}
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 impl SceneObject for Sphere {

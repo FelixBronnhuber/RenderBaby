@@ -1,1 +1,39 @@
+use crate::geometric_object::GeometricObject;
 
+/// This is where the mesh as an alternative to trigeometry will be implemented
+#[allow(dead_code)]
+#[derive(Debug)]
+struct Mesh {
+    vertices: Vec<f32>,
+    tris: Vec<u32>,
+}
+
+#[allow(dead_code)]
+impl Mesh {
+    fn new(vertices: Vec<f32>, tris: Vec<u32>) -> Self {
+        Self { vertices, tris }
+    }
+}
+
+#[allow(unused)]
+impl GeometricObject for Mesh {
+    fn scale(&mut self, factor: f32) {
+        todo!()
+    }
+
+    fn translate(&mut self, vec: glam::Vec3) {
+        for i in 0..self.vertices.len() / 3 {
+            self.vertices[i * 3] += vec.x;
+            self.vertices[i * 3 + 1] += vec.y;
+            self.vertices[i * 3 + 2] += vec.z;
+        }
+    }
+
+    fn rotate(&mut self, vec: glam::Vec3) {
+        todo!()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        todo!()
+    }
+}
