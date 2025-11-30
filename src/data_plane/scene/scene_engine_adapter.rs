@@ -3,7 +3,7 @@ use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
 use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
-use crate::data_plane::scene::{scene::Scene};
+use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
