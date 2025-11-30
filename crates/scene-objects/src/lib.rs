@@ -1,10 +1,10 @@
-mod camera;
-mod geometric_object;
-mod light_source;
-mod material;
-mod mesh;
-mod sphere;
-mod tri_geometry;
+pub mod camera;
+pub mod geometric_object;
+pub mod light_source;
+pub mod material;
+pub mod mesh;
+pub mod sphere;
+pub mod tri_geometry;
 
 #[cfg(test)]
 mod tests {
