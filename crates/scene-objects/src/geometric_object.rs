@@ -3,6 +3,7 @@ use std::any::Any;
 use glam::Vec3;
 
 #[allow(dead_code)]
+///Defines some basic geometric functions that all Render Objects should offer
 pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
@@ -11,6 +12,7 @@ pub trait GeometricObject {
 }
 
 #[allow(dead_code)]
+/// Defines functions that define how the object has changed from its base
 pub trait SceneObject: GeometricObject {
     fn get_path(&self) -> String;
     //fn set_path(&mut self, path: String);

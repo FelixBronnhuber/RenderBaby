@@ -11,6 +11,7 @@ struct Mesh {
 #[allow(dead_code)]
 impl Mesh {
     fn new(vertices: Vec<f32>, tris: Vec<u32>) -> Self {
+        //! Constructor for new Mesh
         Self { vertices, tris }
     }
 }

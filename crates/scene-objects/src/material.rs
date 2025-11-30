@@ -15,6 +15,7 @@ impl Material {
         shininess: f64,
         transparency: f64,
     ) -> Self {
+        //! Constructor for new material
         Material {
             ambient_reflectivity,
             diffuse_reflectivity,
