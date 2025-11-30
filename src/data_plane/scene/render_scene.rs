@@ -1,6 +1,7 @@
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
 use glam::Vec3;
+use log::{info};
 use scene_objects::{
     camera::Camera,
     geometric_object::GeometricObject,
@@ -34,6 +35,7 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: String) -> Scene {
+        info!("Scene: Loading new scene from {path}");
         parse_scene(path)
     }
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
@@ -42,6 +44,7 @@ impl Scene {
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
+        info!("Scene {self}: Loading object from {path}");
         let objs = parseobj(path).unwrap();
         for obj in objs {
             self.add_object(Box::new(obj));
@@ -57,6 +60,8 @@ impl Scene {
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
+        //! This is a temporary function for test purposes
+        info!("Scene: Initialising with 'proto' settings");
         let green = [0.0, 1.0, 0.0];
         let magenta = [1.0, 0.0, 1.0];
         let red = [1.0, 0.0, 0.0];
@@ -124,12 +129,14 @@ impl Scene {
         //! ## Arguments
         //! 'obj': GeometricObject that is to be added to the scene
         self.scene_graph.add_object(obj);
+        info!("{self}: added new object");
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
         //! adds an LightSource to the scene
         //! ## Arguments
         //! 'light': LightSource that is to be added
+        info!("{self}: adding LightSource {light}");
         self.scene_graph.add_lightsource(light);
     }
 
@@ -137,6 +144,7 @@ impl Scene {
         //! sets the scene camera to the passed camera
         //! ## Arguments
         //! 'camera': Camera that is to be the new scene camera
+        info!("{self}: set camera to {camera}");
         self.scene_graph.set_camera(camera);
     }
 
@@ -169,6 +177,11 @@ impl Scene {
         //! set the scene engine to the passed scene
         //! ## Arguments
         //! 'engine': engine that will be the new engine
+        //!
+        info!(
+            "{self}: setting render engine to new {:?}",
+            engine.current_engine()
+        );
         self.render_engine = Some(engine);
     }
 
@@ -181,7 +194,9 @@ impl Scene {
     pub fn set_name(&mut self, name: String) {
         //! ## Arguments
         //! 'name' : new scene name
-        self.name = name;
+        let old_name = self.name.clone();
+        self.name = name.clone();
+        info!("{self}: Renamed to {name} from {old_name}");
     }
 
     pub fn get_background_color(&self) -> [f32; 3] {
@@ -194,5 +209,15 @@ impl Scene {
         //! ## Parameters
         //! New background color as array of f32
         self.background_color = color;
+        info!(
+            "Scene {self}: set background color to [{}, {}, {}]",
+            color[0], color[1], color[2]
+        );
+    }
+}
+
+impl std::fmt::Display for Scene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Scene {}", self.get_name())
     }
 }

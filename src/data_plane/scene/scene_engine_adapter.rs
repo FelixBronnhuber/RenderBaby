@@ -2,6 +2,7 @@
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
+use log::info;
 use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
 use crate::data_plane::scene::{render_scene::Scene};
 
@@ -133,9 +134,11 @@ impl Scene {
             rcb = rcb.vertices(tri.0.clone()).triangles(tri.1.clone());
         }
         let rc = rcb.build().unwrap();
+        info!("{self}: Calling render");
         let engine = self.get_render_engine_mut();
-
-        engine.render(rc)
+        let res = engine.render(rc);
+        info!("{self}: Received render result");
+        res
     }
 }
 
