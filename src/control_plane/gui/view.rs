@@ -27,6 +27,7 @@ pub struct View {
     file_dialog_scene: egui_file_dialog::FileDialog,
     obj_path: Option<PathBuf>,
     scene_path: Option<PathBuf>,
+    json_text: String,
 }
 
 impl View {
@@ -88,6 +89,7 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
                 .default_file_filter("JSON"),
             obj_path: None,
             scene_path: None,
+            json_text: String::new(),
         }
     }
 
@@ -167,9 +169,14 @@ impl eframe::App for View {
                         (self.handler)(Event::UpdateResolution);
                     }
                 });
-                ui.separator()
+                ui.separator();
 
-                //Hier das Textfeld für die JSON
+                ui.label("Scene JSON:");
+                ui.add(
+                    egui::TextEdit::multiline(&mut self.json_text)
+                        .desired_rows(20)
+                        .desired_width(f32::INFINITY),
+                );
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
