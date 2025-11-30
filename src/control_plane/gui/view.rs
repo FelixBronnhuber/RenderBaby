@@ -4,6 +4,7 @@ use eframe::egui;
 use eframe::epaint;
 use egui_file_dialog;
 use std::path::PathBuf;
+use egui::Align;
 use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::ViewWrapper;
 use crate::data_plane::scene::geometric_object::ImageResolution;
@@ -275,14 +276,23 @@ impl eframe::App for View {
             self.display_image(ui);
         });
 
-        egui::TopBottomPanel::bottom("Log-view")
-            .resizable(true)
-            .min_height(10.0)
-            .show_animated(ctx, self.bottom_visible, |ui| {
-                ui.label("Log-view");
-                let available = ui.available_rect_before_wrap();
-                ui.allocate_rect(available, egui::Sense::drag());
-            });
+        if self.bottom_visible {
+            egui::TopBottomPanel::bottom("Log-view")
+                .resizable(true)
+                .min_height(30.0)
+                .show(ctx, |ui| {
+                    ui.heading("Log-view");
+                    egui::ScrollArea::vertical()
+                        .stick_to_bottom(true)
+                        .show(ui, |ui| {
+                            let logs = log_buffer::get_logs();
+                            ui.add_sized(
+                                ui.available_size(),
+                                egui::Label::new(logs).halign(Align::LEFT),
+                            );
+                        });
+                });
+        }
     }
 }
 

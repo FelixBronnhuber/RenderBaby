@@ -2683,6 +2683,7 @@ dependencies = [
  "env_logger",
  "glam",
  "log",
+ "log-buffer",
  "serde",
  "tobj",
  "view-wrappers",
