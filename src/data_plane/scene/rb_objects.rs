@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use scene_objects::sphere::Sphere;
 
-/// Deref pattern to extend scene objects with same behaviour
+/// Wrapper struct with Deref pattern to extend scene objects with same behaviour
 #[allow(unused)]
 pub struct RbSphere(Sphere);
 

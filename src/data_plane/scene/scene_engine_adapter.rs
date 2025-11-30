@@ -8,25 +8,13 @@ use crate::data_plane::scene::{render_scene::Scene};
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 
-/* impl Sphere {
-    fn to_render_engine_sphere(&self) -> RenderSphere {
-        //! Creates and returns an engine_wgpu_wrapper::Sphere from self
-        let center = self.get_center();
-        let color = self.get_color();
-        let render_color = engine_config::Vec3::new(color[0], color[1], color[2]);
-
-        let res = RenderSphere::new(
-            engine_config::Vec3::new(center.x, center.y, center.z),
-            self.get_radius(),
-            render_color,
-        );
-
-        res.unwrap()
-        //todo: maybe do this when sphere is created/changed in scene to save preparation time when rendering
-        //todo: probably better as into
-    }
-} */
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
+    //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
+    //! so it can be passed to the render engine
+    //! ## Parameter
+    //! scene_objects::sphere::Sphere to be converted
+    //! ## Returns
+    //! engine_config::Sphere based on the given sphere
     RenderSphere::new(
         {
             let center = sphere.get_center();
@@ -42,28 +30,19 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //todo error handling
 }
 
-/* impl Camera {
-    fn to_render_engine_uniforms(
-        &self,
-        spheres_count: u32,
-        triangles_count: u32,
-    ) -> Result<RenderUniforms, Error> {
-        let [width, height] = self.get_resolution();
-        let uniforms = RenderUniforms::new(
-            width,
-            height,
-            self.get_fov(),
-            spheres_count,
-            triangles_count,
-        );
-        Ok(uniforms)
-    }
-} */
 fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
     triangles_count: u32,
 ) -> Result<RenderUniforms, Error> {
+    //! converts the given scene_object::camera::Camera to a render_config::Uniforms
+    //! so that it can be passed to the render engine
+    //! ## Parameter
+    //! 'camera': scene_object::camer::Camera to be converted
+    //! 'spheres_count': Number of spheres to be rendered
+    //! 'triangles_count': Number of triangles to be rendered
+    //! ## Returns
+    //! render_config::Unfiforms for the given parameters
     let [width, height] = camera.get_resolution();
     let uniforms = RenderUniforms::new(
         width,
@@ -75,26 +54,11 @@ fn camera_to_render_uniforms(
     Ok(uniforms)
 }
 
-/* impl TriGeometry {
-    fn to_render_engine_tri(&self) -> (Vec<f32>, Vec<u32>) {
-        let mut res_points = vec![];
-        let mut res_tri = vec![];
-        let mut count = 0u32;
-        for tri in self.get_triangles() {
-            for point in tri.get_points() {
-                res_points.push(point.x);
-                res_points.push(point.y);
-                res_points.push(point.z);
-            }
-            res_tri.push(count);
-            res_tri.push(count + 1);
-            res_tri.push(count + 2);
-            count += 3;
-        }
-        (res_points, res_tri)
-    }
-} */
 fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
+    //! Converts the given TriGeometry to a touple of a Vector represention the triangle vertices and a vector referencing which points make up the triangles
+    //! Purpose of the conversion is to pass the result to the render engine
+    //! ## Parameter
+    //! 'tri_geom': Reference to the TriGeometry that is to be converted
     let mut res_points = vec![];
     let mut res_tri = vec![];
     let mut count = 0u32;
@@ -112,9 +76,11 @@ fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
     (res_points, res_tri)
 }
 
+/// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
     pub(crate) fn get_render_spheres(&self) -> Vec<RenderSphere> {
-        //! Returns a Vec that contains all Scene spheres as engine_config::Sphere
+        //! ## Returns
+        //! a Vec that contains all Scene spheres as engine_config::Sphere
         let mut res = vec![];
         for obj in self.get_objects() {
             if let Some(sphere) = obj.as_any().downcast_ref::<Sphere>() {
@@ -128,12 +94,14 @@ impl Scene {
         spheres_count: u32,
         triangles_count: u32,
     ) -> RenderUniforms {
-        //! Returns the uniforms including camera settings
+        //! ## Returns
+        //! RenderUnfiform for the camera of the scene
         camera_to_render_uniforms(self.get_camera(), spheres_count, triangles_count).unwrap()
     }
 
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
-        //! Returns all TriGeometries of the scene, each representet as a touple of a vector of vertices and a vector of triangles
+        //! ## Returns
+        //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         let mut res = vec![];
         for obj in self.get_objects() {
             if let Some(tri) = obj.as_any().downcast_ref::<TriGeometry>() {
@@ -145,8 +113,9 @@ impl Scene {
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
-        //! calls the render engine for the scene self. Returns ...( will be changed)
-        // todo: change return type to mask engine plane
+        //! calls the render engine for the scene self.
+        //! ## Returns
+        //! Result of either the RenderOutput or a error
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
