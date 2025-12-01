@@ -1,6 +1,6 @@
 use crate::bind_group;
-use crate::{buffers, pipeline, GpuDevice};
-use anyhow::{anyhow, Result};
+use crate::{GpuDevice, buffers, pipeline};
+use anyhow::{Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
 use engine_config::{RenderConfig, Sphere};
