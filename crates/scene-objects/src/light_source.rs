@@ -1,5 +1,3 @@
-use std::fmt::write;
-
 use glam::Vec3;
 /// Defines light sources for the scene
 #[allow(dead_code)]
