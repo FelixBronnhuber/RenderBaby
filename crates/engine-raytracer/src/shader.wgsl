@@ -103,6 +103,9 @@ fn hash_to_color(n: u32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let pane_distance = uniforms.fov;
+    let pane_width = 100.0;
+
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
     let aspect = f32(uniforms.width) / f32(uniforms.height);
@@ -116,8 +119,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let camera_right = normalize(cross(world_up, camera_forward));
     let camera_up = cross(camera_forward, camera_right);
     
-    let fov_fix = 0.2;
-    let ray_dir = normalize(u * camera_right + v * camera_up + camera_forward);
+    let fov = pane_width / (2 * pane_distance * aspect);
+    let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
 
     let a = .5 * (ray_dir.y + 1.);
     var hit_color = vec3<f32>(1., 1., 1.); // Background color

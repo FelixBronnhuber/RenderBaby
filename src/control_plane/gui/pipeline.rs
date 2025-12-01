@@ -15,7 +15,7 @@ impl Pipeline {
     pub fn new() -> Self {
         Self {
             render_output_ppl: Arc::new(Mutex::new(None)),
-            fov: Arc::new(Mutex::new(std::f32::consts::FRAC_PI_4)),
+            fov: Arc::new(Mutex::new(50.0)),
             width: Arc::new(Mutex::new(500)),
             height: Arc::new(Mutex::new(500)),
             obj_file_path: Arc::new(Mutex::new(None)),
