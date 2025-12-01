@@ -7,7 +7,6 @@ use std::path::PathBuf;
 use egui::Align;
 use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::ViewWrapper;
-use crate::data_plane::scene::geometric_object::ImageResolution;
 
 // E FRAME VIEW:
 
@@ -246,8 +245,7 @@ impl eframe::App for View {
                     let mut width = self.pipeline.get_width();
                     if ui
                         .add(
-                            egui::DragValue::new(&mut width)
-                                .range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
+                            egui::DragValue::new(&mut width), //.range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
                         )
                         .changed()
                     {
@@ -261,8 +259,7 @@ impl eframe::App for View {
                     let mut height = self.pipeline.get_height();
                     if ui
                         .add(
-                            egui::DragValue::new(&mut height)
-                                .range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
+                            egui::DragValue::new(&mut height), //.range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
                         )
                         .changed()
                     {
@@ -288,7 +285,7 @@ impl eframe::App for View {
                             let logs = log_buffer::get_logs();
                             ui.add_sized(
                                 ui.available_size(),
-                                egui::Label::new(logs).halign(Align::LEFT),
+                                egui::Label::new(logs).halign(Align::LEFT).selectable(false),
                             );
                         });
                 });
