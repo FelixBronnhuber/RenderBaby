@@ -9,21 +9,6 @@ use view_wrappers::ViewWrapper;
 
 // E FRAME VIEW:
 
-#[derive(Default)]
-pub struct SceneState {
-    pub cam_x: f32,
-    pub cam_y: f32,
-    pub cam_z: f32,
-    pub cam_yaw: f32,
-    pub cam_rot: f32,
-
-    pub ferris_x: f32,
-    pub ferris_y: f32,
-    pub ferris_z: f32,
-    pub ferris_yaw: f32,
-    pub ferris_rot: f32,
-}
-
 #[derive(PartialEq)]
 pub enum Event {
     DoRender,
@@ -42,8 +27,7 @@ pub struct View {
     file_dialog_scene: egui_file_dialog::FileDialog,
     obj_path: Option<PathBuf>,
     scene_path: Option<PathBuf>,
-    //remove Mockup Scene later
-    scene: SceneState,
+    json_text: String,
 }
 
 impl View {
@@ -105,8 +89,7 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
                 .default_file_filter("JSON"),
             obj_path: None,
             scene_path: None,
-            //remove Mockup Struct later
-            scene: SceneState::default(),
+            json_text: String::new(),
         }
     }
 
@@ -146,6 +129,9 @@ impl eframe::App for View {
                 }
                 if let Some(path) = self.file_dialog_scene.take_picked() {
                     self.scene_path = Some(path.to_path_buf());
+                    if let Ok(text) = std::fs::read_to_string(&path) {
+                        self.json_text = text;
+                    }
                     self.set_scene_filepath();
                 }
                 self.file_dialog_scene.update(ctx);
@@ -156,76 +142,6 @@ impl eframe::App for View {
             .resizable(true)
             .min_width(220.0)
             .show(ctx, |ui| {
-                //temporary mockup code for demo presentation
-                ui.separator();
-                ui.heading("Scene Explorer");
-                ui.collapsing("Scene", |ui| {
-                    ui.collapsing("Uniforms", |ui| {
-                        ui.collapsing("Camera", |ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.cam_x)
-                                    .speed(0.1)
-                                    .prefix("x: "),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.cam_y)
-                                    .speed(0.1)
-                                    .prefix("y: "),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.cam_z)
-                                    .speed(0.1)
-                                    .prefix("z: "),
-                            );
-
-                            ui.separator();
-                            ui.add(
-                                egui::Slider::new(&mut self.scene.cam_yaw, -180.0..=180.0)
-                                    .text("yaw"),
-                            );
-                            ui.add(
-                                egui::Slider::new(&mut self.scene.cam_rot, -180.0..=180.0)
-                                    .text("rotation"),
-                            );
-                        });
-                    });
-
-                    ui.collapsing("Lights", |ui| {
-                        ui.label("TODO: Add light objects");
-                    });
-
-                    ui.collapsing("Objects", |ui| {
-                        ui.collapsing("ferris", |ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.ferris_x)
-                                    .speed(0.1)
-                                    .prefix("x: "),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.ferris_y)
-                                    .speed(0.1)
-                                    .prefix("y: "),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut self.scene.ferris_z)
-                                    .speed(0.1)
-                                    .prefix("z: "),
-                            );
-
-                            ui.separator();
-                            ui.add(
-                                egui::Slider::new(&mut self.scene.ferris_yaw, -180.0..=180.0)
-                                    .text("yaw"),
-                            );
-                            ui.add(
-                                egui::Slider::new(&mut self.scene.ferris_rot, -180.0..=180.0)
-                                    .text("rotation"),
-                            )
-                        });
-                    });
-                });
-                ui.separator();
-
                 if ui.button("Render").clicked() {
                     (self.handler)(Event::DoRender);
                 }
@@ -256,6 +172,18 @@ impl eframe::App for View {
                         (self.handler)(Event::UpdateResolution);
                     }
                 });
+                ui.separator();
+
+                ui.label("Scene JSON:");
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::TextEdit::multiline(&mut self.json_text)
+                                .frame(true)
+                                .lock_focus(true),
+                        );
+                    });
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
