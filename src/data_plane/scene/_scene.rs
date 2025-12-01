@@ -166,4 +166,9 @@ impl Scene {
     pub fn set_background_color(&mut self, color: [f32; 3]) {
         self.background_color = color;
     }
+
+    #[allow(dead_code)]
+    pub fn export_render_img(&self, path: String) {
+        todo!()
+    }
 }
