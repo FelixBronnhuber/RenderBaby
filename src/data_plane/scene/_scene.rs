@@ -12,7 +12,7 @@ use crate::{
             },
             scene_graph::SceneGraph,
         },
-        scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
+        scene_io::{scene_parser::parse_scene},
     },
 };
 /// The scene holds all relevant objects, lightsources, camera ...
@@ -45,11 +45,11 @@ impl Scene {
         let t2 = Triangle::new(vec![], None);
         let t3 = Triangle::new(vec![], None);
         let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
-        let objs = parseobj(path).unwrap();
+        /*let objs = parseobj(path).unwrap();
         for obj in objs {
             self.add_object(Box::new(obj));
-        }
-
+        }*/
+        todo!("get parsed information");
         //Ok(&res)
         //todo: this is very ugly
         Ok(self

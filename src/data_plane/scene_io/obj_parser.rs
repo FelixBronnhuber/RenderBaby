@@ -1,120 +1,152 @@
-use anyhow::Error;
-use glam::Vec3;
+use std::fs;
 use std::path::Path;
-use tobj;
 
-use crate::data_plane::scene::geometric_object::{Material, TriGeometry, Triangle};
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct OBJParser {
+    pub vertices: Vec<f32>, //points
+    pub faces: Vec<u32>,    //faces[0] has id face_material_id[0] with the name material_id_name[0]
+    pub face_material_id: Option<Vec<usize>>,
+    pub normals: Option<Vec<f32>>,            //vn
+    pub texture_coordinate: Option<Vec<f32>>, //vt
+    pub material_path: Option<Vec<String>>,
+    pub material_id_name: Option<Vec<String>>, //material_id_name of face
+}
+impl OBJParser {
+    #[allow(dead_code)]
+    pub fn parse(path: String) -> Option<OBJParser> {
+        let path = Path::new(path.as_str());
+        let data = fs::read_to_string(path).unwrap_or_default();
 
-pub fn parseobj(obj_path: String) -> Result<Vec<TriGeometry>, Error> {
-    let obj_path = Path::new(&obj_path);
+        let lineiter = data.lines();
 
-    // Load the OBJ file
-    let (models, materials) = tobj::load_obj(
-        obj_path,
-        &tobj::LoadOptions {
-            triangulate: true,
-            single_index: true,
-            ..Default::default()
-        },
-    )
-    .expect("error while trying to load obj file");
+        let mut v_vec: Vec<String> = Vec::with_capacity(30);
+        let mut v_slicearr: Vec<Vec<&str>> = Vec::with_capacity(30);
+        let mut v_numarr = Vec::with_capacity(30);
 
-    //let amount_models = models.len();
-    let mut z: usize = 0;
-    let mut trivec: Vec<TriGeometry> = Vec::new();
-    let mut modelmaterialids: Vec<Option<usize>> = Vec::new();
-    models.iter().for_each(|model| {
-        let mut return_triangles: Vec<Triangle> = Vec::new();
-        z = 0;
-        let mut vec: Vec<Vec3> = Vec::new();
-        for _i in 0..3 {
-            while z < (model.mesh.positions.len() / 3) {
-                let point = (
-                    model.mesh.positions[z * 3],
-                    model.mesh.positions[z * 3 + 1],
-                    model.mesh.positions[z * 3 + 2],
-                );
-                vec.push(point.into());
-                z += 1;
+        let mut vn_vec: Vec<String> = Vec::with_capacity(30);
+        let mut vn_slicearr: Vec<Vec<&str>> = Vec::with_capacity(30);
+        let mut vn_numarr = Vec::with_capacity(30);
+
+        let mut vt_vec: Vec<String> = Vec::with_capacity(30);
+        let mut vt_slicearr: Vec<Vec<&str>> = Vec::with_capacity(30);
+        let mut vt_numarr = Vec::with_capacity(30);
+
+        let mut f_vec: Vec<String> = Vec::with_capacity(30);
+        let mut f_id = Vec::with_capacity(30);
+        let mut f_slicearr: Vec<Vec<&str>> = Vec::with_capacity(30);
+        let mut f_numarr = Vec::with_capacity(30);
+
+        let mut mtl_vec: Vec<String> = Vec::with_capacity(30);
+        let mut mtl_path: Vec<String> = Vec::with_capacity(30);
+
+        let mut material_id_name = Vec::with_capacity(1);
+        material_id_name.push("NoMaterial".to_string());
+        let mut id = 0;
+        lineiter.for_each(|l| {
+            if l.starts_with("v ") {
+                v_vec.push(l.to_string());
+            } else if l.starts_with("f") {
+                f_vec.push(l.to_string());
+                f_id.push(id);
+            } else if l.starts_with("mtllib") {
+                mtl_vec.push(l.to_string());
+            } else if l.starts_with("usemtl") {
+                material_id_name.push(l.to_string().replace("usemtl", "").trim().to_owned());
+                id += 1
+            } else if l.starts_with("vn") {
+                vn_vec.push(l.to_string());
+            } else if l.starts_with("vt") {
+                vt_vec.push(l.to_string());
             }
-        }
-
-        let i = model.mesh.indices.len() / 3;
-
-        for u in 0..i {
-            let mut a = Triangle::new(Vec::new(), None);
-            a.add_point(vec[model.mesh.indices[u * 3] as usize]);
-            a.add_point(vec[model.mesh.indices[u * 3 + 1] as usize]);
-            a.add_point(vec[model.mesh.indices[u * 3 + 2] as usize]);
-            return_triangles.push(a);
-        }
-        trivec.push(TriGeometry::new(return_triangles));
-        modelmaterialids.push(model.mesh.material_id);
-    });
-
-    //let mats: &tobj::Material;
-    let mut matvec: Vec<Material> = Vec::new();
-    //let mate: Material = Material::default();
-    if let Ok(material) = materials {
-        //println!("materials: {}",material.len());
-        material.iter().for_each(|mats| {
-            matvec.push(Material::new(
-                vec![
-                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[0].into(),
-                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[1].into(),
-                    mats.ambient.unwrap_or([0.0, 0.0, 0.0])[2].into(),
-                ],
-                vec![
-                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[0].into(),
-                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[1].into(),
-                    mats.diffuse.unwrap_or([0.0, 0.0, 0.0])[2].into(),
-                ],
-                vec![
-                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[0].into(),
-                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[1].into(),
-                    mats.specular.unwrap_or([0.0, 0.0, 0.0])[2].into(),
-                ],
-                mats.shininess.unwrap_or(0.0).into(),
-                mats.dissolve.unwrap_or(0.0).into(),
-            ));
         });
-    }
-    for (trigeo, id) in trivec.iter_mut().zip(modelmaterialids.into_iter()) {
-        if let Some(uid) = id {
-            trigeo.set_material(Material::clone(&matvec[uid]));
-        } else {
-            trigeo.set_material(Material::default());
+
+        for s in &mut v_vec {
+            s.remove(0);
+            let str = s.trim();
+            let str = str.split_whitespace().collect::<Vec<&str>>();
+            v_slicearr.push(str);
         }
-    }
-    //trivec.iter().for_each(|tri|println!("{}",tri.get_name()));
-    //println!("return {:?}",trivec,);
-    //println!("trivec: {:?}",trivec);
-    println!("parsed obj successfully");
-    Result::Ok(trivec)
-    /* let mut mat: Material = Material::default();
 
-    if let material = materials.unwrap() {
-        mats = material.first().unwrap();
-        mat = Material::new(
-            vec![
-                mats.ambient.unwrap()[0].into(),
-                mats.ambient.unwrap()[1].into(),
-                mats.ambient.unwrap()[2].into(),
-            ],
-            vec![
-                mats.diffuse.unwrap()[0].into(),
-                mats.diffuse.unwrap()[1].into(),
-                mats.diffuse.unwrap()[2].into(),
-            ],
-            vec![
-                mats.specular.unwrap()[0].into(),
-                mats.specular.unwrap()[1].into(),
-                mats.specular.unwrap()[2].into(),
-            ],
-            mats.shininess.unwrap().into(),
-            mats.dissolve.unwrap().into(),
-        );
-    }
+        v_slicearr.iter().for_each(|a| {
+            a.iter()
+                .for_each(|s| v_numarr.push(s.parse::<f32>().unwrap()))
+        });
 
-    TriGeometry::new(return_triangles, mat) */
+        for s in &mut vn_vec {
+            s.remove(0);
+            s.remove(0);
+            let str = s.trim();
+            let str = str.split_whitespace().collect::<Vec<&str>>();
+            vn_slicearr.push(str);
+        }
+
+        vn_slicearr.iter().for_each(|a| {
+            a.iter()
+                .for_each(|s| vn_numarr.push(s.parse::<f32>().unwrap()))
+        });
+
+        for s in &mut vt_vec {
+            s.remove(0);
+            s.remove(0);
+            let str = s.trim();
+            let str = str.split_whitespace().collect::<Vec<&str>>();
+            vt_slicearr.push(str);
+        }
+
+        vt_slicearr.iter().for_each(|a| {
+            a.iter()
+                .for_each(|s| vt_numarr.push(s.parse::<f32>().unwrap()))
+        });
+
+        for s in &mut f_vec {
+            s.remove(0);
+            let str = s.trim();
+            let mut str = str.split_whitespace().collect::<Vec<&str>>();
+            if !str.is_empty() && str.first().unwrap().contains("/") {
+                str = str
+                    .iter()
+                    .map(|line| line.split_once("/").map(|(str, _)| str).unwrap())
+                    .collect();
+            }
+
+            f_slicearr.push(str);
+        }
+
+        f_slicearr.iter().for_each(|a| {
+            a.iter()
+                .for_each(|s| f_numarr.push(s.parse::<u32>().unwrap()))
+        });
+
+        for s in &mut mtl_vec {
+            let str = s.split_whitespace().collect::<Vec<&str>>();
+            mtl_path.push(str[1].to_string());
+        }
+
+        Some(OBJParser {
+            vertices: v_numarr,
+            faces: f_numarr,
+            material_path: if !mtl_path.is_empty() {
+                Some(mtl_path)
+            } else {
+                None
+            },
+            normals: if !vn_numarr.is_empty() {
+                Some(vn_numarr)
+            } else {
+                None
+            },
+            face_material_id: if !f_id.is_empty() { Some(f_id) } else { None },
+            texture_coordinate: if !vt_numarr.is_empty() {
+                Some(vt_numarr)
+            } else {
+                None
+            },
+            material_id_name: if !material_id_name.is_empty() {
+                Some(material_id_name)
+            } else {
+                None
+            },
+        })
+    }
 }
