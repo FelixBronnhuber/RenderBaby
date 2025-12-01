@@ -401,6 +401,7 @@ pub struct Material {
     shininess: f64,                  //Ns
     transparency: f64,               //d
 }
+#[allow(dead_code)]
 impl Material {
     pub fn new(
         ambient_reflectivity: Vec<f64>,

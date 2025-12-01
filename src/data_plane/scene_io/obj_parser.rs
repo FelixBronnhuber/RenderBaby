@@ -14,8 +14,8 @@ pub struct OBJParser {
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(path: String) -> Option<OBJParser> {
-        let path = Path::new(path.as_str());
+    pub fn parse(path: &str) -> Option<OBJParser> {
+        let path = Path::new(path);
         let data = fs::read_to_string(path).unwrap_or_default();
 
         let lineiter = data.lines();
@@ -37,20 +37,23 @@ impl OBJParser {
         let mut f_slicearr: Vec<Vec<&str>> = Vec::with_capacity(30);
         let mut f_numarr = Vec::with_capacity(30);
 
-        let mut mtl_vec: Vec<String> = Vec::with_capacity(30);
-        let mut mtl_path: Vec<String> = Vec::with_capacity(30);
+        let mut mtl_path: Vec<String> = Vec::with_capacity(2);
 
         let mut material_id_name = Vec::with_capacity(1);
         material_id_name.push("NoMaterial".to_string());
         let mut id = 0;
+
         lineiter.for_each(|l| {
+
             if l.starts_with("v ") {
                 v_vec.push(l.to_string());
             } else if l.starts_with("f") {
                 f_vec.push(l.to_string());
                 f_id.push(id);
             } else if l.starts_with("mtllib") {
-                mtl_vec.push(l.to_string());
+                let mut a = l.split_whitespace().collect::<Vec<&str>>();
+                a.remove(0);
+                mtl_path = a.iter().map(|a| a.to_string()).collect();
             } else if l.starts_with("usemtl") {
                 material_id_name.push(l.to_string().replace("usemtl", "").trim().to_owned());
                 id += 1
@@ -117,11 +120,6 @@ impl OBJParser {
             a.iter()
                 .for_each(|s| f_numarr.push(s.parse::<u32>().unwrap()))
         });
-
-        for s in &mut mtl_vec {
-            let str = s.split_whitespace().collect::<Vec<&str>>();
-            mtl_path.push(str[1].to_string());
-        }
 
         Some(OBJParser {
             vertices: v_numarr,
