@@ -48,6 +48,7 @@ fn camera_to_render_uniforms(
         width,
         height,
         camera.get_fov(),
+        RenderUniforms::default().pane_width,
         spheres_count,
         triangles_count,
     );
