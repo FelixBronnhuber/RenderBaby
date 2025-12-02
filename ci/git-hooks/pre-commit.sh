@@ -23,10 +23,8 @@ fi
 
 echo "[pre-commit] Running rustfmt on staged Rust files..."
 
-echo "$staged_existing_files" | while IFS= read -r file; do
-    cargo fmt -- "$file"
-    git add "$file"
-done
+cargo fmt --all
+echo "$staged_files" | xargs git add
 
 echo "[pre-commit] Running clippy (advisory, no failure)..."
 
