@@ -49,6 +49,16 @@ fn camera_to_render_uniforms(
         height,
         camera.get_fov(),
         RenderUniforms::default().pane_width,
+        [
+            RenderUniforms::default().x,
+            RenderUniforms::default().y,
+            RenderUniforms::default().z,
+        ],
+        [
+            RenderUniforms::default().x_dir,
+            RenderUniforms::default().y_dir,
+            RenderUniforms::default().z_dir,
+        ],
         spheres_count,
         triangles_count,
     );

@@ -26,11 +26,11 @@ impl Default for Uniforms {
             height: 300,
             pane_distance: 50.00,
             pane_width: 100.00,
-            x: 0.0,
-            y: 0.0,
+            x: 2.0,
+            y: 2.0,
             z: 0.0,
-            x_dir: 0.0,
-            y_dir: 0.0,
+            x_dir: -1.0,
+            y_dir: -1.0,
             z_dir: 1.0,
             spheres_count: 0,
             triangles_count: 0,
@@ -39,12 +39,15 @@ impl Default for Uniforms {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 impl Uniforms {
     pub fn new(
         width: u32,
         height: u32,
         pane_distance: f32,
         pane_width: f32,
+        pos: [f32; 3],
+        dir: [f32; 3],
         spheres_count: u32,
         triangles_count: u32,
     ) -> Self {
@@ -53,6 +56,12 @@ impl Uniforms {
             height,
             pane_distance,
             pane_width,
+            x: pos[0],
+            y: pos[1],
+            z: pos[2],
+            x_dir: dir[0],
+            y_dir: dir[1],
+            z_dir: dir[2],
             spheres_count,
             triangles_count,
             ..Default::default()
