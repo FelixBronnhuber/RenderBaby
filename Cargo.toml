@@ -18,6 +18,7 @@ engine-wgpu-wrapper = { version = "0.1.0", path = "crates/engine-wgpu-wrapper" }
 engine-pathtracer = { version = "0.1.0", path = "crates/engine-pathtracer" }
 engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
 view-wrappers = { path = "crates/view-wrappers" }
+log-buffer = { path = "crates/log-buffer" }
 
 [workspace]
 members = [
@@ -27,5 +28,5 @@ members = [
     "crates/engine-wgpu-wrapper",
     "crates/engine-config",
     "crates/view-wrappers",
-    "crates/command-stack",
+    "crates/command-stack", "crates/log-buffer",
 ]
