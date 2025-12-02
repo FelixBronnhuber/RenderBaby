@@ -195,4 +195,9 @@ impl Scene {
         //! New background color as array of f32
         self.background_color = color;
     }
+
+    #[allow(dead_code)]
+    pub fn export_render_img(&self, path: String) {
+        todo!()
+    }
 }
