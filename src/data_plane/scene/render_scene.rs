@@ -214,15 +214,15 @@ impl Scene {
             color[0], color[1], color[2]
         );
     }
+
+    #[allow(dead_code)]
+    pub fn export_render_img(&self, path: String) {
+        todo!()
+    }
 }
 
 impl std::fmt::Display for Scene {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Scene {}", self.get_name())
-    }
-
-    #[allow(dead_code)]
-    pub fn export_render_img(&self, path: String) {
-        todo!()
     }
 }
