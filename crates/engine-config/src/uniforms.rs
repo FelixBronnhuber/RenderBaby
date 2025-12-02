@@ -1,22 +1,15 @@
 use bytemuck::{Pod, Zeroable};
-use std::f32;
-
+use crate::camera::Camera;
 #[repr(C)]
-#[derive(Debug, Clone, Copy, Pod, Zeroable)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Uniforms {
     pub width: u32,
     pub height: u32,
-    pub pane_distance: f32,
-    pub pane_width: f32,
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-    pub x_dir: f32,
-    pub y_dir: f32,
-    pub z_dir: f32,
+    _pad0: [u32; 2],
+    pub camera: Camera,
     pub spheres_count: u32,
     pub triangles_count: u32,
-    pub _pad: [u32; 3],
+    _pad1: [u32; 2],
 }
 
 impl Default for Uniforms {
@@ -24,44 +17,27 @@ impl Default for Uniforms {
         Self {
             width: 400,
             height: 300,
-            pane_distance: 50.00,
-            pane_width: 100.00,
-            x: 2.0,
-            y: 2.0,
-            z: 0.0,
-            x_dir: -1.0,
-            y_dir: -1.0,
-            z_dir: 1.0,
+            _pad0: [0; 2],
+            camera: Camera::default(),
             spheres_count: 0,
             triangles_count: 0,
-            _pad: [0; 3],
+            _pad1: [0; 2],
         }
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 impl Uniforms {
     pub fn new(
         width: u32,
         height: u32,
-        pane_distance: f32,
-        pane_width: f32,
-        pos: [f32; 3],
-        dir: [f32; 3],
+        camera: Camera,
         spheres_count: u32,
         triangles_count: u32,
     ) -> Self {
         Self {
             width,
             height,
-            pane_distance,
-            pane_width,
-            x: pos[0],
-            y: pos[1],
-            z: pos[2],
-            x_dir: dir[0],
-            y_dir: dir[1],
-            z_dir: dir[2],
+            camera,
             spheres_count,
             triangles_count,
             ..Default::default()

@@ -1,20 +1,22 @@
+struct Camera {
+    pane_distance: f32,
+    pane_width: f32,
+    _pad0: vec2<f32>,
+    pos: vec3<f32>,
+    _pad1: f32,
+    dir: vec3<f32>,
+    _pad2: f32,
+};
+
 struct Uniforms {
     width: u32,
     height: u32,
-    pane_distance: f32,
-    pane_width: f32,
-    x: f32,
-    y: f32,
-    z: f32,
-    x_dir: f32,
-    y_dir: f32,
-    z_dir: f32,
+    _pad0: vec2<u32>,
+    camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
-    _pad1: u32,
-    _pad2: u32,
-    _pad3: u32,
-}
+    _pad1: vec2<u32>,
+};
 
 struct Sphere {
     center: vec3<f32>,
@@ -111,14 +113,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let u = ((f32(x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
     let v = (1.0 - f32(y) / f32(uniforms.height - 1u)) * 2.0 - 1.0;
 
-    let camera_pos = vec3<f32>(uniforms.x, uniforms.y, uniforms.z);
+    let camera_pos = uniforms.camera.pos;
 
-    let camera_forward = normalize(vec3<f32>(uniforms.x_dir, uniforms.y_dir, uniforms.z_dir));
+    let camera_forward = normalize(uniforms.camera.dir);
     let world_up = vec3<f32>(0.0, 1.0, 0.0);
     let camera_right = normalize(cross(world_up, camera_forward));
     let camera_up = cross(camera_forward, camera_right);
-    
-    let fov = uniforms.pane_width / (2 * uniforms.pane_distance * aspect);
+
+    let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
     let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
 
     let a = .5 * (ray_dir.y + 1.);
