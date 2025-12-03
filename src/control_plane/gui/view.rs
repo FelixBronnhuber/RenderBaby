@@ -148,8 +148,9 @@ impl eframe::App for View {
                 }
 
                 let mut fov = self.pipeline.get_fov();
+                // TODO: Get the fov limits from somewhere central as consts.
                 if ui
-                    .add(egui::Slider::new(&mut fov, 0.1..=20.0).text("FOV"))
+                    .add(egui::Slider::new(&mut fov, 0.1..=3.1).text("FOV"))
                     .changed()
                 {
                     self.pipeline.set_fov(fov);

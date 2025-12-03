@@ -2,14 +2,14 @@ use crate::*;
 use core::fmt;
 
 pub struct RenderConfig {
-    pub uniforms: Update<Uniforms>,
-    pub spheres: Update<Vec<Sphere>>,
-    pub vertices: Update<Vec<f32>>,
-    pub triangles: Update<Vec<u32>>,
+    pub uniforms: Change<Uniforms>,
+    pub spheres: Change<Vec<Sphere>>,
+    pub vertices: Change<Vec<f32>>,
+    pub triangles: Change<Vec<u32>>,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Update<T> {
+pub enum Change<T> {
     Keep,
     Create(T),
     Update(T),
@@ -32,16 +32,16 @@ impl RenderConfig {
 
 impl ValidateInit for RenderConfig {
     fn validate_init(&self) -> Result<&Self, RenderConfigBuilderError> {
-        if !matches!(self.uniforms, Update::Create(_)) {
+        if !matches!(self.uniforms, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidUniforms);
         }
-        if !matches!(self.spheres, Update::Create(_)) {
+        if !matches!(self.spheres, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidSpheres);
         }
-        if !matches!(self.vertices, Update::Create(_)) {
+        if !matches!(self.vertices, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidVertices);
         }
-        if !matches!(self.triangles, Update::Create(_)) {
+        if !matches!(self.triangles, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidTriangles);
         }
         Ok(self)
@@ -51,59 +51,56 @@ impl ValidateInit for RenderConfig {
 impl Validate for RenderConfig {
     fn validate(&self) -> Result<&Self, RenderConfigBuilderError> {
         match &self.uniforms {
-            Update::Update(u) => {
+            Change::Update(u) | Change::Create(u) => {
+                // TODO: Get fov limits from constants somewhere central / bound to the struct?
                 if !(0.0 < u.fov && u.fov < 3.14) {
                     return Err(RenderConfigBuilderError::FOVOutOfBounds);
                 }
                 // Add more Uniforms validation as needed
             }
-            Update::Delete => {
+            Change::Delete => {
                 // If deleting uniforms is not allowed, error
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
-            Update::Keep => {}
-            Update::Create(_) => todo!(),
+            Change::Keep => {}
         }
 
         match &self.spheres {
-            Update::Update(spheres) => {
+            Change::Update(spheres) | Change::Create(spheres) => {
                 if spheres.iter().any(|s| s.radius <= 0.0) {
                     return Err(RenderConfigBuilderError::InvalidSpheres);
                 }
                 // Add more Sphere validation as needed
             }
-            Update::Delete => {
+            Change::Delete => {
                 // If deleting spheres is not allowed, error
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
-            Update::Keep => {}
-            Update::Create(_) => todo!(),
+            Change::Keep => {}
         }
 
         match &self.vertices {
-            Update::Update(vertices) => {
+            Change::Update(vertices) | Change::Create(vertices) => {
                 if vertices.len() % 3 != 0 {
                     return Err(RenderConfigBuilderError::InvalidVertices);
                 }
             }
-            Update::Delete => {
+            Change::Delete => {
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
-            Update::Keep => {}
-            Update::Create(_) => todo!(),
+            Change::Keep => {}
         }
 
         match &self.triangles {
-            Update::Update(triangles) => {
+            Change::Update(triangles) | Change::Create(triangles) => {
                 if triangles.len() % 3 != 0 {
                     return Err(RenderConfigBuilderError::InvalidTriangles);
                 }
             }
-            Update::Delete => {
+            Change::Delete => {
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
-            Update::Keep => {}
-            Update::Create(_) => todo!(),
+            Change::Keep => {}
         }
 
         Ok(self)
@@ -112,10 +109,10 @@ impl Validate for RenderConfig {
 
 #[derive(Default, Clone)]
 pub struct RenderConfigBuilder {
-    pub uniforms: Option<Update<Uniforms>>,
-    pub spheres: Option<Update<Vec<Sphere>>>,
-    pub vertices: Option<Update<Vec<f32>>>,
-    pub triangles: Option<Update<Vec<u32>>>,
+    pub uniforms: Option<Change<Uniforms>>,
+    pub spheres: Option<Change<Vec<Sphere>>>,
+    pub vertices: Option<Change<Vec<f32>>>,
+    pub triangles: Option<Change<Vec<u32>>>,
 }
 
 impl RenderConfigBuilder {
@@ -129,62 +126,82 @@ impl RenderConfigBuilder {
     }
 
     pub fn uniforms(mut self, uniforms: Uniforms) -> Self {
-        self.uniforms = Some(Update::Update(uniforms));
+        self.uniforms = Some(Change::Update(uniforms));
+        self
+    }
+
+    pub fn uniforms_create(mut self, uniforms: Uniforms) -> Self {
+        self.uniforms = Some(Change::Create(uniforms));
         self
     }
 
     pub fn uniforms_no_change(mut self) -> Self {
-        self.uniforms = Some(Update::Keep);
+        self.uniforms = Some(Change::Keep);
         self
     }
 
     pub fn uniforms_delete(mut self) -> Self {
-        self.uniforms = Some(Update::Delete);
+        self.uniforms = Some(Change::Delete);
         self
     }
 
     pub fn spheres(mut self, spheres: Vec<Sphere>) -> Self {
-        self.spheres = Some(Update::Update(spheres));
+        self.spheres = Some(Change::Update(spheres));
+        self
+    }
+
+    pub fn spheres_create(mut self, spheres: Vec<Sphere>) -> Self {
+        self.spheres = Some(Change::Create(spheres));
         self
     }
 
     pub fn spheres_no_change(mut self) -> Self {
-        self.spheres = Some(Update::Keep);
+        self.spheres = Some(Change::Keep);
         self
     }
 
     pub fn spheres_delete(mut self) -> Self {
-        self.spheres = Some(Update::Delete);
+        self.spheres = Some(Change::Delete);
         self
     }
 
     pub fn vertices(mut self, vertices: Vec<f32>) -> Self {
-        self.vertices = Some(Update::Update(vertices));
+        self.vertices = Some(Change::Update(vertices));
+        self
+    }
+
+    pub fn vertices_create(mut self, vertices: Vec<f32>) -> Self {
+        self.vertices = Some(Change::Create(vertices));
         self
     }
 
     pub fn vertices_no_change(mut self) -> Self {
-        self.vertices = Some(Update::Keep);
+        self.vertices = Some(Change::Keep);
         self
     }
 
     pub fn vertices_delete(mut self) -> Self {
-        self.vertices = Some(Update::Delete);
+        self.vertices = Some(Change::Delete);
         self
     }
 
     pub fn triangles(mut self, triangles: Vec<u32>) -> Self {
-        self.triangles = Some(Update::Update(triangles));
+        self.triangles = Some(Change::Update(triangles));
+        self
+    }
+
+    pub fn triangles_create(mut self, triangles: Vec<u32>) -> Self {
+        self.triangles = Some(Change::Create(triangles));
         self
     }
 
     pub fn triangles_no_change(mut self) -> Self {
-        self.triangles = Some(Update::Keep);
+        self.triangles = Some(Change::Keep);
         self
     }
 
     pub fn triangles_delete(mut self) -> Self {
-        self.triangles = Some(Update::Delete);
+        self.triangles = Some(Change::Delete);
         self
     }
 
@@ -203,10 +220,10 @@ impl RenderConfigBuilder {
         }
 
         RenderConfig {
-            uniforms: self.uniforms.unwrap_or(Update::Keep),
-            spheres: self.spheres.unwrap_or(Update::Keep),
-            vertices: self.vertices.unwrap_or(Update::Keep),
-            triangles: self.triangles.unwrap_or(Update::Keep),
+            uniforms: self.uniforms.unwrap_or(Change::Keep),
+            spheres: self.spheres.unwrap_or(Change::Keep),
+            vertices: self.vertices.unwrap_or(Change::Keep),
+            triangles: self.triangles.unwrap_or(Change::Keep),
         }
     }
 }
@@ -239,4 +256,6 @@ impl fmt::Display for RenderConfigBuilderError {
 impl std::error::Error for RenderConfigBuilderError {}
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    // TODO: Write tests for new CRUD style RenderConfigBuilder
+}

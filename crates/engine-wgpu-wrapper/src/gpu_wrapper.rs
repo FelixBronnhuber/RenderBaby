@@ -3,11 +3,9 @@ use crate::{GpuDevice, buffers, pipeline};
 use anyhow::{Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
-use engine_config::render_config::{Update, Validate, ValidateInit};
-use engine_config::{RenderConfig, RenderConfigBuilderError, Sphere};
+use engine_config::render_config::{Change, Validate, ValidateInit};
+use engine_config::RenderConfig;
 use pipeline::ComputePipeline;
-
-const RGBA_4: u64 = 4;
 const DISPATCH_WORK_GROUP_WIDTH: u32 = 16;
 const DISPATCH_WORK_GROUP_HEIGHT: u32 = 16;
 
@@ -47,94 +45,135 @@ impl GpuWrapper {
             // First render: require Create for all fields
             new_rc.validate_init()?;
             // Initialize all resources
-            if let Update::Create(uniforms) = &new_rc.uniforms {
-                // Initialize uniforms buffer
+            if let Change::Create(uniforms) = &new_rc.uniforms {
+                // Check if resolution changed from engine initialization and resize buffers
+                let old_size = self.get_image_buffer_size() * 4;
+                let new_size = (uniforms.width as u64) * (uniforms.height as u64) * 4;
                 self.buffer_wrapper.init_uniforms(&self.device, uniforms);
+                if old_size != new_size {
+                    log::info!(
+                        "Resolution changed during first render, resizing buffers from {} to {} bytes",
+                        old_size,
+                        new_size
+                    );
+                    self.buffer_wrapper.grow_resolution(&self.device, new_size);
+                }
             }
-            if let Update::Create(spheres) = &new_rc.spheres {
+            if let Change::Create(spheres) = &new_rc.spheres {
                 self.buffer_wrapper.init_spheres(&self.device, spheres);
             }
-            if let Update::Create(vertices) = &new_rc.vertices {
+            if let Change::Create(vertices) = &new_rc.vertices {
                 self.buffer_wrapper.init_vertices(&self.device, vertices);
             }
-            if let Update::Create(triangles) = &new_rc.triangles {
+            if let Change::Create(triangles) = &new_rc.triangles {
                 self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
+            // Recreate bind group with new buffers
+            self.recreate_bind_group();
             self.initialized = true;
-            self.rc = new_rc;
-            return Ok(());
-        }
+        } else {
+            // Subsequent updates: validate and apply changes
+            new_rc.validate()?;
 
-        // Subsequent updates: validate and apply changes
-        new_rc.validate()?;
+            match &new_rc.uniforms {
+                Change::Keep => log::info!("Not updating Uniforms."),
+                Change::Update(uniforms) => {
+                    // Check if resolution changed and resize output/staging buffers if needed
+                    let old_size = self.get_image_buffer_size() * 4;
+                    let new_size = (uniforms.width as u64) * (uniforms.height as u64) * 4;
+                    if old_size != new_size {
+                        log::info!(
+                            "Resolution changed, resizing buffers from {} to {} bytes",
+                            old_size,
+                            new_size
+                        );
+                        self.buffer_wrapper.grow_resolution(&self.device, new_size);
+                    }
+                    self.buffer_wrapper.update_uniforms(&self.device, uniforms);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_uniforms(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for uniforms.");
+                }
+            }
 
-        match &new_rc.uniforms {
-            Update::Keep => log::info!("Not updating Uniforms."),
-            Update::Update(uniforms) => {
-                self.buffer_wrapper.update_uniforms(&self.device, uniforms);
+            match &new_rc.spheres {
+                Change::Keep => log::info!("Not updating Spheres Buffer."),
+                Change::Update(spheres) => {
+                    self.buffer_wrapper.update_spheres(&self.device, spheres);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_spheres(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for spheres.");
+                }
             }
-            Update::Delete => {
-                self.buffer_wrapper.delete_uniforms(&self.device);
-            }
-            Update::Create(_) => {
-                log::warn!("Create not allowed after initialization for uniforms.");
-            }
-        }
 
-        match &new_rc.spheres {
-            Update::Keep => log::info!("Not updating Spheres Buffer."),
-            Update::Update(spheres) => {
-                self.buffer_wrapper.update_spheres(&self.device, spheres);
+            match &new_rc.vertices {
+                Change::Keep => log::info!("Not updating Vertices Buffer."),
+                Change::Update(vertices) => {
+                    self.buffer_wrapper.update_vertices(&self.device, vertices);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_vertices(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for vertices.");
+                }
             }
-            Update::Delete => {
-                self.buffer_wrapper.delete_spheres(&self.device);
-            }
-            Update::Create(_) => {
-                log::warn!("Create not allowed after initialization for spheres.");
-            }
-        }
 
-        match &new_rc.vertices {
-            Update::Keep => log::info!("Not updating Vertices Buffer."),
-            Update::Update(vertices) => {
-                self.buffer_wrapper.update_vertices(&self.device, vertices);
+            match &new_rc.triangles {
+                Change::Keep => log::info!("Not updating Triangles Buffer."),
+                Change::Update(triangles) => {
+                    self.buffer_wrapper
+                        .update_triangles(&self.device, triangles);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_triangles(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for triangles.");
+                }
             }
-            Update::Delete => {
-                self.buffer_wrapper.delete_vertices(&self.device);
-            }
-            Update::Create(_) => {
-                log::warn!("Create not allowed after initialization for vertices.");
-            }
-        }
-
-        match &new_rc.triangles {
-            Update::Keep => log::info!("Not updating Triangles Buffer."),
-            Update::Update(triangles) => {
-                self.buffer_wrapper
-                    .update_triangles(&self.device, triangles);
-            }
-            Update::Delete => {
-                self.buffer_wrapper.delete_triangles(&self.device);
-            }
-            Update::Create(_) => {
-                log::warn!("Create not allowed after initialization for triangles.");
-            }
+            // Recreate bind group after any buffer updates
+            self.recreate_bind_group();
         }
 
         self.rc = new_rc;
         Ok(())
     }
 
+    fn recreate_bind_group(&mut self) {
+        self.bind_group_wrapper = BindGroup::new(
+            &self.device,
+            &self.buffer_wrapper,
+            &self.bind_group_layout_wrapper.bind_group_layout,
+        );
+    }
+
     pub fn get_image_buffer_size(&self) -> u64 {
-        (self.rc.uniforms.width as u64) * (self.rc.uniforms.height as u64)
+        let uniforms = match &self.rc.uniforms {
+            Change::Create(u) | Change::Update(u) => u,
+            Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
+        };
+        (uniforms.width as u64) * (uniforms.height as u64)
     }
 
     pub fn get_width(&self) -> u32 {
-        self.rc.uniforms.width
+        match &self.rc.uniforms {
+            Change::Create(u) | Change::Update(u) => u.width,
+            Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
+        }
     }
 
     pub fn get_height(&self) -> u32 {
-        self.rc.uniforms.height
+        match &self.rc.uniforms {
+            Change::Create(u) | Change::Update(u) => u.height,
+            Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
+        }
     }
 
     pub fn get_bind_group_layout(&self) -> &wgpu::BindGroupLayout {
@@ -213,9 +252,31 @@ impl GpuWrapper {
     }
 
     pub fn update_uniforms(&self) {
-        let mut uniforms = self.rc.uniforms;
-        uniforms.spheres_count = self.rc.spheres.len() as u32;
-        uniforms.triangles_count = self.rc.triangles.len() as u32 / 3;
+        let mut uniforms = match &self.rc.uniforms {
+            Change::Create(u) | Change::Update(u) => u.clone(),
+            Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
+        };
+
+        let spheres_len = match &self.rc.spheres {
+            Change::Create(s) | Change::Update(s) => s.len(),
+            Change::Keep | Change::Delete => 0,
+        };
+        let triangles_len = match &self.rc.triangles {
+            Change::Create(t) | Change::Update(t) => t.len(),
+            Change::Keep | Change::Delete => 0,
+        };
+
+        uniforms.spheres_count = spheres_len as u32;
+        uniforms.triangles_count = triangles_len as u32 / 3;
+
+        log::info!(
+            "Writing uniforms to GPU: {}x{}, fov={}, spheres={}, triangles={}",
+            uniforms.width,
+            uniforms.height,
+            uniforms.fov,
+            uniforms.spheres_count,
+            uniforms.triangles_count
+        );
 
         self.queue.write_buffer(
             &self.buffer_wrapper.uniforms,
@@ -223,25 +284,28 @@ impl GpuWrapper {
             bytemuck::bytes_of(&uniforms),
         );
 
-        let spheres: Vec<Sphere> = self.rc.spheres.clone();
-        self.queue.write_buffer(
-            &self.buffer_wrapper.spheres,
-            0,
-            bytemuck::cast_slice(&spheres),
-        );
+        if let Change::Create(spheres) | Change::Update(spheres) = &self.rc.spheres {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.spheres,
+                0,
+                bytemuck::cast_slice(spheres),
+            );
+        }
 
-        let vertices = &self.rc.vertices;
-        self.queue.write_buffer(
-            &self.buffer_wrapper.vertices,
-            0,
-            bytemuck::cast_slice(vertices),
-        );
+        if let Change::Create(vertices) | Change::Update(vertices) = &self.rc.vertices {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.vertices,
+                0,
+                bytemuck::cast_slice(vertices),
+            );
+        }
 
-        let triangles = &self.rc.triangles;
-        self.queue.write_buffer(
-            &self.buffer_wrapper.triangles,
-            0,
-            bytemuck::cast_slice(triangles),
-        );
+        if let Change::Create(triangles) | Change::Update(triangles) = &self.rc.triangles {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.triangles,
+                0,
+                bytemuck::cast_slice(triangles),
+            );
+        }
     }
 }
