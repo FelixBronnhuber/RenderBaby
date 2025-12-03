@@ -20,7 +20,9 @@ impl Model {
 
     pub fn import_scene(&mut self, scene_file_path: &str) {
         println!("Received path (scene): {}", scene_file_path);
-        self.scene = Scene::load_scene_from_file(scene_file_path.to_string());
+        if let Ok(scene) = Scene::load_scene_from_file(scene_file_path.to_string()) {
+            self.scene = scene;
+        }
     }
     pub fn set_fov(&mut self, fov: f32) {
         self.scene.get_camera_mut().set_fov(fov);

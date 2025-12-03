@@ -33,9 +33,9 @@ impl Default for Scene {
 #[allow(unused)]
 impl Scene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: String) -> Scene {
+    pub fn load_scene_from_file(path: String) -> Result<Scene, Error> {
         info!("Scene: Loading new scene from {path}");
-        parse_scene(path)
+        Ok(parse_scene(path))
     }
     pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
         //! Adds new object from a obj file at path
