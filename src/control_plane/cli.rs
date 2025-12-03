@@ -76,11 +76,40 @@ impl CliApp {
 
     pub fn run(&self) {
         info!("Loading scene...");
-        let mut scene = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
-        info!("Finished loading scene, starting render...");
-        scene.render().ok();
-        info!("Finished rendering scene, saving image");
-        scene.export_render_img(self.args.output.to_str().unwrap().to_string());
+
+        let scene_res = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
+        let mut scene: Scene;
+        match scene_res {
+            Err(e) => {
+                error!("Error loading scene: {:?}, exiting...", e);
+                std::process::exit(1);
+            }
+            Ok(s) => {
+                scene = s;
+                info!("Finished loading scene, starting render...");
+            }
+        }
+
+        match scene.render() {
+            Err(e) => {
+                error!("Error rendering scene: {:?}, exiting...", e);
+                std::process::exit(1);
+            }
+            Ok(_) => {
+                info!("Finished rendering scene, saving image");
+            }
+        }
+
+        match scene.export_render_img(self.args.output.to_str().unwrap().to_string()) {
+            Err(e) => {
+                error!("Error saving image: {:?}, exiting...", e);
+                std::process::exit(1);
+            }
+            Ok(_) => {
+                info!("Finished saving image.");
+            }
+        }
+
         info!("Saved image to {:?}. Exiting...", self.args.output);
     }
 }
