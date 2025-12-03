@@ -8,8 +8,6 @@ pub mod tri_geometry;
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
-
     #[test]
     fn it_works() {}
 }
