@@ -114,7 +114,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
         Vec3::new(pitch, yaw, 0.0),
     ));
 
-    scene.add_object(Box::new(TriGeometry::new(Vec::new())));
+    scene.add_tri_geometry(Box::new(TriGeometry::new(Vec::new())));
     scene.set_background_color([
         file.background_color.r,
         file.background_color.g,
@@ -127,28 +127,26 @@ pub fn serialize_scene(sc: &mut Scene) {
     //if let Some(p) = obj.as_any().downcast_ref::<Player>() ;
     //let scene_file = Scene_File{scene_name : sc.get_name().to_string(),objects : sc.get_objects().for_each().,camera: sc.get_camera(), lights: sc.get_light_sources(), background_color: sc.get_background_color()};
     let mut objectarr: Vec<ParsingObject> = Vec::new();
-    sc.get_objects().iter().for_each(|object| {
-        if let Some(b) = object.as_any().downcast_ref::<TriGeometry>() {
-            objectarr.push(ParsingObject {
-                name: b.get_name().clone(),
-                path: b.get_path(),
-                scale: Vec3d {
-                    x: b.get_scale().x,
-                    y: b.get_scale().y,
-                    z: b.get_scale().z,
-                },
-                rotation: Vec3d {
-                    x: b.get_rotation().x,
-                    y: b.get_rotation().y,
-                    z: b.get_rotation().z,
-                },
-                translation: Vec3d {
-                    x: b.get_translation().x,
-                    y: b.get_translation().y,
-                    z: b.get_translation().z,
-                },
-            });
-        };
+    sc.get_tri_geometries().iter().for_each(|object| {
+        objectarr.push(ParsingObject {
+            name: object.get_name().clone(),
+            path: object.get_path(),
+            scale: Vec3d {
+                x: object.get_scale().x,
+                y: object.get_scale().y,
+                z: object.get_scale().z,
+            },
+            rotation: Vec3d {
+                x: object.get_rotation().x,
+                y: object.get_rotation().y,
+                z: object.get_rotation().z,
+            },
+            translation: Vec3d {
+                x: object.get_translation().x,
+                y: object.get_translation().y,
+                z: object.get_translation().z,
+            },
+        });
     });
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     sc.get_light_sources().iter().for_each(|light_source| {
