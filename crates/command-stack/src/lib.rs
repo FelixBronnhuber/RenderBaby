@@ -1,5 +1,6 @@
-mod builder;
+#![allow(dead_code)]
 
+mod builder;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub struct Command<T> {
@@ -38,14 +39,13 @@ where
             The attribute rollback_is_last_execute is used to identify this case.
             */
             if command.rollback_is_last_execute {
-                if let Some(mut guard) = self.get_executes_guard(&command.command_type) {
-                    if let Some(prev_command_of_type) = guard
+                if let Some(mut guard) = self.get_executes_guard(&command.command_type)
+                    && let Some(prev_command_of_type) = guard
                         .iter_mut()
                         .rev()
-                        .find(|c| &c.command_type == &command.command_type)
-                    {
-                        (prev_command_of_type.execute)();
-                    }
+                        .find(|c| c.command_type == command.command_type)
+                {
+                    (prev_command_of_type.execute)();
                 }
             } else if let Some(ref mut rollback_fn) = command.rollback {
                 rollback_fn();
@@ -71,6 +71,15 @@ where
             Some(guard)
         } else {
             None
+        }
+    }
+}
+
+impl<T> Default for CommandStack<T> {
+    fn default() -> Self {
+        Self {
+            execute_stack: Default::default(),
+            rollback_stack: Default::default(),
         }
     }
 }
