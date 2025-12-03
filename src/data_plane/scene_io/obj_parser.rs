@@ -1,9 +1,11 @@
 use anyhow::Error;
 use glam::Vec3;
+use scene_objects::{
+    material::Material,
+    tri_geometry::{TriGeometry, Triangle},
+};
 use std::path::Path;
 use tobj;
-
-use crate::data_plane::scene::geometric_object::{Material, TriGeometry, Triangle};
 
 pub fn parseobj(obj_path: String) -> Result<Vec<TriGeometry>, Error> {
     let obj_path = Path::new(&obj_path);
