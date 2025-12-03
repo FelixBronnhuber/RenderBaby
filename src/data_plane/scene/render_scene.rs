@@ -1,21 +1,23 @@
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
 use glam::Vec3;
+use scene_objects::{
+    camera::Camera,
+    geometric_object::GeometricObject,
+    light_source::{LightSource, LightType},
+    material::Material,
+    sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::{
-            geometric_object::{
-                Camera, GeometricObject, LightSource, LightType, Material, Rotation, Sphere,
-                TriGeometry,
-            },
-            scene_graph::SceneGraph,
-        },
+        scene::{scene_graph::SceneGraph},
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
-/// The scene holds all relevant objects, lightsources, camera ...
+/// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
     //action_stack: ActionStack,
@@ -30,28 +32,20 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
+    /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: String) -> Scene {
         parse_scene(path)
     }
     pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
-        //! loads object from file. Adds object to scene and returns object if successfull
-        /* let p0 = Vec3::new(0.0, 0.0, 0.0);
-        let p1 = Vec3::new(1.0, 0.0, 0.0);
-        let p2 = Vec3::new(0.0, 1.0, 0.0);
-        let p2 = Vec3::new(0.0, 0.0, 1.0);
-        // todo: color?
-        let t0 = Triangle::new(vec![], None);
-        let t1 = Triangle::new(vec![], None);
-        let t2 = Triangle::new(vec![], None);
-        let t3 = Triangle::new(vec![], None);
-        let obj = TriGeometry::new(vec![t0, t1, t2, t3], Material::default()); */
+        //! Adds new object from a obj file at path
+        //! ## Parameter
+        //! 'path': Path to the obj file
+        //! ## Returns
+        //! Result of either a reference to the new object or an error
         let objs = parseobj(path).unwrap();
         for obj in objs {
             self.add_object(Box::new(obj));
         }
-
-        //Ok(&res)
-        //todo: this is very ugly
         Ok(self
             .get_objects()
             .last()
@@ -75,7 +69,7 @@ impl Scene {
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
-        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Rotation::new(0.0, 0.0));
+        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Vec3::default());
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,
@@ -95,9 +89,13 @@ impl Scene {
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
+        //! ## Returns
+        //! a mutable reference to the camera
         self.scene_graph.get_camera_mut()
     }
     pub fn get_camera(&self) -> &Camera {
+        //! ## Returns
+        //!  a reference to the camera
         self.scene_graph.get_camera()
     }
     /*pub fn set_camera_position(&mut self, pos: Vec<f32>) {
@@ -107,6 +105,8 @@ impl Scene {
         self.get_camera().set_rotation(pitch, yaw);
     }*/
     pub fn new() -> Self {
+        //! ## Returns
+        //! A new scenen with default values
         Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
@@ -120,50 +120,84 @@ impl Scene {
     }
 
     pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
+        //! adds an object to the scene
+        //! ## Arguments
+        //! 'obj': GeometricObject that is to be added to the scene
         self.scene_graph.add_object(obj);
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
+        //! adds an LightSource to the scene
+        //! ## Arguments
+        //! 'light': LightSource that is to be added
         self.scene_graph.add_lightsource(light);
     }
 
     pub fn set_camera(&mut self, camera: Camera) {
+        //! sets the scene camera to the passed camera
+        //! ## Arguments
+        //! 'camera': Camera that is to be the new scene camera
         self.scene_graph.set_camera(camera);
     }
 
     pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
+        //! ##  Returns
+        //! a reference to a vector of all render objects
+
         self.scene_graph.get_objects()
     }
 
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
+        //! ## Returns
+        //! Reference to a vector that holds all LightSources of the scene
         self.scene_graph.get_light_sources()
     }
 
     pub fn get_render_engine(&self) -> &Engine {
+        //! ## Returns
+        //! Reference to the scene Engine
         self.render_engine.as_ref().expect("No render engine found")
     }
 
     pub fn get_render_engine_mut(&mut self) -> &mut Engine {
+        //! ## Returns
+        //! Mutable reference to the scene Engine
         self.render_engine.as_mut().expect("No render engine found")
     }
 
     pub fn set_render_engine(&mut self, engine: Engine) {
+        //! set the scene engine to the passed scene
+        //! ## Arguments
+        //! 'engine': engine that will be the new engine
         self.render_engine = Some(engine);
     }
 
     pub fn get_name(&self) -> &String {
+        //!## Returns
+        //! Reference to the scene name
         &self.name
     }
 
     pub fn set_name(&mut self, name: String) {
+        //! ## Arguments
+        //! 'name' : new scene name
         self.name = name;
     }
 
     pub fn get_background_color(&self) -> [f32; 3] {
+        //! ## Returns
+        //! Background color rgb as array of f32
         self.background_color
     }
 
     pub fn set_background_color(&mut self, color: [f32; 3]) {
+        //! ## Parameters
+        //! New background color as array of f32
         self.background_color = color;
+    }
+
+    #[allow(dead_code)]
+    pub fn export_render_img(&self, path: String) {
+        todo!()
     }
 }

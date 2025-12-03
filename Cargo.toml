@@ -19,6 +19,7 @@ engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
 view-wrappers = { path = "crates/view-wrappers" }
 log-buffer = { path = "crates/log-buffer" }
 clap = { version = "4.4.7", features = ["derive"] }
+scene-objects = { path = "crates/scene-objects"}
 
 [workspace]
 members = [
@@ -29,4 +30,5 @@ members = [
     "crates/engine-config",
     "crates/view-wrappers",
     "crates/command-stack", "crates/log-buffer",
+    "crates/scene-objects",
 ]

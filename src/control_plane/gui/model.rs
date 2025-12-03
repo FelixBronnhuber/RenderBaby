@@ -1,4 +1,4 @@
-use crate::data_plane::scene::_scene::Scene;
+use crate::data_plane::scene::render_scene::Scene;
 use engine_wgpu_wrapper::RenderOutput;
 
 pub struct Model {
