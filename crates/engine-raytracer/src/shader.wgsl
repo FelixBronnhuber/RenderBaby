@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i: u32 = 0u; i < sqrt_samples; i = i + 1u) {
         for (var j: u32 = 0u; j < sqrt_samples; j = j + 1u) {
             let aspect = f32(uniforms.width) / f32(uniforms.height);
-            let u = (((f32(x) + (f32(i) + 0.5) / f32(sqrt_samples))) / f32(uniforms.width - 1u)) * 2.0 - 1.0;
+            let u = ((((f32(x) + (f32(i) + 0.5) / f32(sqrt_samples))) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
             let v = (1.0 - ((f32(y) + (f32(j) + 0.5) / f32(sqrt_samples))) / f32(uniforms.height - 1u)) * 2.0 - 1.0;
 
             let camera_pos = uniforms.camera.pos;
