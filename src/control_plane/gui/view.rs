@@ -4,6 +4,7 @@ use eframe::egui;
 use eframe::epaint;
 use egui_file_dialog;
 use std::path::PathBuf;
+use egui::Align;
 use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::ViewWrapper;
 
@@ -158,7 +159,12 @@ impl eframe::App for View {
                 ui.horizontal(|ui| {
                     ui.label("Width:");
                     let mut width = self.pipeline.get_width();
-                    if ui.add(egui::DragValue::new(&mut width)).changed() {
+                    if ui
+                        .add(
+                            egui::DragValue::new(&mut width), //.range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
+                        )
+                        .changed()
+                    {
                         self.pipeline.set_width(width);
                         (self.handler)(Event::UpdateResolution);
                     }
@@ -167,7 +173,12 @@ impl eframe::App for View {
                 ui.horizontal(|ui| {
                     ui.label("Height:");
                     let mut height = self.pipeline.get_height();
-                    if ui.add(egui::DragValue::new(&mut height)).changed() {
+                    if ui
+                        .add(
+                            egui::DragValue::new(&mut height), //.range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
+                        )
+                        .changed()
+                    {
                         self.pipeline.set_height(height);
                         (self.handler)(Event::UpdateResolution);
                     }
@@ -190,14 +201,23 @@ impl eframe::App for View {
             self.display_image(ui);
         });
 
-        egui::TopBottomPanel::bottom("Log-view")
-            .resizable(true)
-            .min_height(10.0)
-            .show_animated(ctx, self.bottom_visible, |ui| {
-                ui.label("Log-view");
-                let available = ui.available_rect_before_wrap();
-                ui.allocate_rect(available, egui::Sense::drag());
-            });
+        if self.bottom_visible {
+            egui::TopBottomPanel::bottom("Log-view")
+                .resizable(true)
+                .min_height(30.0)
+                .show(ctx, |ui| {
+                    ui.heading("Log-view");
+                    egui::ScrollArea::vertical()
+                        .stick_to_bottom(true)
+                        .show(ui, |ui| {
+                            let logs = log_buffer::get_logs();
+                            ui.add_sized(
+                                ui.available_size(),
+                                egui::Label::new(logs).halign(Align::LEFT).selectable(false),
+                            );
+                        });
+                });
+        }
     }
 }
 
