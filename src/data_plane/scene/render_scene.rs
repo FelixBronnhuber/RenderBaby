@@ -37,7 +37,7 @@ impl Scene {
         info!("Scene: Loading new scene from {path}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -48,27 +48,22 @@ impl Scene {
         match result {
             Ok(objs) => {
                 if objs.is_empty() {
-                    warn!("{self}: Parsing obj from {path} returned 0 geometries")
+                    let error_msg = format!("Parsing obj from {path} returned 0 geometries");
+                    warn!("{self}: {error_msg}");
+                    Err(anyhow::bail!("{error_msg}"))
                 } else {
+                    let res = objs.clone();
                     for obj in objs {
                         self.add_object(Box::new(obj));
                     }
+                    Ok(res)
                 }
             }
             Err(error) => {
                 error!("{self}: Parsing obj from {path} resulted in error: {error}");
-                return Err(error);
+                Err(error)
             }
         }
-
-        Ok(self
-            .get_objects()
-            .last()
-            .unwrap()
-            .as_ref()
-            .as_any()
-            .downcast_ref()
-            .unwrap())
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource

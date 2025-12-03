@@ -2,7 +2,7 @@
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
-use log::info;
+use log::{info, error};
 use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
 use crate::data_plane::scene::{render_scene::Scene};
 
@@ -133,18 +133,39 @@ impl Scene {
         for tri in render_tris {
             rcb = rcb.vertices(tri.0.clone()).triangles(tri.1.clone());
         }
-        let rc = rcb.build().unwrap();
-        info!("{self}: Calling render");
-        let engine = self.get_render_engine_mut();
-        let res = engine.render(rc);
-        info!("{self}: Received render result");
-        res
+        let rc = rcb.build();
+        match rc {
+            Ok(rc) => {
+                info!("{self}: Calling render");
+                let engine = self.get_render_engine_mut();
+                let output = engine.render(rc);
+                match output {
+                    Ok(res) => match res.validate() {
+                        Ok(_) => {
+                            info!("{self}: Successfully got valid render output");
+                            Ok(res)
+                        }
+                        Err(error) => {
+                            error!("{self}: Received invalid render output");
+                            Err(error)
+                        }
+                    },
+                    Err(error) => {
+                        error!("{self}: The following error occurred when rendering: {error}");
+                        Err(error)
+                    }
+                }
+            }
+            Err(error) => {
+                error!("{self}: Failed to build render context");
+                Err(error)
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
 
     #[test]
     fn it_works() {}
