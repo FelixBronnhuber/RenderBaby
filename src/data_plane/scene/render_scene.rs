@@ -54,7 +54,7 @@ impl Scene {
                 } else {
                     let res = objs.clone();
                     for obj in objs {
-                        self.add_tri_geometry(Box::new(obj));
+                        self.add_tri_geometry(obj);
                     }
                     Ok(res)
                 }
@@ -90,11 +90,11 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
-        self.add_sphere(Box::new(sphere0));
-        self.add_sphere(Box::new(sphere1));
-        self.add_sphere(Box::new(sphere2));
-        self.add_sphere(Box::new(sphere3));
-        self.add_sphere(Box::new(sphere4));
+        self.add_sphere(sphere0);
+        self.add_sphere(sphere1);
+        self.add_sphere(sphere2);
+        self.add_sphere(sphere3);
+        self.add_sphere(sphere4);
 
         self.set_camera(cam);
         self.add_lightsource(light);
@@ -131,7 +131,7 @@ impl Scene {
         } // todo: allow name and color as param
     }
 
-    pub fn add_tri_geometry(&mut self, tri: Box<TriGeometry>) {
+    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
         //! adds an object to the scene
         //! ## Arguments
         //! 'tri': TriGeometry that is to be added to the scene
@@ -139,14 +139,14 @@ impl Scene {
         info!("{self}: adding TriGeometry {:?}", tri);
         self.scene_graph.add_tri_geometry(tri);
     }
-    pub fn add_sphere(&mut self, sphere: Box<Sphere>) {
+    pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
         //! ## Arguments
         //! 'sphere': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", sphere);
         self.scene_graph.add_sphere(sphere);
     }
-    pub fn add_mesh(&mut self, mesh: Box<Mesh>) {
+    pub fn add_mesh(&mut self, mesh: Mesh) {
         //! adds an object to the scene
         //! ## Arguments
         //! 'mesh': GeometricObject that is to be added to the scene
@@ -170,19 +170,19 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_tri_geometries(&self) -> &Vec<Box<TriGeometry>> {
+    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
         //! ##  Returns
         //! a reference to a vector of all TriGeometries
 
         self.scene_graph.get_tri_geometries()
     }
-    pub fn get_spheres(&self) -> &Vec<Box<Sphere>> {
+    pub fn get_spheres(&self) -> &Vec<Sphere> {
         //! ##  Returns
         //! a reference to a vector of all spheres
 
         self.scene_graph.get_spheres()
     }
-    pub fn get_meshes(&self) -> &Vec<Box<Mesh>> {
+    pub fn get_meshes(&self) -> &Vec<Mesh> {
         //! ##  Returns
         //! a reference to a vector of all Meshes
 

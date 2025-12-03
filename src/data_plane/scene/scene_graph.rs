@@ -4,9 +4,9 @@ use scene_objects::{
 };
 /// The scene graphs holds all elements of the scene
 pub(crate) struct SceneGraph {
-    tri_geometries: Vec<Box<TriGeometry>>,
-    spheres: Vec<Box<Sphere>>,
-    meshes: Vec<Box<Mesh>>,
+    tri_geometries: Vec<TriGeometry>,
+    spheres: Vec<Sphere>,
+    meshes: Vec<Mesh>,
     light_sources: Vec<LightSource>,
     camera: Camera,
 }
@@ -23,19 +23,19 @@ impl SceneGraph {
             camera: Camera::default(),
         }
     }
-    pub fn add_tri_geometry(&mut self, tri: Box<TriGeometry>) {
+    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
         //! Adds a TriGeometry
         //! ## Parameter
         //! 'tri': render object to be added
         self.tri_geometries.push(tri);
     }
-    pub fn add_sphere(&mut self, sphere: Box<Sphere>) {
+    pub fn add_sphere(&mut self, sphere: Sphere) {
         //! Adds a Sphere
         //! ## Parameter
         //! 'sphere': render object to be added
         self.spheres.push(sphere);
     }
-    pub fn add_mesh(&mut self, mesh: Box<Mesh>) {
+    pub fn add_mesh(&mut self, mesh: Mesh) {
         //! Adds a object
         //! ## Parameter
         //! 'mesh': render object to be added
@@ -54,17 +54,17 @@ impl SceneGraph {
         self.camera = camera;
     }
 
-    pub fn get_tri_geometries(&self) -> &Vec<Box<TriGeometry>> {
+    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
         //! ## Returns
         //! all TriGeometries as a reference to a vector of TriGeometry
         &self.tri_geometries
     }
-    pub fn get_spheres(&self) -> &Vec<Box<Sphere>> {
+    pub fn get_spheres(&self) -> &Vec<Sphere> {
         //! ## Returns
         //! all Spheres objects as a reference to a vector of Sphere
         &self.spheres
     }
-    pub fn get_meshes(&self) -> &Vec<Box<Mesh>> {
+    pub fn get_meshes(&self) -> &Vec<Mesh> {
         //! ## Returns
         //! all Meshes objects as a reference to a vector of Mesh
         &self.meshes
