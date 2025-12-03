@@ -253,7 +253,7 @@ impl GpuWrapper {
 
     pub fn update_uniforms(&self) {
         let mut uniforms = match &self.rc.uniforms {
-            Change::Create(u) | Change::Update(u) => u.clone(),
+            Change::Create(u) | Change::Update(u) => *u,
             Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
         };
 
