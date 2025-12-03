@@ -79,14 +79,12 @@ fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
-    pub(crate) fn get_render_spheres(&self) -> Vec<RenderSphere> {
+    fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
         let mut res = vec![];
-        for obj in self.get_objects() {
-            if let Some(sphere) = obj.as_any().downcast_ref::<Sphere>() {
-                res.push(sphere_to_render_sphere(sphere));
-            }
+        for sphere in self.get_spheres() {
+            res.push(sphere_to_render_sphere(sphere));
         }
         res
     }
@@ -104,11 +102,8 @@ impl Scene {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         let mut res = vec![];
-        for obj in self.get_objects() {
-            if let Some(tri) = obj.as_any().downcast_ref::<TriGeometry>() {
-                res.push(tri_geometry_to_render_tri(tri));
-                //break;
-            }
+        for tri in self.get_tri_geometries() {
+            res.push(tri_geometry_to_render_tri(tri))
         }
         res
     }

@@ -4,9 +4,9 @@ use glam::Vec3;
 use log::{info, warn, error};
 use scene_objects::{
     camera::Camera,
-    geometric_object::GeometricObject,
     light_source::{LightSource, LightType},
     material::Material,
+    mesh::Mesh,
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
@@ -54,7 +54,7 @@ impl Scene {
                 } else {
                     let res = objs.clone();
                     for obj in objs {
-                        self.add_object(Box::new(obj));
+                        self.add_tri_geometry(Box::new(obj));
                     }
                     Ok(res)
                 }
@@ -90,11 +90,11 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
-        self.add_object(Box::new(sphere0));
-        self.add_object(Box::new(sphere1));
-        self.add_object(Box::new(sphere2));
-        self.add_object(Box::new(sphere3));
-        self.add_object(Box::new(sphere4));
+        self.add_sphere(Box::new(sphere0));
+        self.add_sphere(Box::new(sphere1));
+        self.add_sphere(Box::new(sphere2));
+        self.add_sphere(Box::new(sphere3));
+        self.add_sphere(Box::new(sphere4));
 
         self.set_camera(cam);
         self.add_lightsource(light);
@@ -131,12 +131,27 @@ impl Scene {
         } // todo: allow name and color as param
     }
 
-    pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
+    pub fn add_tri_geometry(&mut self, tri: Box<TriGeometry>) {
         //! adds an object to the scene
         //! ## Arguments
-        //! 'obj': GeometricObject that is to be added to the scene
-        self.scene_graph.add_object(obj);
-        info!("{self}: added new object");
+        //! 'tri': TriGeometry that is to be added to the scene
+        //!
+        info!("{self}: adding TriGeometry {:?}", tri);
+        self.scene_graph.add_tri_geometry(tri);
+    }
+    pub fn add_sphere(&mut self, sphere: Box<Sphere>) {
+        //! adds an object to the scene
+        //! ## Arguments
+        //! 'sphere': GeometricObject that is to be added to the scene
+        info!("{self}: adding {:?}", sphere);
+        self.scene_graph.add_sphere(sphere);
+    }
+    pub fn add_mesh(&mut self, mesh: Box<Mesh>) {
+        //! adds an object to the scene
+        //! ## Arguments
+        //! 'mesh': GeometricObject that is to be added to the scene
+        info!("{self}: adding {:?}", mesh);
+        self.scene_graph.add_mesh(mesh);
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
@@ -155,11 +170,23 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
+    pub fn get_tri_geometries(&self) -> &Vec<Box<TriGeometry>> {
         //! ##  Returns
-        //! a reference to a vector of all render objects
+        //! a reference to a vector of all TriGeometries
 
-        self.scene_graph.get_objects()
+        self.scene_graph.get_tri_geometries()
+    }
+    pub fn get_spheres(&self) -> &Vec<Box<Sphere>> {
+        //! ##  Returns
+        //! a reference to a vector of all spheres
+
+        self.scene_graph.get_spheres()
+    }
+    pub fn get_meshes(&self) -> &Vec<Box<Mesh>> {
+        //! ##  Returns
+        //! a reference to a vector of all Meshes
+
+        self.scene_graph.get_meshes()
     }
 
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
