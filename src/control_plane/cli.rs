@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use log::{error, info};
+use crate::data_plane::scene::render_scene::Scene;
 
 #[derive(Subcommand, Debug)]
 enum Mode {
@@ -73,11 +74,23 @@ impl CliApp {
         }
     }
 
-    fn verify_args(self) -> bool {
+    fn verify_args(&self) -> bool {
         todo!()
     }
 
     pub fn run(&self) {
-        todo!()
+        if !self.verify_args() {
+            error!("CLI arguments are invalid. Exiting...");
+            return;
+        } else {
+            info!("Verified CLI arguments.");
+        }
+        info!("Loading scene...");
+        let mut scene = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
+        info!("Finished loading scene, starting render...");
+        scene.render().ok();
+        info!("Finished rendering scene, saving image");
+        scene.export_render_img(self.args.output.to_str().unwrap().to_string());
+        info!("Saved image to {:?}. Exiting...", self.args.output);
     }
 }
