@@ -207,16 +207,16 @@ impl RenderConfigBuilder {
 
     pub fn build(self) -> RenderConfig {
         if self.uniforms.is_none() {
-            log::warn!("RenderConfigBuilder: uniforms not set, defaulting to NoChange.");
+            log::info!("RenderConfigBuilder: uniforms not set, defaulting to NoChange.");
         }
         if self.spheres.is_none() {
-            log::warn!("RenderConfigBuilder: spheres not set, defaulting to NoChange.");
+            log::info!("RenderConfigBuilder: spheres not set, defaulting to NoChange.");
         }
         if self.vertices.is_none() {
-            log::warn!("RenderConfigBuilder: vertices not set, defaulting to NoChange.");
+            log::info!("RenderConfigBuilder: vertices not set, defaulting to NoChange.");
         }
         if self.triangles.is_none() {
-            log::warn!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
+            log::info!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
         }
 
         RenderConfig {
