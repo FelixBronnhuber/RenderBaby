@@ -1061,6 +1061,7 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
+ "log",
  "pollster",
  "wgpu",
 ]
@@ -2683,8 +2684,8 @@ dependencies = [
  "env_logger",
  "glam",
  "log",
- "scene-objects",
  "log-buffer",
+ "scene-objects",
  "serde",
  "tobj",
  "view-wrappers",

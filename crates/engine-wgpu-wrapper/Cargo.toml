@@ -11,3 +11,4 @@ wgpu = "27.0.1"
 engine-config = { path = "../engine-config" }
 bytemuck = "1.24.0"
 pollster = "0.4.0"
+log = "0.4.28"
