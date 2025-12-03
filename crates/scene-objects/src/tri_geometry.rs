@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TriGeometry {
     triangles: Vec<Triangle>,
     attr: SceneObjectAttributes,
@@ -88,7 +88,7 @@ impl TriGeometry {
     }
 }
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Triangle {
     points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
     material: Option<Material>,
