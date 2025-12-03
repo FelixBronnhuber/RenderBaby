@@ -114,7 +114,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
         Vec3::new(pitch, yaw, 0.0),
     ));
 
-    scene.add_tri_geometry(Box::new(TriGeometry::new(Vec::new())));
+    scene.add_tri_geometry(TriGeometry::new(Vec::new()));
     scene.set_background_color([
         file.background_color.r,
         file.background_color.g,
