@@ -1,3 +1,6 @@
+const GROUND_Y: f32 = -1.0;
+const GROUND_ENABLED: bool = true;
+
 struct Camera {
     pane_distance: f32,
     pane_width: f32,
@@ -104,11 +107,37 @@ fn hash_to_color(n: u32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
+// Ray-plane intersection
+fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
+    // Plane equation: y = ground_y
+    // Ray equation: P(t) = origin + t * direction
+    // Solving for t when y = ground_y:
+    // origin.y + t * direction.y = ground_y
+    // t = (ground_y - origin.y) / direction.y
+    
+    if (abs(ray_dir.y) < 1e-6) {
+        return -1.0; // Ray is parallel to plane
+    }
+    
+    let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
+    
+    if (t > 0.0) {
+        return t;
+    }
+    
+    return -1.0;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
+    
+    // Bounds check: skip threads outside the image
+    if (x >= uniforms.width || y >= uniforms.height) {
+        return;
+    }
 
     // Bounds check: skip threads outside the image
     if (x >= uniforms.width || y >= uniforms.height) {
@@ -134,6 +163,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hit_color = (1. - a) * hit_color + a * vec3<f32>(.5, .7, 1.);
 
     var min_t = 1e20;
+
+    // Ground plane intersection
+    if (GROUND_ENABLED) {
+        let t_ground = intersect_ground(camera_pos, ray_dir);
+        if (t_ground > 0.0 && t_ground < min_t) {
+            min_t = t_ground;
+            // Solid gray ground
+            hit_color = vec3<f32>(0.5, 0.5, 0.5);
+        }
+    }
 
     // Triangle intersection loop
     for (var i = 0u; i < uniforms.triangles_count; i = i + 1u) {
