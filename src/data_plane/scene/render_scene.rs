@@ -1,7 +1,7 @@
 use anyhow::Error;
 use engine_config::RenderConfigBuilder;
 use glam::Vec3;
-use log::{info};
+use log::{info, warn, error};
 use scene_objects::{
     camera::Camera,
     geometric_object::GeometricObject,
@@ -14,14 +14,13 @@ use scene_objects::{
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::{scene_graph::SceneGraph},
+        scene::scene_graph::SceneGraph,
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
-    //action_stack: ActionStack,
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
@@ -45,10 +44,23 @@ impl Scene {
         //! ## Returns
         //! Result of either a reference to the new object or an error
         info!("Scene {self}: Loading object from {path}");
-        let objs = parseobj(path).unwrap();
-        for obj in objs {
-            self.add_object(Box::new(obj));
+        let result = parseobj(path.clone());
+        match result {
+            Ok(objs) => {
+                if objs.is_empty() {
+                    warn!("{self}: Parsing obj from {path} returned 0 geometries")
+                } else {
+                    for obj in objs {
+                        self.add_object(Box::new(obj));
+                    }
+                }
+            }
+            Err(error) => {
+                error!("{self}: Parsing obj from {path} resulted in error: {error}");
+                return Err(error);
+            }
         }
+
         Ok(self
             .get_objects()
             .last()
