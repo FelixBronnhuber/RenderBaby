@@ -74,17 +74,7 @@ impl CliApp {
         }
     }
 
-    fn verify_args(&self) -> bool {
-        todo!()
-    }
-
     pub fn run(&self) {
-        if !self.verify_args() {
-            error!("CLI arguments are invalid. Exiting...");
-            return;
-        } else {
-            info!("Verified CLI arguments.");
-        }
         info!("Loading scene...");
         let mut scene = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
         info!("Finished loading scene, starting render...");
