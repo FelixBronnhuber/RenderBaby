@@ -6,6 +6,7 @@ use crate::{
 };
 
 #[allow(dead_code)]
+#[derive(Debug)]
 /// Simple Sphere defined by a 3d center and a radius
 pub struct Sphere {
     center: Vec3,
