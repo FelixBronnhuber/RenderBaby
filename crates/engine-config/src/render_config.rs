@@ -53,7 +53,7 @@ impl Validate for RenderConfig {
         match &self.uniforms {
             Change::Update(u) | Change::Create(u) => {
                 // TODO: Get fov limits from constants somewhere central / bound to the struct?
-                if !(0.0 < u.fov && u.fov < 3.14) {
+                if !(0.0 < u.fov && u.fov < std::f32::consts::PI) {
                     return Err(RenderConfigBuilderError::FOVOutOfBounds);
                 }
                 // Add more Uniforms validation as needed
