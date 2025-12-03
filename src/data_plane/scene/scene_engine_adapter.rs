@@ -44,14 +44,20 @@ fn camera_to_render_uniforms(
     //! 'triangles_count': Number of triangles to be rendered
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
+
+    //TODO: Replace defaults
     let [width, height] = camera.get_resolution();
-    let camera = RenderCamera::new(
+    let position = camera.get_position();
+    let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
+    let pane_width = RenderCamera::default().pane_width;
+    let render_camera = RenderCamera::new(
         camera.get_fov(),
-        RenderCamera::default().pane_width,
-        RenderCamera::default().pos,
-        RenderCamera::default().dir,
+        pane_width,
+        [position.x, position.y, position.z],
+        rotation,
     );
-    let uniforms = RenderUniforms::new(width, height, camera, spheres_count, triangles_count);
+    let uniforms =
+        RenderUniforms::new(width, height, render_camera, spheres_count, triangles_count);
     Ok(uniforms)
 }
 

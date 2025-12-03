@@ -109,6 +109,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
+
+    // Bounds check: skip threads outside the image
+    if (x >= uniforms.width || y >= uniforms.height) {
+        return;
+    }
+
     let aspect = f32(uniforms.width) / f32(uniforms.height);
     let u = ((f32(x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
     let v = (1.0 - f32(y) / f32(uniforms.height - 1u)) * 2.0 - 1.0;
