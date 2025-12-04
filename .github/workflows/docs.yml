@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - 'sprint-[0-9]+'
+      - 187-ci-deploy-cargo-docks
 permissions:
   contents: read
   pages: write
