@@ -140,7 +140,7 @@ impl Scene {
             (all_verts, all_tris)
         };
 
-        let rc = if self.first_render {
+        let mut rc = if self.first_render {
             self.first_render = false;
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
@@ -154,11 +154,15 @@ impl Scene {
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
             RenderConfigBuilder::new()
                 .uniforms(uniforms)
-                .spheres(render_spheres)
+                // TODO: Handle sphere deletion via state: `.spheres(render_spheres)`
+                .spheres_delete()
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .build()
         };
+
+        #[allow(deprecated)]
+        rc.translate(0.0, 0.0, 2.0);
 
         let engine = self.get_render_engine_mut();
 

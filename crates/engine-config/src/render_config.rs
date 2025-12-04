@@ -28,6 +28,31 @@ impl RenderConfig {
     pub fn builder() -> RenderConfigBuilder {
         RenderConfigBuilder::default()
     }
+
+    #[deprecated(note = "Temporary function for testing translation. Do not use.")]
+    pub fn translate(&mut self, dx: f32, dy: f32, dz: f32) {
+        match &mut self.spheres {
+            Change::Create(spheres) | Change::Update(spheres) => {
+                for sphere in spheres.iter_mut() {
+                    sphere.center.0[0] += dx;
+                    sphere.center.0[1] += dy;
+                    sphere.center.0[2] += dz;
+                }
+            }
+            _ => {}
+        }
+
+        match &mut self.vertices {
+            Change::Create(vertices) | Change::Update(vertices) => {
+                for i in (0..vertices.len()).step_by(3) {
+                    vertices[i] += dx;
+                    vertices[i + 1] += dy;
+                    vertices[i + 2] += dz;
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 impl ValidateInit for RenderConfig {
@@ -56,10 +81,9 @@ impl Validate for RenderConfig {
                 if !(0.0 < u.fov && u.fov < std::f32::consts::PI) {
                     return Err(RenderConfigBuilderError::FOVOutOfBounds);
                 }
-                // Add more Uniforms validation as needed
+                // TODO: Add more Uniforms validation as needed
             }
             Change::Delete => {
-                // If deleting uniforms is not allowed, error
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
             Change::Keep => {}
@@ -70,11 +94,10 @@ impl Validate for RenderConfig {
                 if spheres.iter().any(|s| s.radius <= 0.0) {
                     return Err(RenderConfigBuilderError::InvalidSpheres);
                 }
-                // Add more Sphere validation as needed
+                // TODO: Add more Sphere validation as needed
             }
             Change::Delete => {
-                // If deleting spheres is not allowed, error
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                log::info!("RenderConfig: Attempting to delete spheres")
             }
             Change::Keep => {}
         }
@@ -86,7 +109,7 @@ impl Validate for RenderConfig {
                 }
             }
             Change::Delete => {
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                todo!("Implement Vertices Deletion")
             }
             Change::Keep => {}
         }
@@ -98,7 +121,7 @@ impl Validate for RenderConfig {
                 }
             }
             Change::Delete => {
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                todo!("Implement triangles Deletion")
             }
             Change::Keep => {}
         }
