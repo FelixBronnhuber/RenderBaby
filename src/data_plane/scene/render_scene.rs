@@ -1,5 +1,5 @@
 use anyhow::Error;
-use engine_config::RenderConfigBuilder;
+use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
 use scene_objects::{
     camera::Camera,
@@ -26,6 +26,7 @@ pub struct Scene {
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
+    pub(crate) first_render: bool,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -109,15 +110,23 @@ impl Scene {
     pub fn new() -> Self {
         //! ## Returns
         //! A new scenen with default values
+        let cam = Camera::default();
+        let [width, height] = cam.get_resolution();
         Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
-                RenderConfigBuilder::new().build().unwrap(),
+                RenderConfigBuilder::new()
+                    .uniforms_create(Uniforms::new(width, height, cam.get_fov(), 0, 0))
+                    .spheres_create(vec![])
+                    .vertices_create(vec![])
+                    .triangles_create(vec![])
+                    .build(),
                 RenderEngine::Raytracer,
             )),
+            first_render: true,
         } // todo: allow name and color as param
     }
 

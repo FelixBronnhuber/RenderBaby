@@ -23,8 +23,13 @@ impl Controller {
         match event {
             view::Event::DoRender => {
                 let output = self.model.generate_render_output();
-                if output.validate().is_ok() {
-                    self.pipeline.submit_render_output(output);
+                match output.validate() {
+                    Ok(_) => {
+                        self.pipeline.submit_render_output(output);
+                    }
+                    Err(e) => {
+                        log::error!("Render output validation failed: {}", e);
+                    }
                 }
             }
             view::Event::ImportObj => {

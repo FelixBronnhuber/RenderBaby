@@ -43,6 +43,13 @@ impl Model {
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
-        self.scene.render().unwrap()
+        match self.scene.render() {
+            Ok(output) => output,
+            Err(e) => {
+                log::error!("Render failed: {}", e);
+                // Return a dummy output (magenta image) to avoid panic for now...
+                RenderOutput::new(1, 1, vec![255, 0, 255, 255])
+            }
+        }
     }
 }
