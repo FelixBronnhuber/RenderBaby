@@ -154,7 +154,8 @@ impl Scene {
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
             RenderConfigBuilder::new()
                 .uniforms(uniforms)
-                .spheres(render_spheres)
+                // TODO: Handle sphere deletion via state: `.spheres(render_spheres)`
+                .spheres_delete()
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .build()

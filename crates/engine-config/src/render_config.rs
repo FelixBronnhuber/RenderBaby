@@ -81,10 +81,9 @@ impl Validate for RenderConfig {
                 if !(0.0 < u.fov && u.fov < std::f32::consts::PI) {
                     return Err(RenderConfigBuilderError::FOVOutOfBounds);
                 }
-                // Add more Uniforms validation as needed
+                // TODO: Add more Uniforms validation as needed
             }
             Change::Delete => {
-                // If deleting uniforms is not allowed, error
                 return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
             }
             Change::Keep => {}
@@ -95,11 +94,10 @@ impl Validate for RenderConfig {
                 if spheres.iter().any(|s| s.radius <= 0.0) {
                     return Err(RenderConfigBuilderError::InvalidSpheres);
                 }
-                // Add more Sphere validation as needed
+                // TODO: Add more Sphere validation as needed
             }
             Change::Delete => {
-                // If deleting spheres is not allowed, error
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                log::info!("RenderConfig: Attempting to delete spheres")
             }
             Change::Keep => {}
         }
@@ -111,7 +109,7 @@ impl Validate for RenderConfig {
                 }
             }
             Change::Delete => {
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                todo!("Implement Vertices Deletion")
             }
             Change::Keep => {}
         }
@@ -123,7 +121,7 @@ impl Validate for RenderConfig {
                 }
             }
             Change::Delete => {
-                return Err(RenderConfigBuilderError::CannotDeleteNonexistent);
+                todo!("Implement triangles Deletion")
             }
             Change::Keep => {}
         }
