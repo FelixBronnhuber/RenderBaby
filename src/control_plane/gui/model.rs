@@ -20,7 +20,7 @@ impl Model {
         let _ = self.scene.load_object_from_file(obj_file_path.to_string());
     }
 
-    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<(), SceneParseError> {
+    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&Scene, SceneParseError> {
         info!("Received path (scene): {}", scene_file_path);
         let scene_res = Scene::load_scene_from_file(scene_file_path.to_string());
         match scene_res {
@@ -30,7 +30,7 @@ impl Model {
             }
             Ok(s) => {
                 self.scene = s;
-                Ok(())
+                Ok(&self.scene)
             }
         }
     }

@@ -1,4 +1,5 @@
 use scene_objects::{camera::Camera, geometric_object::GeometricObject, light_source::LightSource};
+
 /// The scene graphs holds all elements of the scene
 pub(crate) struct SceneGraph {
     objects: Vec<Box<dyn GeometricObject>>,
