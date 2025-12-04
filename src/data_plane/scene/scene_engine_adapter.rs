@@ -2,6 +2,7 @@
 use anyhow::{Error, Result};
 use engine_config::RenderConfigBuilder;
 use engine_wgpu_wrapper::RenderOutput;
+use log::{info, error};
 use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
 use crate::data_plane::scene::{render_scene::Scene};
 
@@ -78,14 +79,12 @@ fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
-    pub(crate) fn get_render_spheres(&self) -> Vec<RenderSphere> {
+    fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
         let mut res = vec![];
-        for obj in self.get_objects() {
-            if let Some(sphere) = obj.as_any().downcast_ref::<Sphere>() {
-                res.push(sphere_to_render_sphere(sphere));
-            }
+        for sphere in self.get_spheres() {
+            res.push(sphere_to_render_sphere(sphere));
         }
         res
     }
@@ -103,11 +102,8 @@ impl Scene {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         let mut res = vec![];
-        for obj in self.get_objects() {
-            if let Some(tri) = obj.as_any().downcast_ref::<TriGeometry>() {
-                res.push(tri_geometry_to_render_tri(tri));
-                //break;
-            }
+        for tri in self.get_tri_geometries() {
+            res.push(tri_geometry_to_render_tri(tri))
         }
         res
     }
@@ -116,6 +112,7 @@ impl Scene {
         //! calls the render engine for the scene self.
         //! ## Returns
         //! Result of either the RenderOutput or a error
+        info!("{self}: Render has been called. Collecting render parameters");
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
@@ -139,6 +136,12 @@ impl Scene {
             }
             (all_verts, all_tris)
         };
+        info!(
+            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
+            render_spheres.len(),
+            all_triangles.len() / 3,
+            all_vertices.len() / 3
+        );
 
         let mut rc = if self.first_render {
             self.first_render = false;
@@ -166,13 +169,28 @@ impl Scene {
 
         let engine = self.get_render_engine_mut();
 
-        engine.render(rc)
+        let output = engine.render(rc);
+        match output {
+            Ok(res) => match res.validate() {
+                Ok(_) => {
+                    info!("{self}: Successfully got valid render output");
+                    Ok(res)
+                }
+                Err(error) => {
+                    error!("{self}: Received invalid render output");
+                    Err(error)
+                }
+            },
+            Err(error) => {
+                error!("{self}: The following error occurred when rendering: {error}");
+                Err(error)
+            }
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    //use super::*;
 
     #[test]
     fn it_works() {}

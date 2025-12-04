@@ -1,8 +1,12 @@
-use scene_objects::{camera::Camera, geometric_object::GeometricObject, light_source::LightSource};
-
+use scene_objects::{
+    camera::Camera, light_source::LightSource, mesh::Mesh, sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 /// The scene graphs holds all elements of the scene
 pub(crate) struct SceneGraph {
-    objects: Vec<Box<dyn GeometricObject>>,
+    tri_geometries: Vec<TriGeometry>,
+    spheres: Vec<Sphere>,
+    meshes: Vec<Mesh>,
     light_sources: Vec<LightSource>,
     camera: Camera,
 }
@@ -12,16 +16,30 @@ impl SceneGraph {
         //! ## Returns
         //! a new scene graph with emtpy objects, light_sources, and a default Camera
         Self {
-            objects: Vec::new(),
+            tri_geometries: Vec::new(),
+            spheres: Vec::new(),
+            meshes: Vec::new(),
             light_sources: Vec::new(),
             camera: Camera::default(),
         }
     }
-    pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
+    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
+        //! Adds a TriGeometry
+        //! ## Parameter
+        //! 'tri': render object to be added
+        self.tri_geometries.push(tri);
+    }
+    pub fn add_sphere(&mut self, sphere: Sphere) {
+        //! Adds a Sphere
+        //! ## Parameter
+        //! 'sphere': render object to be added
+        self.spheres.push(sphere);
+    }
+    pub fn add_mesh(&mut self, mesh: Mesh) {
         //! Adds a object
         //! ## Parameter
-        //! 'obj': render object to be added
-        self.objects.push(obj);
+        //! 'mesh': render object to be added
+        self.meshes.push(mesh);
     }
     pub fn add_lightsource(&mut self, light: LightSource) {
         //! adds a LightSource
@@ -32,13 +50,24 @@ impl SceneGraph {
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the camera
         //! ## Parameter
-        //! 'camer': camera to be stored
+        //! 'camera': camera to be stored
         self.camera = camera;
     }
-    pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
+
+    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
         //! ## Returns
-        //! all render objects as a reference to a vector of GeometricObject
-        &self.objects
+        //! all TriGeometries as a reference to a vector of TriGeometry
+        &self.tri_geometries
+    }
+    pub fn get_spheres(&self) -> &Vec<Sphere> {
+        //! ## Returns
+        //! all Spheres objects as a reference to a vector of Sphere
+        &self.spheres
+    }
+    pub fn get_meshes(&self) -> &Vec<Mesh> {
+        //! ## Returns
+        //! all Meshes objects as a reference to a vector of Mesh
+        &self.meshes
     }
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         //! ## Returns
@@ -56,11 +85,23 @@ impl SceneGraph {
         &self.camera
     }
 
-    pub fn remove_object(&mut self, index: usize) {
-        //! Removes object at given index
+    pub fn remove_sphere(&mut self, index: usize) {
+        //! Removes sphere at given index
         //! ## Parameter
         //! 'index': Index of the object that will be removed
-        self.objects.remove(index);
+        self.spheres.remove(index);
+    }
+    pub fn remove_tri_geomtry(&mut self, index: usize) {
+        //! Removes TriGeometry at given index
+        //! ## Parameter
+        //! 'index': Index of the object that will be removed
+        self.tri_geometries.remove(index);
+    }
+    pub fn remove_mesh(&mut self, index: usize) {
+        //! Removes mesh at given index
+        //! ## Parameter
+        //! 'index': Index of the object that will be removed
+        self.meshes.remove(index);
     }
 
     pub fn remove_light_source(&mut self, index: usize) {

@@ -23,7 +23,7 @@ pub trait SceneObject: GeometricObject {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct SceneObjectAttributes {
     pub name: String,
     pub path: Option<String>,

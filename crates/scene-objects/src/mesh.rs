@@ -3,7 +3,7 @@ use crate::geometric_object::GeometricObject;
 /// This is where the mesh as an alternative to trigeometry will be implemented
 #[allow(dead_code)]
 #[derive(Debug)]
-struct Mesh {
+pub struct Mesh {
     vertices: Vec<f32>,
     tris: Vec<u32>,
 }

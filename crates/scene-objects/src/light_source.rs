@@ -98,7 +98,20 @@ impl LightSource {
     }
 }
 
+impl std::fmt::Display for LightSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?} LightSource {} at {}",
+            self.get_light_type(),
+            self.name,
+            self.get_position()
+        )
+    }
+}
+
 #[allow(dead_code)]
+#[derive(Debug)]
 /// Light can be either Ambient, Point or Directional
 pub enum LightType {
     Ambient,

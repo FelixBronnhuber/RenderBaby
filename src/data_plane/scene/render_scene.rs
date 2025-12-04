@@ -1,11 +1,12 @@
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
+use log::{info, warn, error};
 use scene_objects::{
     camera::Camera,
-    geometric_object::GeometricObject,
     light_source::{LightSource, LightType},
     material::Material,
+    mesh::Mesh,
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
@@ -13,7 +14,7 @@ use scene_objects::{
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::{scene_graph::SceneGraph},
+        scene::scene_graph::SceneGraph,
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
@@ -22,7 +23,6 @@ use crate::data_plane::scene_io::scene_parser::SceneParseError;
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
-    //action_stack: ActionStack,
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
@@ -37,29 +37,41 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: String) -> Result<Scene, SceneParseError> {
+        info!("Scene: Loading new scene from {path}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<&TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let objs = parseobj(path).unwrap();
-        for obj in objs {
-            self.add_object(Box::new(obj));
+        info!("Scene {self}: Loading object from {path}");
+        let result = parseobj(path.clone());
+        match result {
+            Ok(objs) => {
+                if objs.is_empty() {
+                    let error_msg = format!("Parsing obj from {path} returned 0 geometries");
+                    warn!("{self}: {error_msg}");
+                    Err(anyhow::bail!("{error_msg}"))
+                } else {
+                    let res = objs.clone();
+                    for obj in objs {
+                        self.add_tri_geometry(obj);
+                    }
+                    Ok(res)
+                }
+            }
+            Err(error) => {
+                error!("{self}: Parsing obj from {path} resulted in error: {error}");
+                Err(error)
+            }
         }
-        Ok(self
-            .get_objects()
-            .last()
-            .unwrap()
-            .as_ref()
-            .as_any()
-            .downcast_ref()
-            .unwrap())
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
+        //! This is a temporary function for test purposes
+        info!("Scene: Initialising with 'proto' settings");
         let green = [0.0, 1.0, 0.0];
         let magenta = [1.0, 0.0, 1.0];
         let red = [1.0, 0.0, 0.0];
@@ -81,11 +93,11 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
-        self.add_object(Box::new(sphere0));
-        self.add_object(Box::new(sphere1));
-        self.add_object(Box::new(sphere2));
-        self.add_object(Box::new(sphere3));
-        self.add_object(Box::new(sphere4));
+        self.add_sphere(sphere0);
+        self.add_sphere(sphere1);
+        self.add_sphere(sphere2);
+        self.add_sphere(sphere3);
+        self.add_sphere(sphere4);
 
         self.set_camera(cam);
         self.add_lightsource(light);
@@ -130,17 +142,34 @@ impl Scene {
         } // todo: allow name and color as param
     }
 
-    pub fn add_object(&mut self, obj: Box<dyn GeometricObject>) {
+    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
         //! adds an object to the scene
         //! ## Arguments
-        //! 'obj': GeometricObject that is to be added to the scene
-        self.scene_graph.add_object(obj);
+        //! 'tri': TriGeometry that is to be added to the scene
+        //!
+        info!("{self}: adding TriGeometry {:?}", tri);
+        self.scene_graph.add_tri_geometry(tri);
+    }
+    pub fn add_sphere(&mut self, sphere: Sphere) {
+        //! adds an object to the scene
+        //! ## Arguments
+        //! 'sphere': GeometricObject that is to be added to the scene
+        info!("{self}: adding {:?}", sphere);
+        self.scene_graph.add_sphere(sphere);
+    }
+    pub fn add_mesh(&mut self, mesh: Mesh) {
+        //! adds an object to the scene
+        //! ## Arguments
+        //! 'mesh': GeometricObject that is to be added to the scene
+        info!("{self}: adding {:?}", mesh);
+        self.scene_graph.add_mesh(mesh);
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
         //! adds an LightSource to the scene
         //! ## Arguments
         //! 'light': LightSource that is to be added
+        info!("{self}: adding LightSource {light}");
         self.scene_graph.add_lightsource(light);
     }
 
@@ -148,14 +177,27 @@ impl Scene {
         //! sets the scene camera to the passed camera
         //! ## Arguments
         //! 'camera': Camera that is to be the new scene camera
+        info!("{self}: set camera to {camera}");
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_objects(&self) -> &Vec<Box<dyn GeometricObject>> {
+    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
         //! ##  Returns
-        //! a reference to a vector of all render objects
+        //! a reference to a vector of all TriGeometries
 
-        self.scene_graph.get_objects()
+        self.scene_graph.get_tri_geometries()
+    }
+    pub fn get_spheres(&self) -> &Vec<Sphere> {
+        //! ##  Returns
+        //! a reference to a vector of all spheres
+
+        self.scene_graph.get_spheres()
+    }
+    pub fn get_meshes(&self) -> &Vec<Mesh> {
+        //! ##  Returns
+        //! a reference to a vector of all Meshes
+
+        self.scene_graph.get_meshes()
     }
 
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
@@ -180,6 +222,11 @@ impl Scene {
         //! set the scene engine to the passed scene
         //! ## Arguments
         //! 'engine': engine that will be the new engine
+        //!
+        info!(
+            "{self}: setting render engine to new {:?}",
+            engine.current_engine()
+        );
         self.render_engine = Some(engine);
     }
 
@@ -192,7 +239,9 @@ impl Scene {
     pub fn set_name(&mut self, name: String) {
         //! ## Arguments
         //! 'name' : new scene name
-        self.name = name;
+        let old_name = self.name.clone();
+        self.name = name.clone();
+        info!("{self}: Renamed to {name} from {old_name}");
     }
 
     pub fn get_background_color(&self) -> [f32; 3] {
@@ -205,10 +254,20 @@ impl Scene {
         //! ## Parameters
         //! New background color as array of f32
         self.background_color = color;
+        info!(
+            "Scene {self}: set background color to [{}, {}, {}]",
+            color[0], color[1], color[2]
+        );
     }
 
     #[allow(dead_code)]
     pub fn export_render_img(&self, path: String) -> Result<(), Error> {
         todo!()
+    }
+}
+
+impl std::fmt::Display for Scene {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Scene {}", self.get_name())
     }
 }
