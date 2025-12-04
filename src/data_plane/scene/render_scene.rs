@@ -18,6 +18,8 @@ use crate::{
         scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
     },
 };
+use crate::data_plane::scene_io::scene_parser::SceneParseError;
+
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
@@ -34,9 +36,9 @@ impl Default for Scene {
 #[allow(unused)]
 impl Scene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: String) -> Result<Scene, Error> {
+    pub fn load_scene_from_file(path: String) -> Result<Scene, SceneParseError> {
         info!("Scene: Loading new scene from {path}");
-        Ok(parse_scene(path))
+        parse_scene(path)
     }
     pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
         //! Adds new object from a obj file at path
@@ -259,7 +261,7 @@ impl Scene {
     }
 
     #[allow(dead_code)]
-    pub fn export_render_img(&self, path: String) {
+    pub fn export_render_img(&self, path: String) -> Result<(), Error> {
         todo!()
     }
 }
