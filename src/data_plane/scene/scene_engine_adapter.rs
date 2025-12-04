@@ -112,6 +112,7 @@ impl Scene {
         //! calls the render engine for the scene self.
         //! ## Returns
         //! Result of either the RenderOutput or a error
+        info!("{self}: Render has been called. Collecting render parameters");
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
@@ -135,6 +136,12 @@ impl Scene {
             }
             (all_verts, all_tris)
         };
+        info!(
+            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
+            render_spheres.len(),
+            all_triangles.len() / 3,
+            all_vertices.len() / 3
+        );
 
         let rc = if self.first_render {
             self.first_render = false;
@@ -158,7 +165,23 @@ impl Scene {
 
         let engine = self.get_render_engine_mut();
 
-        engine.render(rc)
+        let output = engine.render(rc);
+        match output {
+            Ok(res) => match res.validate() {
+                Ok(_) => {
+                    info!("{self}: Successfully got valid render output");
+                    Ok(res)
+                }
+                Err(error) => {
+                    error!("{self}: Received invalid render output");
+                    Err(error)
+                }
+            },
+            Err(error) => {
+                error!("{self}: The following error occurred when rendering: {error}");
+                Err(error)
+            }
+        }
     }
 }
 
