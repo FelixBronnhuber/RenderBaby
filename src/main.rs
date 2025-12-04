@@ -8,7 +8,7 @@ use crate::control_plane::gui::app::App;
 fn main() {
     /* for testing without setting env vars yourself: */
     if env::var("RUST_LOG").is_err() {
-        unsafe { env::set_var("RUST_LOG", "debug") }
+        unsafe { env::set_var("RUST_LOG", "info") }
     }
     log_buffer::get_builder().init();
 

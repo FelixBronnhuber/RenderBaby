@@ -8,7 +8,7 @@ pub struct Engine {
 
 impl Renderer for Engine {
     fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
-        self.gpu_wrapper.update(rc);
+        self.gpu_wrapper.update(rc)?;
 
         self.gpu_wrapper.update_uniforms();
 

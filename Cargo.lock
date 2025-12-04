@@ -1061,6 +1061,7 @@ dependencies = [
  "anyhow",
  "bytemuck",
  "engine-config",
+ "log",
  "pollster",
  "wgpu",
 ]

@@ -122,40 +122,43 @@ impl Scene {
             .sum();
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
-        let mut rcb = RenderConfigBuilder::new()
-            .uniforms(uniforms)
-            .spheres(render_spheres);
-        for tri in render_tris {
-            rcb = rcb.vertices(tri.0.clone()).triangles(tri.1.clone());
-        }
-        let rc = rcb.build();
-        match rc {
-            Ok(rc) => {
-                info!("{self}: Calling render");
-                let engine = self.get_render_engine_mut();
-                let output = engine.render(rc);
-                match output {
-                    Ok(res) => match res.validate() {
-                        Ok(_) => {
-                            info!("{self}: Successfully got valid render output");
-                            Ok(res)
-                        }
-                        Err(error) => {
-                            error!("{self}: Received invalid render output");
-                            Err(error)
-                        }
-                    },
-                    Err(error) => {
-                        error!("{self}: The following error occurred when rendering: {error}");
-                        Err(error)
-                    }
-                }
+
+        // Collect all vertices and triangles into flat vectors
+        let (all_vertices, all_triangles) = if render_tris.is_empty() {
+            (vec![], vec![])
+        } else {
+            let mut all_verts = vec![];
+            let mut all_tris = vec![];
+            for (verts, tris) in render_tris {
+                all_verts.extend(verts);
+                all_tris.extend(tris);
             }
-            Err(error) => {
-                error!("{self}: Failed to build render context");
-                Err(error)
-            }
-        }
+            (all_verts, all_tris)
+        };
+
+        let rc = if self.first_render {
+            self.first_render = false;
+            // NOTE: *_create is for the first initial render which initializes all the buffers etc.
+            RenderConfigBuilder::new()
+                .uniforms_create(uniforms)
+                .spheres_create(render_spheres)
+                .vertices_create(all_vertices)
+                .triangles_create(all_triangles)
+                .build()
+        } else {
+            // NOTE: * otherwise the values are updated with the new value an the unchanged fields
+            // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
+            RenderConfigBuilder::new()
+                .uniforms(uniforms)
+                .spheres(render_spheres)
+                .vertices(all_vertices)
+                .triangles(all_triangles)
+                .build()
+        };
+
+        let engine = self.get_render_engine_mut();
+
+        engine.render(rc)
     }
 }
 
