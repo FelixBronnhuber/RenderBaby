@@ -29,8 +29,10 @@ impl Controller {
                 self.handle_event(view::Event::DoRender);
             }
             view::Event::ImportScene => {
-                self.model
-                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
+                let _ = self
+                    .model
+                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()))
+                    .ok();
                 self.handle_event(view::Event::DoRender);
                 // todo: also set all sliders, update tree ...
             }
