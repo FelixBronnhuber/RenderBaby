@@ -1,5 +1,10 @@
 # RenderBaby
 
+[![Documentation][doc-img]][doc-url]
+
+[doc-img]: https://img.shields.io/badge/docs.rs-aoc-4d76ae?style=for-the-badge
+[doc-url]: https://github.com/FelixBronnhuber/RenderBaby/aoc/index.html
+
 RenderBaby is a Rust project.  
 This repository uses a workspace structure, with multiple crates located in the `crates/` directory.
 
