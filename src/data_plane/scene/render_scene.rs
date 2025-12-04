@@ -110,6 +110,16 @@ impl Scene {
         //! A new scenen with default values
         let cam = Camera::default();
         let [width, height] = cam.get_resolution();
+        let position = cam.get_position();
+        let rotation = crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().dir; //Engine uses currently a direction vector
+        let pane_width =
+            crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().pane_width;
+        let render_camera = crate::data_plane::scene::scene_engine_adapter::RenderCamera::new(
+            cam.get_fov(),
+            pane_width,
+            [position.x, position.y, position.z],
+            rotation,
+        );
         Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
@@ -117,7 +127,7 @@ impl Scene {
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
                 RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(width, height, cam.get_fov(), 0, 0))
+                    .uniforms_create(Uniforms::new(width, height, render_camera, 0, 0))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])

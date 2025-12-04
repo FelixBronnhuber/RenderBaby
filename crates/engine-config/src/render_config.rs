@@ -53,8 +53,14 @@ impl Validate for RenderConfig {
         match &self.uniforms {
             Change::Update(u) | Change::Create(u) => {
                 // TODO: Get fov limits from constants somewhere central / bound to the struct?
-                if !(0.0 < u.fov && u.fov < std::f32::consts::PI) {
-                    return Err(RenderConfigBuilderError::FOVOutOfBounds);
+                if !(0.0..=100.0).contains(&u.camera.pane_distance) {
+                    return Err(RenderConfigBuilderError::PaneDistanceOutOfBounds);
+                }
+                if !(0.0..=1000.0).contains(&u.camera.pane_width) {
+                    return Err(RenderConfigBuilderError::PaneWidthOutOfBounds);
+                }
+                if is_zero(&u.camera.dir) {
+                    return Err(RenderConfigBuilderError::InvalidCameraDirection);
                 }
                 // Add more Uniforms validation as needed
             }
@@ -230,7 +236,9 @@ impl RenderConfigBuilder {
 
 #[derive(Debug)]
 pub enum RenderConfigBuilderError {
-    FOVOutOfBounds,
+    PaneDistanceOutOfBounds,
+    PaneWidthOutOfBounds,
+    InvalidCameraDirection,
     InvalidUniforms,
     InvalidSpheres,
     InvalidVertices,
@@ -241,7 +249,15 @@ pub enum RenderConfigBuilderError {
 impl fmt::Display for RenderConfigBuilderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RenderConfigBuilderError::FOVOutOfBounds => write!(f, "FOV is out of bounds"),
+            RenderConfigBuilderError::PaneDistanceOutOfBounds => {
+                write!(f, "Pane-Distance is out of bounds")
+            }
+            RenderConfigBuilderError::PaneWidthOutOfBounds => {
+                write!(f, "Pane-Distance is out of bounds")
+            }
+            RenderConfigBuilderError::InvalidCameraDirection => {
+                write!(f, "Invalid camera direction")
+            }
             RenderConfigBuilderError::InvalidUniforms => write!(f, "Invalid Uniforms"),
             RenderConfigBuilderError::InvalidSpheres => write!(f, "Invalid Spheres"),
             RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
@@ -254,6 +270,11 @@ impl fmt::Display for RenderConfigBuilderError {
 }
 
 impl std::error::Error for RenderConfigBuilderError {}
+
+fn is_zero(v: &[f32; 3]) -> bool {
+    let len_sq = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+    len_sq < f32::EPSILON
+}
 
 #[cfg(test)]
 mod tests {

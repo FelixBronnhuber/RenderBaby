@@ -7,7 +7,7 @@ use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
-type RenderCamera = engine_config::Camera;
+pub type RenderCamera = engine_config::Camera;
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
