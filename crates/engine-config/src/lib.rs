@@ -1,3 +1,4 @@
+mod camera;
 pub mod render_config;
 pub mod sphere;
 pub mod uniforms;
@@ -7,3 +8,4 @@ pub use render_config::{RenderConfig, RenderConfigBuilder, RenderConfigBuilderEr
 pub use sphere::{Sphere, SphereError};
 pub use uniforms::Uniforms;
 pub use vec3::Vec3;
+pub use camera::Camera;

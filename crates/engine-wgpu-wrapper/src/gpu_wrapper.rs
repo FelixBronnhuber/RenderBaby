@@ -270,10 +270,13 @@ impl GpuWrapper {
         uniforms.triangles_count = triangles_len as u32 / 3;
 
         log::info!(
-            "Writing uniforms to GPU: {}x{}, fov={}, spheres={}, triangles={}",
+            "Writing uniforms to GPU: camera_pos={:?}, camera_dir={:?}, pane_distance={}, pane_width={}, size={}x{}, spheres={}, triangles={}",
+            uniforms.camera.pos,
+            uniforms.camera.dir,
+            uniforms.camera.pane_distance,
+            uniforms.camera.pane_width,
             uniforms.width,
             uniforms.height,
-            uniforms.fov,
             uniforms.spheres_count,
             uniforms.triangles_count
         );

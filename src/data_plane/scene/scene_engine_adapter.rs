@@ -8,6 +8,7 @@ use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
+pub type RenderCamera = engine_config::Camera;
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -44,14 +45,20 @@ fn camera_to_render_uniforms(
     //! 'triangles_count': Number of triangles to be rendered
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
+
+    //TODO: Replace defaults
     let [width, height] = camera.get_resolution();
-    let uniforms = RenderUniforms::new(
-        width,
-        height,
+    let position = camera.get_position();
+    let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
+    let pane_width = RenderCamera::default().pane_width;
+    let render_camera = RenderCamera::new(
         camera.get_fov(),
-        spheres_count,
-        triangles_count,
+        pane_width,
+        [position.x, position.y, position.z],
+        rotation,
     );
+    let uniforms =
+        RenderUniforms::new(width, height, render_camera, spheres_count, triangles_count);
     Ok(uniforms)
 }
 
