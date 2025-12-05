@@ -7,12 +7,11 @@ pub fn export_img_png(path: &str, render: RenderOutput) -> image::ImageResult<()
         render.width as u32,
         render.height as u32,
         render.pixels.clone(),
-    ).ok_or_else(|| {
-        image::ImageError::Parameter(
-            image::error::ParameterError::from_kind(
-                image::error::ParameterErrorKind::DimensionMismatch
-            )
-        )
+    )
+    .ok_or_else(|| {
+        image::ImageError::Parameter(image::error::ParameterError::from_kind(
+            image::error::ParameterErrorKind::DimensionMismatch,
+        ))
     })?;
 
     img.save(Path::new(path))
