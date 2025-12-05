@@ -1,7 +1,7 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
-const AA_SAMPLES: u32 = 500u; //use ~10 for testing and 500+ for final render
-const MAX_DEPTH: i32 = 10;
+const SAMPLES_PER_PASS: u32 = 10u;
+const MAX_DEPTH: i32 = 5;
 
 struct Camera {
     pane_distance: f32,
@@ -16,18 +16,20 @@ struct Camera {
 struct Uniforms {
     width: u32,
     height: u32,
-    _pad0: vec2<u32>,
+    current_pass: u32,      // NEW: which pass we're on
+    total_passes: u32,      // NEW: total number of passes
     camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
     _pad1: vec2<u32>,
+
 };
 
 struct Sphere {
     center: vec3<f32>,
     radius: f32,
     color: vec3<f32>,
-    _pad: u32, // 4 bytes padding for alignment
+    _pad: u32,
 };
 
 struct HitRecord {
@@ -41,10 +43,9 @@ struct HitRecord {
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-
 @group(0) @binding(3) var<storage, read> vertices: array<f32>;
-@group(0) @binding(4) var<storage, read> triangles: array<u32>; // Indexes into vertices
-
+@group(0) @binding(4) var<storage, read> triangles: array<u32>;
+@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>; // NEW: accumulation buffer
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -81,7 +82,6 @@ struct TriangleData {
     _pad: u32,
 };
 
-// Möller–Trumbore algorithm
 fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> f32 {
     let edge1 = tri.v1 - tri.v0;
     let edge2 = tri.v2 - tri.v0;
@@ -116,7 +116,6 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
     return -1.0;
 }
 
-// Knuth's multiplicative hash
 fn hash_to_color(n: u32) -> vec3<f32> {
     let h = n * 2654435761u;
     let r = f32(h % 41u) / 40.0;
@@ -125,11 +124,9 @@ fn hash_to_color(n: u32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
-// Ray-plane intersection
 fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
-    
     if (abs(ray_dir.y) < 1e-6) {
-        return -1.0; // Ray is parallel to plane
+        return -1.0;
     }
     
     let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
@@ -141,19 +138,16 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
     return -1.0;
 }
 
-// Based Minimal PCG and adapted to stateless shader hash (https://www.pcg-random.org/)
 fn hash(seed: u32) -> u32 {
     var state = seed * 747796405u + 2891336453u;
     var word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
     return (word >> 22u) ^ word;
 }
 
-// Convert hash to float in [0, 1)
 fn random_float(seed: u32) -> f32 {
     return f32(hash(seed)) / 4294967296.0;
 }
 
-// Generate random float in range [min, max)
 fn random_range(seed: u32, min: f32, max: f32) -> f32 {
     return min + random_float(seed) * (max - min);
 }
@@ -283,7 +277,6 @@ fn trace_ray(
     return color;
 }
 
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
@@ -294,38 +287,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
-    var accumulated_color = vec3<f32>(0.0, 0.0, 0.0);
+    let pixel_index = y * uniforms.width + x;
+    
+    // Load previous accumulation
+    var accumulated_color = accumulation[pixel_index].xyz;
+    var total_samples = u32(accumulation[pixel_index].w);
 
-    for (var render_sample: u32 = 0u; render_sample < AA_SAMPLES; render_sample = render_sample + 1u) {
-            let aspect = f32(uniforms.width) / f32(uniforms.height);
+    // Render new samples for this pass
+    for (var sample: u32 = 0u; sample < SAMPLES_PER_PASS; sample = sample + 1u) {
+        let aspect = f32(uniforms.width) / f32(uniforms.height);
 
-            let pixel_index = y * uniforms.width + x;
-            let seed = hash(pixel_index + hash(render_sample));
+        // Use pass index to ensure different samples each pass
+        let sample_offset = uniforms.current_pass * SAMPLES_PER_PASS + sample;
+        let seed = hash(pixel_index + hash(sample_offset));
 
-            let offset_x = random_float(seed) - 0.5;
-            let offset_y = random_float(hash(seed)) - 0.5;
+        let offset_x = random_float(seed) - 0.5;
+        let offset_y = random_float(hash(seed)) - 0.5;
 
-            let u = ((f32(x) + offset_x) / f32(uniforms.width - 1u)) * 2.0 - 1.0;
-            let v = 1.0 - ((f32(y) + offset_y) / f32(uniforms.height - 1u)) * 2.0;
+        let u = (((f32(x) + offset_x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
+        let v = 1.0 - ((f32(y) + offset_y) / f32(uniforms.height - 1u)) * 2.0;
 
-            let u_corrected = u * aspect;
+        let camera_pos = uniforms.camera.pos;
 
-            let camera_pos = uniforms.camera.pos;
+        let camera_forward = normalize(uniforms.camera.dir);
+        let world_up = vec3<f32>(0.0, 1.0, 0.0);
+        let camera_right = normalize(cross(world_up, camera_forward));
+        let camera_up = cross(camera_forward, camera_right);
 
-            let camera_forward = normalize(uniforms.camera.dir);
-            let world_up = vec3<f32>(0.0, 1.0, 0.0);
-            let camera_right = normalize(cross(world_up, camera_forward));
-            let camera_up = cross(camera_forward, camera_right);
+        let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
+        let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
 
-            let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
-            let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
+        let sample_color = trace_ray(camera_pos, ray_dir, seed);
+        accumulated_color = accumulated_color + sample_color;
+        total_samples = total_samples + 1u;
+    }
 
-            let sample_color = trace_ray(camera_pos, ray_dir, seed);
-            accumulated_color = accumulated_color + sample_color;
-        }
+    // Store accumulated result
+    accumulation[pixel_index] = vec4<f32>(accumulated_color, f32(total_samples));
 
-    accumulated_color = accumulated_color / f32(AA_SAMPLES);
-
-    let index: u32 = y * uniforms.width + x;
-    output[index] = color_map(accumulated_color);
+    // Write final color (averaged)
+    let final_color = accumulated_color / f32(total_samples);
+    output[pixel_index] = color_map(final_color);
 }

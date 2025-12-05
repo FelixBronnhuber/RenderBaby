@@ -1,13 +1,14 @@
 use crate::bind_group;
 use crate::{GpuDevice, buffers, pipeline};
-use anyhow::{Result, anyhow};
+use anyhow::{Ok, Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
 use engine_config::render_config::{Change, Validate, ValidateInit};
-use engine_config::RenderConfig;
+use engine_config::{RenderConfig, Uniforms};
 use pipeline::ComputePipeline;
-const DISPATCH_WORK_GROUP_WIDTH: u32 = 16;
-const DISPATCH_WORK_GROUP_HEIGHT: u32 = 16;
+
+const TOTAL_SAMPLES: u32 = 5000; //has to be multiple of SAMPLES_PER_PASS
+const SAMPLES_PER_PASS: u32 = 10; //also change in shader!
 
 pub struct GpuWrapper {
     buffer_wrapper: GpuBuffers,
@@ -16,6 +17,7 @@ pub struct GpuWrapper {
     device: wgpu::Device,
     queue: wgpu::Queue,
     rc: RenderConfig,
+    uniforms: Uniforms,
     pipeline_wrapper: ComputePipeline,
     initialized: bool,
 }
@@ -28,6 +30,11 @@ impl GpuWrapper {
         let layout = BindGroupLayout::new(&gpu.device);
         let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
         let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, path);
+        let initial_uniforms = match rc.uniforms {
+            Change::Create(u) | Change::Update(u) => u,
+            Change::Keep => Uniforms::default(),
+            Change::Delete => panic!("Cannot create GpuWrapper with deleted uniforms"),
+        };
         Ok(Self {
             buffer_wrapper: buffers,
             bind_group_layout_wrapper: layout,
@@ -35,6 +42,7 @@ impl GpuWrapper {
             device: gpu.device,
             queue: gpu.queue,
             rc,
+            uniforms: initial_uniforms,
             pipeline_wrapper: pipeline,
             initialized: false,
         })
@@ -56,6 +64,7 @@ impl GpuWrapper {
                         old_size,
                         new_size
                     );
+                    self.uniforms = *uniforms;
                     self.buffer_wrapper.grow_resolution(&self.device, new_size);
                 }
             }
@@ -89,6 +98,7 @@ impl GpuWrapper {
                         );
                         self.buffer_wrapper.grow_resolution(&self.device, new_size);
                     }
+                    self.uniforms = *uniforms;
                     self.buffer_wrapper.update_uniforms(&self.device, uniforms);
                 }
                 Change::Delete => {
@@ -188,10 +198,12 @@ impl GpuWrapper {
         &self.pipeline_wrapper.pipeline
     }
 
-    pub fn dispatch_compute(&self) -> Result<()> {
+    pub fn dispatch_compute_progressive(&self, pass_index: u32, total_passes: u32) -> Result<()> {
         let mut encoder = self
             .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some(&format!("Compute Pass {}/{}", pass_index + 1, total_passes)),
+            });
 
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -202,8 +214,8 @@ impl GpuWrapper {
             pass.set_pipeline(self.get_pipeline());
             pass.set_bind_group(0, self.get_bind_group(), &[]);
             pass.dispatch_workgroups(
-                self.get_width().div_ceil(DISPATCH_WORK_GROUP_WIDTH),
-                self.get_height().div_ceil(DISPATCH_WORK_GROUP_HEIGHT),
+                self.get_width().div_ceil(16),
+                self.get_height().div_ceil(16),
                 1,
             );
         }
@@ -217,6 +229,33 @@ impl GpuWrapper {
         );
 
         self.queue.submit(Some(encoder.finish()));
+
+        let _ = self.device.poll(wgpu::PollType::wait_indefinitely());
+
+        Ok(())
+    }
+
+    pub fn dispatch_compute(&mut self) -> Result<()> {
+        self.queue.write_buffer(
+            &self.buffer_wrapper.accumulation,
+            0,
+            &vec![0u8; (self.get_width() * self.get_height() * 16) as usize],
+        );
+        let total_passes = TOTAL_SAMPLES.div_ceil(SAMPLES_PER_PASS);
+
+        for pass in 0..total_passes {
+            println!("Rendering pass {}/{}", pass + 1, total_passes);
+            let mut uniforms = self.uniforms;
+            uniforms.current_pass = pass;
+            self.queue.write_buffer(
+                &self.buffer_wrapper.uniforms,
+                0,
+                bytemuck::cast_slice(&[uniforms]),
+            );
+
+            self.dispatch_compute_progressive(pass, total_passes)?;
+        }
+
         Ok(())
     }
 

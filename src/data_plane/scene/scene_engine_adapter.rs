@@ -164,7 +164,7 @@ impl Scene {
             RenderConfigBuilder::new()
                 .uniforms(uniforms)
                 // TODO: Handle sphere deletion via state: `.spheres(render_spheres)`
-                .spheres_delete()
+                .spheres_no_change()
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .build()

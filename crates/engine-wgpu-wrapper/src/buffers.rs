@@ -10,6 +10,7 @@ pub struct GpuBuffers {
     pub staging: Buffer,
     pub vertices: Buffer,
     pub triangles: Buffer,
+    pub accumulation: Buffer,
 }
 
 impl GpuBuffers {
@@ -33,6 +34,14 @@ impl GpuBuffers {
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
 
+        // Add this when creating buffers
+        let accumulation_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Accumulation Buffer"),
+            size: (uniforms.width * uniforms.height * 16) as u64, // vec4<f32> = 16 bytes
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             spheres: Self::create_storage_buffer(device, "Spheres Buffer", spheres),
             uniforms: Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms),
@@ -40,12 +49,19 @@ impl GpuBuffers {
             staging: Self::create_staging_buffer(device, size),
             vertices: Self::create_storage_buffer(device, "Vertices Buffer", vertices),
             triangles: Self::create_storage_buffer(device, "Triangles Buffer", triangles),
+            accumulation: accumulation_buffer,
         }
     }
 
     pub fn grow_resolution(&mut self, device: &Device, size: u64) {
         self.output = Self::create_output_buffer(device, size);
         self.staging = Self::create_staging_buffer(device, size);
+        self.accumulation = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Accumulation Buffer"),
+            size: (size * 4),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
     }
 
     pub fn grow_spheres(&mut self, device: &Device, spheres: &[Sphere]) {

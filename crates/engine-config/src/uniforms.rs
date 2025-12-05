@@ -5,7 +5,8 @@ use crate::camera::Camera;
 pub struct Uniforms {
     pub width: u32,
     pub height: u32,
-    _pad0: [u32; 2],
+    pub current_pass: u32,
+    pub total_passes: u32,
     pub camera: Camera,
     pub spheres_count: u32,
     pub triangles_count: u32,
@@ -17,7 +18,8 @@ impl Default for Uniforms {
         Self {
             width: 400,
             height: 300,
-            _pad0: [0; 2],
+            current_pass: 0,
+            total_passes: 1,
             camera: Camera::default(),
             spheres_count: 0,
             triangles_count: 0,
