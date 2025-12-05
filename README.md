@@ -2,7 +2,7 @@
 
 [![Documentation][doc-img]][doc-url]
 
-[doc-img]: https://img.shields.io/badge/docs.rs-aoc-4d76ae?style=for-the-badge
+[doc-img]: https://img.shields.io/badge/renderbaby-cargo--docs-blue?style=for-the-badge&logo=github
 [doc-url]: https://github.com/FelixBronnhuber/RenderBaby/renderbaby/index.html
 
 RenderBaby is a Rust project.  
