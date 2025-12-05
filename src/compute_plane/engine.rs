@@ -1,6 +1,6 @@
 use anyhow::Result;
 use engine_config::RenderConfig;
-use engine_wgpu_wrapper::{RenderOutput, Renderer};
+use engine_config::{RenderOutput, Renderer};
 
 use crate::compute_plane::render_engine::RenderEngine;
 

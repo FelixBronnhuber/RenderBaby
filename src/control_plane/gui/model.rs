@@ -1,6 +1,6 @@
 use log::info;
 use crate::data_plane::scene::render_scene::Scene;
-use engine_wgpu_wrapper::RenderOutput;
+use engine_config::RenderOutput;
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {

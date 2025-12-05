@@ -1,7 +1,6 @@
 /// Serves as an adpter between the scene plane and the render engine.
 use anyhow::{Error, Result};
-use engine_config::RenderConfigBuilder;
-use engine_wgpu_wrapper::RenderOutput;
+use engine_config::{RenderConfigBuilder, RenderOutput};
 use log::{info, error};
 use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
 use crate::data_plane::scene::{render_scene::Scene};
