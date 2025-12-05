@@ -1,4 +1,4 @@
-use engine_wgpu_wrapper::RenderOutput;
+use engine_config::RenderOutput;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]

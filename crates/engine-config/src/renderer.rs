@@ -1,5 +1,5 @@
 use anyhow::Result;
-use engine_config::RenderConfig;
+use crate::RenderConfig;
 
 use crate::render_output::RenderOutput;
 
