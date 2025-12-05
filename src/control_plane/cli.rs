@@ -100,7 +100,7 @@ impl CliApp {
             }
         }
 
-        match scene.export_render_img(self.args.output.to_str().unwrap().to_string()) {
+        match scene.export_render_img(self.args.output.to_str().unwrap()) {
             Err(e) => {
                 error!("Error saving image: {:?}, exiting...", e);
                 std::process::exit(1);

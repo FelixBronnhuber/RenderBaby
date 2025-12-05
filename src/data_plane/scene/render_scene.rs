@@ -1,5 +1,5 @@
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms};
+use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, warn, error};
 use scene_objects::{
@@ -15,7 +15,7 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
+        scene_io::{obj_parser::parseobj, scene_parser::parse_scene, img_export::export_img_png},
     },
 };
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
@@ -27,6 +27,7 @@ pub struct Scene {
     name: String,
     render_engine: Option<Engine>,
     pub(crate) first_render: bool,
+    last_render: Option<RenderOutput>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -149,6 +150,7 @@ impl Scene {
                 RenderEngine::Raytracer,
             )),
             first_render: true,
+            last_render: None,
         } // todo: allow name and color as param
     }
 
@@ -270,9 +272,24 @@ impl Scene {
         );
     }
 
+    pub fn set_last_render(&mut self, render: RenderOutput) {
+        self.last_render = Some(render.clone());
+        info!("{self}: Last render saved to buffer");
+    }
+
     #[allow(dead_code)]
-    pub fn export_render_img(&self, path: String) -> Result<(), Error> {
-        todo!()
+    pub fn export_render_img(&self, path: &str) -> image::ImageResult<()>{
+        let render = self
+            .last_render
+            .clone()
+            .ok_or_else(|| image::ImageError::Parameter(
+                image::error::ParameterError::from_kind(
+                    image::error::ParameterErrorKind::Generic("No render available".into())
+                )
+            ))?;
+
+        info!("{self}: Saved image to {:?}", path);
+        export_img_png(path, render)
     }
 }
 
