@@ -1,5 +1,10 @@
 # RenderBaby
 
+[![Documentation][doc-img]][doc-url]
+
+[doc-img]: https://img.shields.io/badge/renderbaby-cargo--docs-blue?style=for-the-badge&logo=github
+[doc-url]: https://felixbronnhuber.github.io/RenderBaby/index.html
+
 RenderBaby is a Rust project.  
 This repository uses a workspace structure, with multiple crates located in the `crates/` directory.
 
