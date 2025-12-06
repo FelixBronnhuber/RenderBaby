@@ -2,6 +2,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 /// Camera that is used to render scenes
 #[allow(dead_code)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Camera {
     position: Vec3,
     rotation: Vec3, // fov: f32 ?
@@ -86,12 +87,12 @@ impl std::fmt::Display for Camera {
         write!(f, "Camera at {}", self.get_position())
     }
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Resolution {
     pub width: u32,
     pub height: u32,
 }
-// todo: later add implementation for min, max, hd,uhd, default
+// todo: later add implementation for min, max, hd,uhd, ...
 impl Resolution {
     pub fn new(width: u32, height: u32) -> Self {
         Self { width, height }
