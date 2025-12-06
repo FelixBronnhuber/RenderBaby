@@ -1,5 +1,7 @@
-use crate::data_plane::scene::_scene::Scene;
-use engine_wgpu_wrapper::RenderOutput;
+use log::info;
+use crate::data_plane::scene::render_scene::Scene;
+use engine_config::RenderOutput;
+use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {
     scene: Scene,
@@ -13,14 +15,24 @@ impl Model {
     }
 
     pub fn import_obj(&mut self, obj_file_path: &str) {
-        println!("Received path (obj): {}", obj_file_path);
+        info!("Received path (obj): {}", obj_file_path);
 
         let _ = self.scene.load_object_from_file(obj_file_path.to_string());
     }
 
-    pub fn import_scene(&mut self, scene_file_path: &str) {
-        println!("Received path (scene): {}", scene_file_path);
-        self.scene = Scene::load_scene_from_file(scene_file_path.to_string());
+    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&Scene, SceneParseError> {
+        info!("Received path (scene): {}", scene_file_path);
+        let scene_res = Scene::load_scene_from_file(scene_file_path.to_string());
+        match scene_res {
+            Err(e) => {
+                eprintln!("Error loading scene: {:?}", e);
+                Err(e)
+            }
+            Ok(s) => {
+                self.scene = s;
+                Ok(&self.scene)
+            }
+        }
     }
     pub fn set_fov(&mut self, fov: f32) {
         self.scene.get_camera_mut().set_fov(fov);
@@ -31,6 +43,13 @@ impl Model {
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
-        self.scene.render().unwrap()
+        match self.scene.render() {
+            Ok(output) => output,
+            Err(e) => {
+                log::error!("Render failed: {}", e);
+                // Return a dummy output (magenta image) to avoid panic for now...
+                RenderOutput::new(1, 1, vec![255, 0, 255, 255])
+            }
+        }
     }
 }

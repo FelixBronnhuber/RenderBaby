@@ -1,12 +1,21 @@
+struct Camera {
+    pane_distance: f32,
+    pane_width: f32,
+    _pad0: vec2<f32>,
+    pos: vec3<f32>,
+    _pad1: f32,
+    dir: vec3<f32>,
+    _pad2: f32,
+};
+
 struct Uniforms {
     width: u32,
     height: u32,
-    fov: f32,
+    _pad0: vec2<u32>,
+    camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
-    _pad1: u32,
-    _pad2: u32,
-    _pad3: u32,
+    _pad1: vec2<u32>,
 };
 
 struct Sphere {
@@ -97,17 +106,28 @@ fn hash_to_color(n: u32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
+
+    // Bounds check: skip threads outside the image
+    if (x >= uniforms.width || y >= uniforms.height) {
+        return;
+    }
 
     let aspect = f32(uniforms.width) / f32(uniforms.height);
     let u = ((f32(x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
     let v = (1.0 - f32(y) / f32(uniforms.height - 1u)) * 2.0 - 1.0;
 
-    let camera_pos = vec3<f32>(0.0, 0.0, -uniforms.fov); // Camera behind the scene
-    let screen_z: f32 = 0.0;
+    let camera_pos = uniforms.camera.pos;
 
-    let ray_dir = normalize(vec3<f32>(u, v, screen_z - camera_pos.z));
+    let camera_forward = normalize(uniforms.camera.dir);
+    let world_up = vec3<f32>(0.0, 1.0, 0.0);
+    let camera_right = normalize(cross(world_up, camera_forward));
+    let camera_up = cross(camera_forward, camera_right);
+
+    let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
+    let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
 
     let a = .5 * (ray_dir.y + 1.);
     var hit_color = vec3<f32>(1., 1., 1.); // Background color

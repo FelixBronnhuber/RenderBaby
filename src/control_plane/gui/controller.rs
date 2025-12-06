@@ -1,4 +1,6 @@
+use log::error;
 use crate::control_plane::gui::*;
+use crate::data_plane::scene::render_scene::Scene;
 
 pub struct Controller {
     model: model::Model,
@@ -10,12 +12,24 @@ impl Controller {
         Self { model, pipeline }
     }
 
+    fn update_pipeline(pipeline: &pipeline::Pipeline, scene: &Scene) {
+        pipeline.set_fov(scene.get_camera().get_fov());
+        let [res_x, res_y] = scene.get_camera().get_resolution();
+        pipeline.set_width(res_x);
+        pipeline.set_height(res_y);
+    }
+
     pub fn handle_event(&mut self, event: view::Event) {
         match event {
             view::Event::DoRender => {
                 let output = self.model.generate_render_output();
-                if output.validate().is_ok() {
-                    self.pipeline.submit_render_output(output);
+                match output.validate() {
+                    Ok(_) => {
+                        self.pipeline.submit_render_output(output);
+                    }
+                    Err(e) => {
+                        log::error!("Render output validation failed: {}", e);
+                    }
                 }
             }
             view::Event::ImportObj => {
@@ -24,10 +38,18 @@ impl Controller {
                 self.handle_event(view::Event::DoRender);
             }
             view::Event::ImportScene => {
-                self.model
-                    .import_scene(&self.pipeline.take_scene_file_path().unwrap_or("".into()));
-                self.handle_event(view::Event::DoRender);
-                // todo: also set all sliders, update tree ...
+                let scene_path = self.pipeline.take_scene_file_path().unwrap_or("".into());
+                let import_res = self.model.import_scene(&scene_path);
+
+                match import_res {
+                    Err(e) => {
+                        error!("Error importing scene: {:?}", e);
+                    }
+                    Ok(scene) => {
+                        Self::update_pipeline(&self.pipeline, scene);
+                        self.handle_event(view::Event::DoRender);
+                    }
+                }
             }
             view::Event::UpdateResolution => {
                 self.model
