@@ -3,7 +3,7 @@ use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
 use log::{info, warn, error};
 use scene_objects::{
-    camera::Camera,
+    camera::{Camera, Resolution},
     light_source::{LightSource, LightType},
     material::Material,
     mesh::Mesh,
@@ -123,7 +123,7 @@ impl Scene {
         //! ## Returns
         //! A new scenen with default values
         let cam = Camera::default();
-        let [width, height] = cam.get_resolution();
+        let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
         let rotation = crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().dir; //Engine uses currently a direction vector
         let pane_width =
@@ -141,7 +141,7 @@ impl Scene {
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
                 RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(width, height, render_camera, 0, 0))
+                    .uniforms_create(Uniforms::new(*width, *height, render_camera, 0, 0))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])

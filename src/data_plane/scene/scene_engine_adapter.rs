@@ -2,7 +2,11 @@
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use log::{info, error};
-use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
+use scene_objects::{
+    camera::{Camera, Resolution},
+    sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
@@ -46,7 +50,8 @@ fn camera_to_render_uniforms(
     //! render_config::Unfiforms for the given parameters
 
     //TODO: Replace defaults
-    let [width, height] = camera.get_resolution();
+    //let [width, height] = camera.get_resolution();
+    let Resolution { width, height } = camera.get_resolution();
     let position = camera.get_position();
     let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
     let pane_width = RenderCamera::default().pane_width;
@@ -56,8 +61,13 @@ fn camera_to_render_uniforms(
         [position.x, position.y, position.z],
         rotation,
     );
-    let uniforms =
-        RenderUniforms::new(width, height, render_camera, spheres_count, triangles_count);
+    let uniforms = RenderUniforms::new(
+        *width,
+        *height,
+        render_camera,
+        spheres_count,
+        triangles_count,
+    );
     Ok(uniforms)
 }
 
