@@ -131,9 +131,6 @@ impl Scene {
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
-        let s: String = serde_json::to_string(&self).unwrap();
-        info!("{}", s);
-
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
