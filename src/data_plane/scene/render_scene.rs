@@ -129,7 +129,7 @@ impl Scene {
     }*/
     pub fn new() -> Self {
         //! ## Returns
-        //! A new scenen with default values
+        //! A new scene with default values
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
@@ -166,6 +166,35 @@ impl Scene {
             first_render: true,
             last_render: None,
         } // todo: allow name and color as param
+    }
+
+    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
+        //! ## Paramter
+        //! 'json_data': &str of a serialized scene
+        //! ## Returns
+        //! Result of new Scene from deserialized scene
+        todo!("Deserialization of scene is not implemented")
+        /* let deserialized =serde_json::from_str(json_data);
+        match deserialized {
+            Ok(scene) => {Ok(scene)},
+            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
+        } */
+    }
+
+    pub fn update_from_json(&mut self, json_data: &str) -> Result<(), Error> {
+        //! ## Parameter
+        //! 'json_data': &str of a serialized scene
+        //! ## Returns
+        //! Result of () or Error
+        todo!("Deserialization of scene is not implemented")
+        /* let deserialized = serde_json::from_str(json_data);
+        match deserialized {
+            Ok(scene) => {
+                *self = scene;
+                Ok(())
+            },
+            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
+        } */
     }
 
     pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
