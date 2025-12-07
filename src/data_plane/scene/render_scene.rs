@@ -54,7 +54,7 @@ impl Scene {
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        info!("Scene {self}: Loading object from {path}");
+        info!("{self}: Loading object from {path}");
         let result = parseobj(path.clone());
         match result {
             Ok(objs) => {
