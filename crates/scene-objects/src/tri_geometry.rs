@@ -19,6 +19,7 @@ pub struct TriGeometry {
     scale: Vec3,
     translation: Vec3,
     rotation: Vec3,
+    a_position: Option<Vec3>,
 }
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
@@ -72,6 +73,10 @@ impl TriGeometry {
         self.material = material;
     }
     pub fn new(triangles: Vec<Triangle>) -> Self {
+        let mut a_point: Option<Vec3> = None;
+        if let Some(t) = triangles.first() {
+            a_point = t.get_points().first().copied();
+        }
         TriGeometry {
             triangles,
             path: Some("".to_owned()),
@@ -81,6 +86,7 @@ impl TriGeometry {
             file_path: " ".to_owned(),
             name: "unnamed".to_owned(),
             material: Material::default(),
+            a_position: a_point,
         }
     }
 }
