@@ -10,6 +10,7 @@ use scene_objects::{
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
+use serde::Serialize;
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
@@ -21,11 +22,15 @@ use crate::{
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
+#[derive(Serialize)]
 pub struct Scene {
+    #[serde(rename(serialize = "items"))]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
+    #[serde(skip_serializing)]
     render_engine: Option<Engine>,
+    #[serde(rename(serialize = "ser_name"))]
     pub(crate) first_render: bool,
 }
 impl Default for Scene {
