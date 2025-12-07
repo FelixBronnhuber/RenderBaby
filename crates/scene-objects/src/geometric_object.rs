@@ -8,7 +8,7 @@ pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
-    fn as_any(&self) -> &dyn Any;
+    fn as_any(&self) -> &dyn Any; // todo remove as_any
 }
 
 #[allow(dead_code)]
@@ -20,14 +20,4 @@ pub trait SceneObject: GeometricObject {
     fn get_translation(&self) -> Vec3;
     fn get_rotation(&self) -> Vec3;
     // todo color?
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub(crate) struct SceneObjectAttributes {
-    pub name: String,
-    pub path: Option<String>,
-    pub scale: Vec3,
-    pub translation: Vec3,
-    pub rotation: Vec3,
 }

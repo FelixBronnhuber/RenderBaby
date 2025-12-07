@@ -1,8 +1,8 @@
 use std::any::Any;
 use glam::Vec3;
-use serde::{Deserialize, Serialize, ser::SerializeStruct};
+use serde::Serialize;
 use crate::{
-    geometric_object::{GeometricObject, SceneObject, SceneObjectAttributes},
+    geometric_object::{GeometricObject, SceneObject},
     material::Material,
 };
 
