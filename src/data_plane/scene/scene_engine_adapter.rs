@@ -56,8 +56,14 @@ fn camera_to_render_uniforms(
         [position.x, position.y, position.z],
         rotation,
     );
-    let uniforms =
-        RenderUniforms::new(width, height, render_camera, spheres_count, triangles_count);
+    let uniforms = RenderUniforms::new(
+        width,
+        height,
+        render_camera,
+        RenderUniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+        spheres_count,
+        triangles_count,
+    );
     Ok(uniforms)
 }
 
