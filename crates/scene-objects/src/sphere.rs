@@ -1,4 +1,3 @@
-use std::any::Any;
 use glam::Vec3;
 use serde::Serialize;
 use crate::{
@@ -139,9 +138,6 @@ impl GeometricObject for Sphere {
     }
     fn rotate(&mut self, _vec: Vec3) {
         //! Rotates the sphere? Rly?
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

@@ -8,7 +8,6 @@ pub trait GeometricObject {
     fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
-    fn as_any(&self) -> &dyn Any; // todo remove as_any
 }
 
 #[allow(dead_code)]
