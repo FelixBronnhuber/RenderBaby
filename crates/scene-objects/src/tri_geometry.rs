@@ -17,8 +17,10 @@ pub struct TriGeometry {
     material: Material,
     path: Option<String>,
     scale: Vec3,
+    #[serde(skip_serializing)]
     translation: Vec3,
     rotation: Vec3,
+    #[serde(rename(serialize = "position"))]
     a_position: Option<Vec3>,
 }
 impl GeometricObject for TriGeometry {
