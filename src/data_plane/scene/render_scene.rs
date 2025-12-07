@@ -1,7 +1,7 @@
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
-use log::{info, warn, error};
+use log::{info, error};
 use scene_objects::{
     camera::Camera,
     light_source::{LightSource, LightType},
@@ -18,7 +18,7 @@ use crate::{
         scene_io::{obj_parser::OBJParser, scene_parser::parse_scene},
     },
 };
-
+use crate::data_plane::scene_io::mtl_parser;
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
@@ -52,22 +52,72 @@ impl Scene {
 
         match result {
             Ok(objs) => {
-                let mut trianglevector : Vec<Triangle> = Vec::with_capacity(100);
+                let mut material_name_list: Vec<String> = Vec::new();
+                let mut material_list: Vec<Material> = Vec::new();
+
+                if let Some(obj) = objs.material_path {
+                    for i in obj {
+                        let parsed = mtl_parser::MTLParser::parse(i.as_str());
+                        match parsed {
+                            Ok(parsed) => parsed.iter().for_each(|mat| {
+                                material_list.push(Material::new(
+                                    mat.name.clone(),
+                                    mat.ka.iter().map(|a| *a as f64).collect(),
+                                    mat.kd.iter().map(|a| *a as f64).collect(),
+                                    mat.ks.iter().map(|a| *a as f64).collect(),
+                                    mat.ns.into(),
+                                    mat.d.into(),
+                                ))
+                            }),
+                            Err(error) => {
+                                error!(
+                                    "{self}: Parsing mtl from {path} resulted in error: {error}"
+                                );
+                                return Err(error.into());
+                            }
+                        }
+                    }
+
+                    material_list
+                        .iter()
+                        .for_each(|mat| material_name_list.push(mat.name.clone()));
+                }
+                let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
                 objs.faces.len();
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
                         let vs = (face.v[0], face.v[i], face.v[i + 1]);
+                        let triangle = vec![
+                            Vec3::new(
+                                objs.vertices[((vs.0 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                            Vec3::new(
+                                objs.vertices[((vs.1 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                            Vec3::new(
+                                objs.vertices[((vs.2 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                        ];
 
-                        let mut triangle = Vec::with_capacity(3);
-
-                        triangle.push(Vec3::new(objs.vertices[((vs.0 - 1.0) * 3.0) as usize], objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize]));
-                        triangle.push(Vec3::new(objs.vertices[((vs.1 - 1.0) * 3.0) as usize], objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize]));
-                        triangle.push(Vec3::new(objs.vertices[((vs.2 - 1.0) * 3.0) as usize], objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize]));
-                        trianglevector.push(Triangle::new(triangle, None));
+                        let material_name = face.material_name.clone();
+                        if let Some(material) =
+                            material_list.iter().find(|a| a.name == material_name)
+                        {
+                            trianglevector.push(Triangle::new(triangle, Some(material.clone())));
+                        } else {
+                            trianglevector.push(Triangle::new(triangle, None));
+                        };
                     }
                 }
-                let tri = TriGeometry::new(trianglevector);
+                let mut tri = TriGeometry::new(trianglevector);
+                tri.set_name(objs.name);
                 self.add_tri_geometry(tri.clone());
                 Result::Ok(tri)
             }
@@ -166,7 +216,7 @@ impl Scene {
         //! ## Arguments
         //! 'tri': TriGeometry that is to be added to the scene
         //!
-        info!("{self}: adding TriGeometry {:?}", tri);
+        info!("{self}: adding TriGeometry {:?}", tri.get_name());
         self.scene_graph.add_tri_geometry(tri);
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {

@@ -1,14 +1,16 @@
 #[derive(Debug)]
 pub struct Material {
-    ambient_reflectivity: Vec<f64>,  //Ka
-    diffuse_reflectivity: Vec<f64>,  //Kd
-    specular_reflectivity: Vec<f64>, //Ks
-    shininess: f64,                  //Ns
-    transparency: f64,               //d
+    pub name: String,
+    pub ambient_reflectivity: Vec<f64>,  //Ka
+    pub diffuse_reflectivity: Vec<f64>,  //Kd
+    pub specular_reflectivity: Vec<f64>, //Ks
+    pub shininess: f64,                  //Ns
+    pub transparency: f64,               //d
 }
 #[allow(dead_code)]
 impl Material {
     pub fn new(
+        name: String,
         ambient_reflectivity: Vec<f64>,
         diffuse_reflectivity: Vec<f64>,
         specular_reflectivity: Vec<f64>,
@@ -17,6 +19,7 @@ impl Material {
     ) -> Self {
         //! Constructor for new material
         Material {
+            name,
             ambient_reflectivity,
             diffuse_reflectivity,
             specular_reflectivity,
@@ -28,6 +31,7 @@ impl Material {
 impl Clone for Material {
     fn clone(&self) -> Material {
         Material {
+            name: self.name.clone(),
             ambient_reflectivity: self.ambient_reflectivity.clone(),
             diffuse_reflectivity: self.diffuse_reflectivity.clone(),
             specular_reflectivity: self.specular_reflectivity.clone(),
@@ -40,6 +44,7 @@ impl Clone for Material {
 impl Default for Material {
     fn default() -> Self {
         Material {
+            name: String::new(),
             ambient_reflectivity: vec![0.0, 0.0, 0.0],
             diffuse_reflectivity: vec![0.0, 0.0, 0.0],
             specular_reflectivity: vec![0.0, 0.0, 0.0],

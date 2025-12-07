@@ -70,6 +70,9 @@ impl TriGeometry {
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name
+    }
     pub fn new(triangles: Vec<Triangle>) -> Self {
         let conf = SceneObjectAttributes {
             name: "".to_owned(),
