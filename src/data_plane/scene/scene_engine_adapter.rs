@@ -65,6 +65,7 @@ fn camera_to_render_uniforms(
         *width,
         *height,
         render_camera,
+        RenderUniforms::default().total_samples, //replace later with gui impl for tatal_samples!
         spheres_count,
         triangles_count,
     );
@@ -194,6 +195,7 @@ impl Scene {
             Ok(res) => match res.validate() {
                 Ok(_) => {
                     info!("{self}: Successfully got valid render output");
+                    self.set_last_render(res.clone());
                     Ok(res)
                 }
                 Err(error) => {

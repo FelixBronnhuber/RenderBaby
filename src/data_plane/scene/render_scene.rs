@@ -1,5 +1,5 @@
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms};
+use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, warn, error};
 use scene_objects::{
@@ -16,7 +16,7 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
+        scene_io::{obj_parser::parseobj, scene_parser::parse_scene, img_export::export_img_png},
     },
 };
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
@@ -33,6 +33,8 @@ pub struct Scene {
     render_engine: Option<Engine>,
     #[serde(skip_serializing)]
     pub(crate) first_render: bool,
+    #[serde(skip_serializing)]
+    last_render: Option<RenderOutput>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -147,7 +149,14 @@ impl Scene {
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
                 RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(*width, *height, render_camera, 0, 0))
+                    .uniforms_create(Uniforms::new(
+                        *width,
+                        *height,
+                        render_camera,
+                        Uniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+                        0,
+                        0,
+                    ))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])
@@ -155,6 +164,7 @@ impl Scene {
                 RenderEngine::Raytracer,
             )),
             first_render: true,
+            last_render: None,
         } // todo: allow name and color as param
     }
 
@@ -276,9 +286,21 @@ impl Scene {
         );
     }
 
+    pub fn set_last_render(&mut self, render: RenderOutput) {
+        self.last_render = Some(render.clone());
+        info!("{self}: Last render saved to buffer");
+    }
+
     #[allow(dead_code)]
-    pub fn export_render_img(&self, path: String) -> Result<(), Error> {
-        todo!()
+    pub fn export_render_img(&self, path: &str) -> image::ImageResult<()> {
+        let render = self.last_render.clone().ok_or_else(|| {
+            image::ImageError::Parameter(image::error::ParameterError::from_kind(
+                image::error::ParameterErrorKind::Generic("No render available".into()),
+            ))
+        })?;
+
+        info!("{self}: Saved image to {:?}", path);
+        export_img_png(path, render)
     }
 }
 
