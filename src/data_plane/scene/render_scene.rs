@@ -24,7 +24,8 @@ use crate::data_plane::scene_io::scene_parser::SceneParseError;
 /// The scene holds all relevant objects, lightsources, camera
 #[derive(Serialize)]
 pub struct Scene {
-    #[serde(rename(serialize = "items"))]
+    //#[serde(rename(serialize = "items"))]
+    #[serde(flatten)]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,

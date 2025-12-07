@@ -2742,6 +2742,7 @@ dependencies = [
  "log-buffer",
  "scene-objects",
  "serde",
+ "serde_json",
  "tobj",
  "view-wrappers",
 ]
