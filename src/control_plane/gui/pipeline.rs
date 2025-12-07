@@ -9,6 +9,7 @@ pub struct Pipeline {
     height: Arc<Mutex<u32>>,
     obj_file_path: Arc<Mutex<Option<String>>>,
     scene_file_path: Arc<Mutex<Option<String>>>,
+    export_file_path: Arc<Mutex<Option<String>>>,
 }
 
 impl Pipeline {
@@ -20,6 +21,7 @@ impl Pipeline {
             height: Arc::new(Mutex::new(500)),
             obj_file_path: Arc::new(Mutex::new(None)),
             scene_file_path: Arc::new(Mutex::new(None)),
+            export_file_path: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -77,5 +79,13 @@ impl Pipeline {
 
     pub fn take_scene_file_path(&self) -> Option<String> {
         self.scene_file_path.lock().unwrap().take()
+    }
+
+    pub fn submit_export_file_path(&self, path: Option<String>) {
+        *self.export_file_path.lock().unwrap() = path;
+    }
+
+    pub fn take_export_file_path(&self) -> Option<String> {
+        self.export_file_path.lock().unwrap().take()
     }
 }
