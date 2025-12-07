@@ -1,5 +1,6 @@
 use std::any::Any;
 use glam::Vec3;
+use serde::{Serialize, ser::SerializeStruct};
 use crate::{
     geometric_object::{GeometricObject, SceneObject, SceneObjectAttributes},
     material::Material,
@@ -135,5 +136,20 @@ impl SceneObject for Sphere {
         //! ## Returns
         //!
         self.attr.translation
+    }
+}
+
+impl Serialize for Sphere {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("Sphere", 3)?;
+        s.serialize_field("center", &self.center)?;
+        s.serialize_field("radius", &self.radius)?;
+        s.serialize_field("color", &self.color)?;
+        s.serialize_field("name", &self.attr.name)?;
+        s.serialize_field("path", &self.attr.path)?;
+        s.end()
     }
 }
