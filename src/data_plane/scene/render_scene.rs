@@ -31,7 +31,7 @@ pub struct Scene {
     name: String,
     #[serde(skip_serializing)]
     render_engine: Option<Engine>,
-    #[serde(rename(serialize = "ser_name"))]
+    #[serde(skip_serializing)]
     pub(crate) first_render: bool,
 }
 impl Default for Scene {
