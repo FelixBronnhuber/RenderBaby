@@ -40,7 +40,7 @@ impl GeometricObject for TriGeometry {
     }
 }
 impl SceneObject for TriGeometry {
-    fn get_path(&self) -> String {
+    fn get_path(&self) -> &str {
         todo!()
     }
 
@@ -77,7 +77,7 @@ impl TriGeometry {
         }
         TriGeometry {
             triangles,
-            scale: Vec3::default(),
+            scale: Vec3::new(1.0, 1.0, 1.0),
             translation: Vec3::default(),
             rotation: Vec3::default(),
             path: None,
