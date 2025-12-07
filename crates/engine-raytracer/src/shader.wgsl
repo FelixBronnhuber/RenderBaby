@@ -1,6 +1,5 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
-const SAMPLES_PER_PASS: u32 = 10u;
 const MAX_DEPTH: i32 = 5;
 
 struct Camera {
@@ -13,11 +12,18 @@ struct Camera {
     _pad2: f32,
 };
 
+struct ProgressiveRenderHelper {
+    total_passes: u32,
+    current_pass: u32,
+    total_samples: u32,
+    samples_per_pass: u32,
+}
+
 struct Uniforms {
     width: u32,
     height: u32,
-    current_pass: u32,      // NEW: which pass we're on
-    total_passes: u32,      // NEW: total number of passes
+    total_passes: u32,
+    _pad0: u32,
     camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
@@ -45,7 +51,8 @@ struct HitRecord {
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 @group(0) @binding(3) var<storage, read> vertices: array<f32>;
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
-@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>; // NEW: accumulation buffer
+@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
+@group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -294,11 +301,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var total_samples = u32(accumulation[pixel_index].w);
 
     // Render new samples for this pass
-    for (var sample: u32 = 0u; sample < SAMPLES_PER_PASS; sample = sample + 1u) {
+    for (var sample: u32 = 0u; sample < prh.samples_per_pass; sample = sample + 1u) {
         let aspect = f32(uniforms.width) / f32(uniforms.height);
 
         // Use pass index to ensure different samples each pass
-        let sample_offset = uniforms.current_pass * SAMPLES_PER_PASS + sample;
+        let sample_offset = prh.current_pass * prh.samples_per_pass + sample;
         let seed = hash(pixel_index + hash(sample_offset));
 
         let offset_x = random_float(seed) - 0.5;

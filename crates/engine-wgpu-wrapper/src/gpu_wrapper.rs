@@ -3,12 +3,38 @@ use crate::{GpuDevice, buffers, pipeline};
 use anyhow::{Ok, Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
+use bytemuck::{Pod, Zeroable};
 use engine_config::render_config::{Change, Validate, ValidateInit};
 use engine_config::{RenderConfig, Uniforms};
+use log::info;
 use pipeline::ComputePipeline;
 
-const TOTAL_SAMPLES: u32 = 5000; //has to be multiple of SAMPLES_PER_PASS
-const SAMPLES_PER_PASS: u32 = 10; //also change in shader!
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct ProgressiveRenderHelper {
+    pub total_passes: u32,
+    pub current_pass: u32,
+    pub total_samples: u32,
+    pub samples_per_pass: u32,
+}
+
+impl ProgressiveRenderHelper {
+    pub fn new(total_samples: u32) -> Self {
+        let samples_per_pass = 10;
+        Self {
+            total_passes: (total_samples.div_ceil(samples_per_pass)),
+            current_pass: 0,
+            total_samples,
+            samples_per_pass,
+        }
+    }
+
+    pub fn update(&mut self, total_samples: u32) -> Self {
+        self.total_samples = total_samples;
+        self.total_passes = self.total_samples.div_ceil(self.samples_per_pass);
+        *self
+    }
+}
 
 pub struct GpuWrapper {
     buffer_wrapper: GpuBuffers,
@@ -17,7 +43,7 @@ pub struct GpuWrapper {
     device: wgpu::Device,
     queue: wgpu::Queue,
     rc: RenderConfig,
-    uniforms: Uniforms,
+    prh: ProgressiveRenderHelper,
     pipeline_wrapper: ComputePipeline,
     initialized: bool,
 }
@@ -26,15 +52,16 @@ impl GpuWrapper {
     ///initializes shared Config, deligated to Sub modules
     pub fn new(rc: RenderConfig, path: &str) -> Result<Self> {
         let gpu = GpuDevice::new().unwrap();
-        let buffers = GpuBuffers::new(&rc, &gpu.device);
-        let layout = BindGroupLayout::new(&gpu.device);
-        let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
-        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, path);
         let initial_uniforms = match rc.uniforms {
             Change::Create(u) | Change::Update(u) => u,
             Change::Keep => Uniforms::default(),
             Change::Delete => panic!("Cannot create GpuWrapper with deleted uniforms"),
         };
+        let prh = ProgressiveRenderHelper::new(initial_uniforms.total_samples);
+        let buffers = GpuBuffers::new(&rc, &gpu.device, &prh);
+        let layout = BindGroupLayout::new(&gpu.device);
+        let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
+        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, path);
         Ok(Self {
             buffer_wrapper: buffers,
             bind_group_layout_wrapper: layout,
@@ -42,7 +69,7 @@ impl GpuWrapper {
             device: gpu.device,
             queue: gpu.queue,
             rc,
-            uniforms: initial_uniforms,
+            prh,
             pipeline_wrapper: pipeline,
             initialized: false,
         })
@@ -64,7 +91,7 @@ impl GpuWrapper {
                         old_size,
                         new_size
                     );
-                    self.uniforms = *uniforms;
+                    self.prh.update(uniforms.total_samples);
                     self.buffer_wrapper.grow_resolution(&self.device, new_size);
                 }
             }
@@ -98,7 +125,7 @@ impl GpuWrapper {
                         );
                         self.buffer_wrapper.grow_resolution(&self.device, new_size);
                     }
-                    self.uniforms = *uniforms;
+                    self.prh.update(uniforms.total_samples);
                     self.buffer_wrapper.update_uniforms(&self.device, uniforms);
                 }
                 Change::Delete => {
@@ -241,19 +268,17 @@ impl GpuWrapper {
             0,
             &vec![0u8; (self.get_width() * self.get_height() * 16) as usize],
         );
-        let total_passes = TOTAL_SAMPLES.div_ceil(SAMPLES_PER_PASS);
 
-        for pass in 0..total_passes {
-            println!("Rendering pass {}/{}", pass + 1, total_passes);
-            let mut uniforms = self.uniforms;
-            uniforms.current_pass = pass;
+        for pass in 0..self.prh.total_passes {
+            info!("Rendering pass {}/{}", pass + 1, self.prh.total_passes);
+            self.prh.current_pass = pass;
             self.queue.write_buffer(
-                &self.buffer_wrapper.uniforms,
+                &self.buffer_wrapper.progressive_render,
                 0,
-                bytemuck::cast_slice(&[uniforms]),
+                bytemuck::cast_slice(&[self.prh]),
             );
 
-            self.dispatch_compute_progressive(pass, total_passes)?;
+            self.dispatch_compute_progressive(pass, self.prh.total_passes)?;
         }
 
         Ok(())
@@ -324,6 +349,12 @@ impl GpuWrapper {
             &self.buffer_wrapper.uniforms,
             0,
             bytemuck::bytes_of(&uniforms),
+        );
+
+        self.queue.write_buffer(
+            &self.buffer_wrapper.progressive_render,
+            0,
+            bytemuck::cast_slice(&[self.prh]),
         );
 
         if let Change::Create(spheres) | Change::Update(spheres) = &self.rc.spheres {

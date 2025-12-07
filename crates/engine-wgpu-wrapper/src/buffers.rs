@@ -2,6 +2,7 @@ use engine_config::{RenderConfig, Uniforms, Sphere};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
+use crate::ProgressiveRenderHelper;
 
 pub struct GpuBuffers {
     pub spheres: Buffer,
@@ -11,10 +12,11 @@ pub struct GpuBuffers {
     pub vertices: Buffer,
     pub triangles: Buffer,
     pub accumulation: Buffer,
+    pub progressive_render: Buffer,
 }
 
 impl GpuBuffers {
-    pub fn new(rc: &RenderConfig, device: &Device) -> Self {
+    pub fn new(rc: &RenderConfig, device: &Device, prh: &ProgressiveRenderHelper) -> Self {
         let uniforms = match &rc.uniforms {
             Change::Create(u) => u,
             _ => panic!("Uniforms must be Create during initialization"),
@@ -50,6 +52,11 @@ impl GpuBuffers {
             vertices: Self::create_storage_buffer(device, "Vertices Buffer", vertices),
             triangles: Self::create_storage_buffer(device, "Triangles Buffer", triangles),
             accumulation: accumulation_buffer,
+            progressive_render: Self::create_uniform_buffer(
+                device,
+                "Progressive Render Buffer",
+                &[*prh],
+            ),
         }
     }
 
@@ -76,7 +83,7 @@ impl GpuBuffers {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
     }
 
-    fn create_uniform_buffer(device: &Device, label: &str, data: &Uniforms) -> Buffer {
+    fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
         device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(label),
             contents: bytemuck::bytes_of(data),

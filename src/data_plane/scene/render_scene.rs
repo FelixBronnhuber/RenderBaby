@@ -141,7 +141,14 @@ impl Scene {
             background_color: [1.0, 1.0, 1.0],
             render_engine: Option::from(Engine::new(
                 RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(width, height, render_camera, 0, 0))
+                    .uniforms_create(Uniforms::new(
+                        width,
+                        height,
+                        render_camera,
+                        Uniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+                        0,
+                        0,
+                    ))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])
