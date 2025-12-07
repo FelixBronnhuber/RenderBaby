@@ -197,6 +197,17 @@ impl Scene {
         } */
     }
 
+    pub fn as_json(&self) -> Result<String, Error> {
+        let s = serde_json::to_string(&self);
+        match s {
+            Ok(data) => Ok(data),
+            Err(error) => {
+                let msg = format!("Error: Failed to serialize {self}: {error}");
+                Err(Error::msg(msg))
+            }
+        }
+    }
+
     pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
         //! adds an object to the scene
         //! ## Arguments
