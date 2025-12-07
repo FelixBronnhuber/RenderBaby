@@ -14,10 +14,15 @@ impl Model {
         Self { scene }
     }
 
-    pub fn import_obj(&mut self, obj_file_path: &str) {
+    pub fn import_obj(&mut self, obj_file_path: &str) -> anyhow::Result<()> {
         info!("Received path (obj): {}", obj_file_path);
-
-        let _ = self.scene.load_object_from_file(obj_file_path.to_string());
+        match self.scene.load_object_from_file(obj_file_path.to_string()) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error loading OBJ file: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
     pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&Scene, SceneParseError> {
@@ -43,13 +48,10 @@ impl Model {
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
-        match self.scene.render() {
-            Ok(output) => output,
-            Err(e) => {
-                log::error!("Render failed: {}", e);
-                // Return a dummy output (magenta image) to avoid panic for now...
-                RenderOutput::new(1, 1, vec![255, 0, 255, 255])
-            }
-        }
+        self.scene.render().unwrap_or_else(|e| {
+            log::error!("Render failed: {}", e);
+            // Return a dummy output (magenta image) to avoid panic for now...
+            RenderOutput::new(1, 1, vec![255, 0, 255, 255])
+        })
     }
 }

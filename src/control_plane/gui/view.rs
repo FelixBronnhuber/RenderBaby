@@ -1,3 +1,4 @@
+use std::any::Any;
 use crate::control_plane::gui::*;
 use eframe;
 use eframe::egui;
@@ -5,8 +6,9 @@ use eframe::epaint;
 use egui_file_dialog;
 use std::path::PathBuf;
 use egui::Align;
+use thread_wrapper::threaded;
 use view_wrappers::egui_view::EframeViewWrapper;
-use view_wrappers::ViewWrapper;
+use view_wrappers::{EventHandler, ViewWrapper};
 
 // E FRAME VIEW:
 
@@ -21,7 +23,7 @@ pub enum Event {
 
 pub struct View {
     pipeline: pipeline::Pipeline,
-    handler: Box<dyn FnMut(Event)>,
+    handler: Box<EventHandler<Event>>,
     texture: Option<epaint::TextureHandle>,
     bottom_visible: bool,
     file_dialog_obj: egui_file_dialog::FileDialog,
@@ -76,7 +78,7 @@ impl View {
 }
 
 impl ViewWrapper<Event, pipeline::Pipeline> for View {
-    fn new(pipeline: pipeline::Pipeline, handler: Box<dyn FnMut(Event)>) -> Self {
+    fn new(pipeline: pipeline::Pipeline, handler: Box<EventHandler<Event>>) -> Self {
         Self {
             pipeline,
             handler,

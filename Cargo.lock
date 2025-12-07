@@ -3206,6 +3206,8 @@ dependencies = [
  "log-buffer",
  "scene-objects",
  "serde",
+ "thiserror 2.0.17",
+ "thread-wrapper",
  "tobj",
  "view-wrappers",
 ]
@@ -3601,6 +3603,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "thread-wrapper"
+version = "0.1.0"
+
+[[package]]
 name = "tiff"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3820,6 +3826,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 name = "view-wrappers"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "eframe",
 ]
 

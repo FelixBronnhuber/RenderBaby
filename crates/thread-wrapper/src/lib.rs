@@ -35,4 +35,11 @@ where
             callback(result);
         });
     }
+
+    pub fn call(self) {
+        let task = self.task.expect("Task already taken");
+        thread::spawn(move || {
+            task();
+        });
+    }
 }
