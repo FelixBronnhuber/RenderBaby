@@ -159,22 +159,21 @@ impl eframe::App for View {
                     self.file_dialog_export.save_file();
                 }
 
-                if self.file_dialog_export.update(ctx).picked().is_some() {
-                    if let Some(path) = self.file_dialog_export.take_picked() {
-                        // <- hier einmal abholen
-                        let mut final_path = path.to_path_buf();
+                self.file_dialog_export.update(ctx);
 
-                        if final_path.is_dir() {
-                            final_path.push("export.png");
-                        }
+                if let Some(path) = self.file_dialog_export.take_picked() {
+                    let mut final_path = path.to_path_buf();
 
-                        if final_path.extension().is_none() {
-                            final_path.set_extension("png");
-                        }
-
-                        self.export_path = Some(final_path.clone());
-                        self.set_export_filepath();
+                    if final_path.is_dir() {
+                        final_path.push("export.png");
                     }
+
+                    if final_path.extension().is_none() {
+                        final_path.set_extension("png");
+                    }
+
+                    self.export_path = Some(final_path.clone());
+                    self.set_export_filepath();
                 }
             })
         });
