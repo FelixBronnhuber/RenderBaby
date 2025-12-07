@@ -20,6 +20,7 @@ view-wrappers = { path = "crates/view-wrappers" }
 log-buffer = { path = "crates/log-buffer" }
 clap = { version = "4.4.7", features = ["derive"] }
 scene-objects = { path = "crates/scene-objects"}
+image = "0.25.9"
 
 [workspace]
 members = [

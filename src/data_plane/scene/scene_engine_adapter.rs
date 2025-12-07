@@ -180,6 +180,7 @@ impl Scene {
             Ok(res) => match res.validate() {
                 Ok(_) => {
                     info!("{self}: Successfully got valid render output");
+                    self.set_last_render(res.clone());
                     Ok(res)
                 }
                 Err(error) => {
