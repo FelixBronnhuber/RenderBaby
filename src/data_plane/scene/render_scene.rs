@@ -15,7 +15,8 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png}, },
+        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png},
+    },
 };
 use crate::data_plane::scene_io::mtl_parser;
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
@@ -70,10 +71,7 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                error!(
-                                    "{self}: Parsing mtl from {path} resulted in error: {error}"
-                                );
-                                return Err(error.into());
+                                info!("{self}: mtl file at {i} could not be parsed");
                             }
                         }
                     }
