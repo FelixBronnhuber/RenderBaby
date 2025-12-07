@@ -142,9 +142,18 @@ impl Scene {
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut vertex_offset = 0u32;
+
             for (verts, tris) in render_tris {
+                let vertex_count = (verts.len() / 3) as u32;
+
+                for tri_idx in tris {
+                    all_tris.push(tri_idx + vertex_offset);
+                }
+
                 all_verts.extend(verts);
-                all_tris.extend(tris);
+
+                vertex_offset += vertex_count;
             }
             (all_verts, all_tris)
         };

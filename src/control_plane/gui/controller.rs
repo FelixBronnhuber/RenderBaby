@@ -71,6 +71,13 @@ impl Controller {
                 self.model.set_fov(self.pipeline.get_fov());
                 Ok(Box::new(()))
             }
+            view::Event::ExportImage => {
+                if let Some(path) = self.pipeline.take_export_file_path() {
+                    self.model.export_image(&path);
+                } else {
+                    log::error!("ExportImage event received but no path was set");
+                }
+            }
         }
     }
 }

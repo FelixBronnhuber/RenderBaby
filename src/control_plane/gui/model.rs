@@ -65,4 +65,11 @@ impl Model {
             RenderOutput::new(1, 1, vec![255, 0, 255, 255])
         })
     }
+
+    pub fn export_image(&mut self, file_path: &str) {
+        match self.scene.export_render_img(file_path) {
+            Ok(_) => log::info!("Image exported to {}", file_path),
+            Err(e) => log::error!("Failed to export image: {}", e),
+        };
+    }
 }
