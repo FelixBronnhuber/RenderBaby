@@ -21,8 +21,8 @@ log-buffer = { path = "crates/log-buffer" }
 clap = { version = "4.4.7", features = ["derive"] }
 scene-objects = { path = "crates/scene-objects"}
 image = "0.25.9"
-thread-wrapper = { path = "crates/thread-wrapper" }
 thiserror = "2.0.17"
+eframe-elements = { path = "crates/eframe-elements" }
 
 [workspace]
 members = [
@@ -35,5 +35,5 @@ members = [
     "crates/command-stack",
     "crates/log-buffer",
     "crates/scene-objects",
-    "crates/thread-wrapper",
+    "crates/eframe-elements",
 ]

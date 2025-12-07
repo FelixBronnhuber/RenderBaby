@@ -1100,6 +1100,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "eframe-elements"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "egui",
+]
+
+[[package]]
 name = "egui"
 version = "0.33.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3194,6 +3202,7 @@ dependencies = [
  "anyhow",
  "clap",
  "eframe",
+ "eframe-elements",
  "egui",
  "egui-file-dialog",
  "engine-config",
@@ -3207,7 +3216,6 @@ dependencies = [
  "scene-objects",
  "serde",
  "thiserror 2.0.17",
- "thread-wrapper",
  "tobj",
  "view-wrappers",
 ]
@@ -3601,10 +3609,6 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[package]]
-name = "thread-wrapper"
-version = "0.1.0"
 
 [[package]]
 name = "tiff"

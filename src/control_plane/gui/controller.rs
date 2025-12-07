@@ -31,7 +31,7 @@ impl Controller {
                     }
                     Err(e) => {
                         log::error!("Render output validation failed: {}", e);
-                        Err(e.into())
+                        Err(e)
                     }
                 }
             }
@@ -43,7 +43,7 @@ impl Controller {
                     Ok(_) => Ok(Box::new(())),
                     Err(e) => {
                         error!("Error importing OBJ: {:?}", e);
-                        Err(e.into())
+                        Err(e)
                     }
                 }
             }

@@ -1,6 +1,8 @@
 [package]
-name = "thread-wrapper"
+name = "eframe-elements"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+egui = "0.33.2"
+anyhow = "1.0.100"

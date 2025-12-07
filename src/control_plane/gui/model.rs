@@ -5,13 +5,17 @@ use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {
     scene: Scene,
+    currently_rendering: bool, // should later be replaced with some mutex guard
 }
 
 impl Model {
     pub fn new() -> Self {
         let mut scene = Scene::new();
         scene.proto_init();
-        Self { scene }
+        Self {
+            scene,
+            currently_rendering: false,
+        }
     }
 
     pub fn import_obj(&mut self, obj_file_path: &str) -> anyhow::Result<()> {
@@ -48,7 +52,14 @@ impl Model {
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
-        self.scene.render().unwrap_or_else(|e| {
+        if self.currently_rendering {
+            log::warn!("Render already in progress, skipping new render request.");
+            return RenderOutput::new(1, 1, vec![0, 0, 0, 255]);
+        }
+        self.currently_rendering = true;
+        let output = self.scene.render();
+        self.currently_rendering = false;
+        output.unwrap_or_else(|e| {
             log::error!("Render failed: {}", e);
             // Return a dummy output (magenta image) to avoid panic for now...
             RenderOutput::new(1, 1, vec![255, 0, 255, 255])
