@@ -321,17 +321,16 @@ impl GpuWrapper {
             Change::Keep | Change::Delete => panic!("Uniforms must be initialized"),
         };
 
-        let spheres_len = match &self.rc.spheres {
-            Change::Create(s) | Change::Update(s) => s.len(),
-            Change::Keep | Change::Delete => 0,
+        match &self.rc.spheres {
+            Change::Create(s) | Change::Update(s) => uniforms.spheres_count = s.len() as u32,
+            Change::Delete => uniforms.spheres_count = 0,
+            Change::Keep => {}
         };
-        let triangles_len = match &self.rc.triangles {
-            Change::Create(t) | Change::Update(t) => t.len(),
-            Change::Keep | Change::Delete => 0,
+        match &self.rc.triangles {
+            Change::Create(t) | Change::Update(t) => uniforms.triangles_count = t.len() as u32 / 3,
+            Change::Delete => uniforms.triangles_count = 0,
+            Change::Keep => {}
         };
-
-        uniforms.spheres_count = spheres_len as u32;
-        uniforms.triangles_count = triangles_len as u32 / 3;
 
         log::info!(
             "Writing uniforms to GPU: camera_pos={:?}, camera_dir={:?}, pane_distance={}, pane_width={}, size={}x{}, spheres={}, triangles={}",
