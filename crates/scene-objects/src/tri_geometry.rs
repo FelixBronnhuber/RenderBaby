@@ -11,7 +11,6 @@ use crate::{
 pub struct TriGeometry {
     #[serde(skip_serializing)]
     triangles: Vec<Triangle>,
-    file_path: String,
     name: String,
     #[serde(skip_serializing)]
     material: Material,
@@ -68,9 +67,6 @@ impl TriGeometry {
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
-    pub fn get_path(&self) -> String {
-        self.file_path.clone()
-    }
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
@@ -81,11 +77,10 @@ impl TriGeometry {
         }
         TriGeometry {
             triangles,
-            path: Some("".to_owned()),
             scale: Vec3::default(),
             translation: Vec3::default(),
             rotation: Vec3::default(),
-            file_path: " ".to_owned(),
+            path: None,
             name: "unnamed".to_owned(),
             material: Material::default(),
             a_position: a_point,
