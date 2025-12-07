@@ -42,6 +42,10 @@ impl Model {
         self.scene.get_camera_mut().set_resolution([width, height]);
     }
 
+    pub fn set_color_hash_enabled(&mut self, enabled: bool) {
+        self.scene.set_color_hash_enabled(enabled);
+    }
+
     pub fn generate_render_output(&mut self) -> RenderOutput {
         match self.scene.render() {
             Ok(output) => output,

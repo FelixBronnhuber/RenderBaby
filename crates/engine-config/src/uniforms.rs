@@ -6,7 +6,7 @@ pub struct Uniforms {
     pub width: u32,
     pub height: u32,
     pub total_samples: u32,
-    _pad0: u32,
+    pub color_hash_enabled: u32,
     pub camera: Camera,
     pub spheres_count: u32,
     pub triangles_count: u32,
@@ -19,7 +19,7 @@ impl Default for Uniforms {
             width: 400,
             height: 300,
             total_samples: 500,
-            _pad0: 0,
+            color_hash_enabled: 1,
             camera: Camera::default(),
             spheres_count: 0,
             triangles_count: 0,
@@ -46,5 +46,10 @@ impl Uniforms {
             triangles_count,
             ..Default::default()
         }
+    }
+
+    pub fn with_color_hash(mut self, enabled: bool) -> Self {
+        self.color_hash_enabled = if enabled { 1 } else { 0 };
+        self
     }
 }

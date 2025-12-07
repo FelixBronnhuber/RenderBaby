@@ -28,6 +28,7 @@ pub struct Scene {
     render_engine: Option<Engine>,
     pub(crate) first_render: bool,
     last_render: Option<RenderOutput>,
+    color_hash_enabled: bool,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -158,6 +159,7 @@ impl Scene {
             )),
             first_render: true,
             last_render: None,
+            color_hash_enabled: true,
         } // todo: allow name and color as param
     }
 
@@ -247,6 +249,15 @@ impl Scene {
             engine.current_engine()
         );
         self.render_engine = Some(engine);
+    }
+
+    pub fn set_color_hash_enabled(&mut self, enabled: bool) {
+        self.color_hash_enabled = enabled;
+        info!("{self}: set color hash enabled to {enabled}");
+    }
+
+    pub fn get_color_hash_enabled(&self) -> bool {
+        self.color_hash_enabled
     }
 
     pub fn get_name(&self) -> &String {

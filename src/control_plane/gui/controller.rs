@@ -58,6 +58,10 @@ impl Controller {
             view::Event::UpdateFOV => {
                 self.model.set_fov(self.pipeline.get_fov());
             }
+            view::Event::UpdateColorHash => {
+                self.model
+                    .set_color_hash_enabled(self.pipeline.get_color_hash_enabled());
+            }
         }
     }
 }
