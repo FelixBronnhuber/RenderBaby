@@ -10,14 +10,15 @@ use scene_objects::{
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
-
+use scene_objects::tri_geometry::Triangle;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::parseobj, scene_parser::parse_scene},
+        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene},
     },
 };
+
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
@@ -40,31 +41,39 @@ impl Scene {
         info!("Scene: Loading new scene from {path}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<Vec<TriGeometry>, Error> {
+    pub fn load_object_from_file(&mut self, path: String) -> Result<TriGeometry, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
         info!("Scene {self}: Loading object from {path}");
-        let result = parseobj(path.clone());
+        let result = OBJParser::parse(path.clone());
+
         match result {
             Ok(objs) => {
-                if objs.is_empty() {
-                    let error_msg = format!("Parsing obj from {path} returned 0 geometries");
-                    warn!("{self}: {error_msg}");
-                    Err(anyhow::bail!("{error_msg}"))
-                } else {
-                    let res = objs.clone();
-                    for obj in objs {
-                        self.add_tri_geometry(obj);
+                let mut trianglevector : Vec<Triangle> = Vec::with_capacity(100);
+                objs.faces.len();
+                for face in objs.faces {
+                    let leng = face.v.len();
+                    for i in 1..(leng - 1) {
+                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
+
+                        let mut triangle = Vec::with_capacity(3);
+
+                        triangle.push(Vec3::new(objs.vertices[((vs.0 - 1.0) * 3.0) as usize], objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize]));
+                        triangle.push(Vec3::new(objs.vertices[((vs.1 - 1.0) * 3.0) as usize], objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize]));
+                        triangle.push(Vec3::new(objs.vertices[((vs.2 - 1.0) * 3.0) as usize], objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize], objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize]));
+                        trianglevector.push(Triangle::new(triangle, None));
                     }
-                    Ok(res)
                 }
+                let tri = TriGeometry::new(trianglevector);
+                self.add_tri_geometry(tri.clone());
+                Result::Ok(tri)
             }
             Err(error) => {
                 error!("{self}: Parsing obj from {path} resulted in error: {error}");
-                Err(error)
+                Err(error.into())
             }
         }
     }
