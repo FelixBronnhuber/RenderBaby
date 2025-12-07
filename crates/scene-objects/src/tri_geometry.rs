@@ -40,7 +40,7 @@ impl GeometricObject for TriGeometry {
     }
 }
 impl SceneObject for TriGeometry {
-    fn get_path(&self) -> &str {
+    fn get_path(&self) -> Option<&str> {
         todo!()
     }
 

@@ -36,7 +36,7 @@ impl GeometricObject for Mesh {
 }
 
 impl SceneObject for Mesh {
-    fn get_path(&self) -> &str {
+    fn get_path(&self) -> Option<&str> {
         todo!()
     }
 

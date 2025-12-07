@@ -97,13 +97,10 @@ impl Sphere {
 }
 
 impl SceneObject for Sphere {
-    fn get_path(&self) -> &str {
+    fn get_path(&self) -> Option<&str> {
         //! ## Returns
         //! Path of the reference file. Does a sphere need one?
-        match &self.path {
-            Some(path) => path,
-            None => "",
-        }
+        self.path.as_deref()
     }
 
     fn get_scale(&self) -> Vec3 {
