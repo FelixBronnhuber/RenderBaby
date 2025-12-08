@@ -119,7 +119,6 @@ impl View {
                 .to_string_lossy()
                 .into_owned(),
         ));
-        (self.handler)(Event::ExportImage);
     }
 }
 
@@ -218,6 +217,12 @@ impl eframe::App for View {
 
                     self.export_path = Some(final_path.clone());
                     self.set_export_filepath();
+                    match self.handle_event(Event::ExportImage) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            self.error_popups.push_message(Message::from_error(e));
+                        }
+                    }
                 }
             })
         });

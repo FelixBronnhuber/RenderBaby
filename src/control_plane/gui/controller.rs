@@ -73,9 +73,18 @@ impl Controller {
             }
             view::Event::ExportImage => {
                 if let Some(path) = self.pipeline.take_export_file_path() {
-                    self.model.export_image(&path);
+                    match self.model.export_image(&path) {
+                        Ok(_) => Ok(Box::new(())),
+                        Err(_) => {
+                            log::error!("Error exporting image to path: {}", path);
+                            Err(anyhow::anyhow!("Failed to export image to {}", path))
+                        }
+                    }
                 } else {
                     log::error!("ExportImage event received but no path was set");
+                    Err(anyhow::anyhow!(
+                        "No export file path provided in ExportImage event"
+                    ))
                 }
             }
         }

@@ -1,3 +1,4 @@
+use anyhow::Error;
 use log::info;
 use crate::data_plane::scene::render_scene::Scene;
 use engine_config::RenderOutput;
@@ -66,10 +67,13 @@ impl Model {
         })
     }
 
-    pub fn export_image(&mut self, file_path: &str) {
+    pub fn export_image(&mut self, file_path: &str) -> anyhow::Result<()> {
         match self.scene.export_render_img(file_path) {
-            Ok(_) => log::info!("Image exported to {}", file_path),
-            Err(e) => log::error!("Failed to export image: {}", e),
-        };
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error exporting image: {:?}", e);
+                Err(Error::from(e))
+            }
+        }
     }
 }
