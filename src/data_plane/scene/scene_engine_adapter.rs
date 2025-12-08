@@ -2,7 +2,11 @@
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use log::{info, error};
-use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
+use scene_objects::{
+    camera::{Camera, Resolution},
+    sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
@@ -46,7 +50,8 @@ fn camera_to_render_uniforms(
     //! render_config::Unfiforms for the given parameters
 
     //TODO: Replace defaults
-    let [width, height] = camera.get_resolution();
+    //let [width, height] = camera.get_resolution();
+    let Resolution { width, height } = camera.get_resolution();
     let position = camera.get_position();
     let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
     let pane_width = RenderCamera::default().pane_width;
@@ -57,8 +62,8 @@ fn camera_to_render_uniforms(
         rotation,
     );
     let uniforms = RenderUniforms::new(
-        width,
-        height,
+        *width,
+        *height,
         render_camera,
         RenderUniforms::default().total_samples, //replace later with gui impl for tatal_samples!
         spheres_count,
@@ -125,6 +130,7 @@ impl Scene {
         //! ## Returns
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
+
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
@@ -142,9 +148,18 @@ impl Scene {
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut vertex_offset = 0u32;
+
             for (verts, tris) in render_tris {
+                let vertex_count = (verts.len() / 3) as u32;
+
+                for tri_idx in tris {
+                    all_tris.push(tri_idx + vertex_offset);
+                }
+
                 all_verts.extend(verts);
-                all_tris.extend(tris);
+
+                vertex_offset += vertex_count;
             }
             (all_verts, all_tris)
         };

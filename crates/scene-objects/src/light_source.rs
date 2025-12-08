@@ -1,11 +1,14 @@
 use glam::Vec3;
+use serde::{Deserialize, Serialize};
 /// Defines light sources for the scene
 #[allow(dead_code)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LightSource {
     position: Vec3,
     luminosity: f32,
     name: String,
     color: [f32; 3],
+    //#[serde(skip_serializing_if = "Vec3::is_zero")]
     rotation: Vec3,
     light_type: LightType,
 }
@@ -111,7 +114,7 @@ impl std::fmt::Display for LightSource {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 /// Light can be either Ambient, Point or Directional
 pub enum LightType {
     Ambient,

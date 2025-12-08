@@ -1,11 +1,13 @@
 use glam::Vec3;
+use serde::{Deserialize, Serialize};
 /// Camera that is used to render scenes
 #[allow(dead_code)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Camera {
     position: Vec3,
     rotation: Vec3, // fov: f32 ?
     fov: f32,
-    resolution: [u32; 2],
+    resolution: Resolution,
 }
 #[allow(dead_code)]
 impl Camera {
@@ -42,12 +44,12 @@ impl Camera {
         //! fov: new field of view
         self.fov = fov;
     }
-    pub fn get_resolution(&self) -> [u32; 2] {
+    pub fn get_resolution(&self) -> &Resolution {
         //! ## Returns
         //! Camera resolution as Array of u32
-        self.resolution
+        &self.resolution
     }
-    pub fn set_resolution(&mut self, resolution: [u32; 2]) {
+    pub fn set_resolution(&mut self, resolution: Resolution) {
         //! Sets the camera resolution
         //! ## Parameter
         //! 'resolution': New resolution as array of u32
@@ -64,7 +66,7 @@ impl Camera {
             position,
             rotation,
             fov: 1.0,
-            resolution: [1920, 1080],
+            resolution: Resolution::default(),
         }
     }
 }
@@ -75,7 +77,7 @@ impl Default for Camera {
             position: Vec3::default(),
             rotation: Vec3::default(),
             fov: 1.0,
-            resolution: [1920, 1080],
+            resolution: Resolution::default(),
         }
     }
 }
@@ -83,5 +85,25 @@ impl Default for Camera {
 impl std::fmt::Display for Camera {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Camera at {}", self.get_position())
+    }
+}
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct Resolution {
+    pub width: u32,
+    pub height: u32,
+}
+// todo: later add implementation for min, max, hd,uhd, ...
+impl Resolution {
+    pub fn new(width: u32, height: u32) -> Self {
+        Self { width, height }
+    }
+}
+
+impl Default for Resolution {
+    fn default() -> Self {
+        Self {
+            width: 1920,
+            height: 1080,
+        }
     }
 }
