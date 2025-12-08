@@ -89,7 +89,8 @@ impl Pipeline {
 
     pub fn get_color_hash_enabled(&self) -> bool {
         *self.color_hash_enabled.lock().unwrap()
-      
+    }
+
     pub fn submit_export_file_path(&self, path: Option<String>) {
         *self.export_file_path.lock().unwrap() = path;
     }
