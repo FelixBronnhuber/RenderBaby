@@ -3224,8 +3224,8 @@ dependencies = [
  "log-buffer",
  "scene-objects",
  "serde",
- "thiserror 2.0.17",
  "serde_json",
+ "thiserror 2.0.17",
  "tobj",
  "view-wrappers",
 ]

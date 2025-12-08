@@ -34,7 +34,7 @@ pub struct View {
     scene_path: Option<PathBuf>,
     export_path: Option<PathBuf>,
     json_text: String,
-    error_popups: MessagePopupPipe,
+    message_popups: MessagePopupPipe,
 }
 
 impl View {
@@ -60,7 +60,7 @@ impl View {
     }
 
     pub fn do_standard_render(&self) {
-        let error_pipe_clone = self.error_popups.clone();
+        let error_pipe_clone = self.message_popups.clone();
         self.handle_event_threaded(
             Event::DoRender,
             Some(move |result: EventResult| {
@@ -142,7 +142,7 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
             scene_path: None,
             export_path: None,
             json_text: String::new(),
-            error_popups: MessagePopupPipe::new(),
+            message_popups: MessagePopupPipe::new(),
         }
     }
 
@@ -153,7 +153,7 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
 
 impl eframe::App for View {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.error_popups.show_last(ctx);
+        self.message_popups.show_last(ctx);
 
         let render_output_opt = self.pipeline.take_render_output();
         if let Some(output) = render_output_opt {
@@ -178,7 +178,7 @@ impl eframe::App for View {
                     self.obj_path = Some(path.to_path_buf());
                     self.set_obj_filepath();
                     if let Err(e) = self.handle_event(Event::ImportObj) {
-                        self.error_popups.push_message(Message::from_error(e));
+                        self.message_popups.push_message(Message::from_error(e));
                     }
                 }
                 self.file_dialog_obj.update(ctx);
@@ -193,7 +193,7 @@ impl eframe::App for View {
                     }
                     self.set_scene_filepath();
                     if let Err(e) = self.handle_event(Event::ImportScene) {
-                        self.error_popups.push_message(Message::from_error(e));
+                        self.message_popups.push_message(Message::from_error(e));
                     }
                 }
                 self.file_dialog_scene.update(ctx);
@@ -220,7 +220,7 @@ impl eframe::App for View {
                     match self.handle_event(Event::ExportImage) {
                         Ok(_) => {}
                         Err(e) => {
-                            self.error_popups.push_message(Message::from_error(e));
+                            self.message_popups.push_message(Message::from_error(e));
                         }
                     }
                 }
@@ -244,7 +244,6 @@ impl eframe::App for View {
                     self.pipeline.set_fov(fov);
                     self.handle_event(Event::UpdateFOV)
                         .expect("TODO: panic message");
-                    self.do_standard_render();
                 }
 
                 ui.horizontal(|ui| {
@@ -259,7 +258,6 @@ impl eframe::App for View {
                         self.pipeline.set_width(width);
                         self.handle_event(Event::UpdateResolution)
                             .expect("TODO: panic message");
-                        self.do_standard_render();
                     }
                 });
 
@@ -275,7 +273,6 @@ impl eframe::App for View {
                         self.pipeline.set_height(height);
                         self.handle_event(Event::UpdateResolution)
                             .expect("TODO: panic message");
-                        self.do_standard_render();
                     }
                 });
                 ui.separator();
@@ -322,7 +319,6 @@ impl EframeViewWrapper<Event, pipeline::Pipeline> for View {
             .expect("Something's wrong");
         self.handle_event(Event::UpdateFOV)
             .expect("Something's wrong");
-        self.handle_event(Event::DoRender)
-            .expect("Replace this later with a start screen");
+        self.do_standard_render();
     }
 }
