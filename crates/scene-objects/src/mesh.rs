@@ -50,7 +50,12 @@ impl Mesh {
             Err(error) => Err(Error::msg(format!("Failed to create new mesh: {error}"))),
         }
     }
-    pub fn update_centroid(&mut self) -> Result<(), Error> {
+    fn update_centroid(&mut self) -> Result<(), Error> {
+        //! Calculates the centroid based on self.vertices
+        //! Should be called after all changes to self.vertices
+        //! ## Returns
+        //! Result<(), Error>
+
         match Self::calculate_centroid(&self.vertices) {
             Ok(c) => {
                 self.centroid = c;
@@ -62,6 +67,11 @@ impl Mesh {
         }
     }
     pub(crate) fn calculate_centroid(vertices: &[f32]) -> Result<Vec3, Error> {
+        //! Calculates the centroid for a sclice of vertices, where 3 entries in the sclice are x, y, z of one point
+        //! ## Parameter
+        //! 'vertices': slice of f32 representing the vertices
+        //! ## Returns
+        //! Centroid of the given vertices as Result<Vec3, Error>
         if vertices.is_empty() {
             return Err(Error::msg("Cannot calculate centroid of 0 points"));
         }
@@ -87,7 +97,17 @@ impl Mesh {
 #[allow(unused)]
 impl GeometricObject for Mesh {
     fn scale(&mut self, factor: f32) {
-        todo!()
+        todo!();
+        for i in 0..self.vertices.len() / 3 {
+            self.vertices[i * 3] =
+                self.centroid.x + (self.vertices[i * 3] - self.centroid.x) * factor;
+            self.vertices[i * 3 + 1] =
+                self.centroid.y + (self.vertices[i * 3 + 1] - self.centroid.y) * factor;
+            self.vertices[i * 3 + 2] =
+                self.centroid.z + (self.vertices[i * 3 + 2] - self.centroid.z) * factor;
+        }
+        // if switch to 3d transformation: use factor.x, factor.y, factor.z
+        self.scale *= factor
     }
 
     fn translate(&mut self, vec: glam::Vec3) {
@@ -100,6 +120,13 @@ impl GeometricObject for Mesh {
     }
 
     fn rotate(&mut self, vec: glam::Vec3) {
+        // https://en.wikipedia.org/wiki/Euler_angles
+        // https://en.wikipedia.org/wiki/Rotation_matrix
+        let rotation_matrix = [
+            [vec.z.cos(), vec.z.sin()],
+            [vec.y.cos(), vec.y.sin()],
+            [vec.x.cos(), vec.x.sin()],
+        ];
         todo!();
         self.rotation += vec;
     }
