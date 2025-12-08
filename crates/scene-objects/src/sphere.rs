@@ -141,26 +141,3 @@ impl GeometricObject for Sphere {
         self.rotation += vec;
     }
 }
-
-/* impl Serialize for Sphere {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut s = serializer.serialize_struct("Sphere", 5)?;
-        s.serialize_field("center", &self.center)?;
-        s.serialize_field("radius", &self.radius)?;
-        s.serialize_field("color", &self.color)?;
-        s.serialize_field("name", &self.attr.name)?;
-        s.serialize_field("path", &self.attr.path)?;
-        s.end()
-    }
-}
-// https://docs.rs/serde/latest/serde/de/trait.DeserializeOwned.html ?
-impl Deserialize for Sphere {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de> {
-        todo!()
-    }
-} */
