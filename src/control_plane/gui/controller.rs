@@ -1,4 +1,5 @@
 use log::error;
+use scene_objects::camera::Resolution;
 use crate::control_plane::gui::*;
 use crate::data_plane::scene::render_scene::Scene;
 use view_wrappers::EventResult;
@@ -15,9 +16,12 @@ impl Controller {
 
     fn update_pipeline(pipeline: &pipeline::Pipeline, scene: &Scene) {
         pipeline.set_fov(scene.get_camera().get_fov());
-        let [res_x, res_y] = scene.get_camera().get_resolution();
-        pipeline.set_width(res_x);
-        pipeline.set_height(res_y);
+        let Resolution {
+            width: res_x,
+            height: res_y,
+        } = scene.get_camera().get_resolution();
+        pipeline.set_width(*res_x);
+        pipeline.set_height(*res_y);
     }
 
     pub fn handle_event(&mut self, event: view::Event) -> EventResult {

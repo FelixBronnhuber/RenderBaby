@@ -178,8 +178,8 @@ pub fn serialize_scene(sc: &mut Scene) {
     });
 
     let mut map = HashMap::with_capacity(2);
-    map.insert("x".to_owned(), sc.get_camera().get_resolution()[0]);
-    map.insert("y".to_owned(), sc.get_camera().get_resolution()[1]);
+    map.insert("x".to_owned(), sc.get_camera().get_resolution().width);
+    map.insert("y".to_owned(), sc.get_camera().get_resolution().height);
     let _file = SceneFile {
         scene_name: sc.get_name().to_string(),
         objects: objectarr,

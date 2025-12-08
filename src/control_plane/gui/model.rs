@@ -1,5 +1,6 @@
 use anyhow::Error;
 use log::info;
+use scene_objects::camera::Resolution;
 use crate::data_plane::scene::render_scene::Scene;
 use engine_config::RenderOutput;
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
@@ -49,7 +50,9 @@ impl Model {
     }
 
     pub fn set_resolution(&mut self, width: u32, height: u32) {
-        self.scene.get_camera_mut().set_resolution([width, height]);
+        self.scene
+            .get_camera_mut()
+            .set_resolution(Resolution::new(width, height));
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {

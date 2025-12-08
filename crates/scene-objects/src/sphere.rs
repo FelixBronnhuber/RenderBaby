@@ -1,19 +1,28 @@
-use std::any::Any;
 use glam::Vec3;
+use serde::Serialize;
 use crate::{
-    geometric_object::{GeometricObject, SceneObject, SceneObjectAttributes},
+    geometric_object::{GeometricObject, SceneObject},
     material::Material,
 };
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 /// Simple Sphere defined by a 3d center and a radius
 pub struct Sphere {
     center: Vec3,
-    radius: f32,
+    radius: f32, // maybe use radius only internally?
+    #[serde(skip_serializing)]
     material: Material,
+    //#[serde(serialize_with = "path::to::function")]
     color: [f32; 3],
-    attr: SceneObjectAttributes,
+    name: String,
+    path: Option<String>,
+    #[serde(skip_serializing)]
+    scale: Vec3,
+    #[serde(skip_serializing)]
+    translation: Vec3,
+    #[serde(skip_serializing)]
+    rotation: Vec3,
 }
 #[allow(dead_code)]
 impl Sphere {
@@ -73,20 +82,43 @@ impl Sphere {
         //! 'radius': radius around the center for the new Sphere <br>
         //! 'material': Material for the new Sphere <br>
         //! 'color': Array of f32 for the color of the new Sphere, values in \[0, 1]
-        let conf = SceneObjectAttributes {
-            name: "New Sphere".to_owned(),
-            path: /*Some("todo".to_owned())*/ None,
-            scale: Vec3::new(0.0, 0.0, 0.0),
-            translation: Vec3::new(0.0, 0.0, 0.0),
-            rotation: Vec3::new(0.0, 0.0, 0.0),
-        };
         Self {
             center,
             radius,
             material,
             color,
-            attr: conf,
+            name: "New Sphere".to_owned(),
+            path: /*Some("todo".to_owned())*/ None,
+            scale: Vec3::default(),
+            translation: Vec3::default(),
+            rotation: Vec3::default(),
         }
+    }
+}
+
+impl SceneObject for Sphere {
+    fn get_path(&self) -> String {
+        //! ## Returns
+        //! Path of the reference file. Does a sphere need one?
+        todo!()
+    }
+
+    fn get_scale(&self) -> Vec3 {
+        //! ## Returns
+        //! Scale in relation to the reference
+        self.scale
+    }
+
+    fn get_translation(&self) -> Vec3 {
+        //! ## Returns
+        //! Translation in relation to the reference as glam::Vec3
+        self.translation
+    }
+
+    fn get_rotation(&self) -> Vec3 {
+        //! ## Returns
+        //! Rotation in relation
+        self.rotation
     }
 }
 impl GeometricObject for Sphere {
@@ -107,33 +139,27 @@ impl GeometricObject for Sphere {
     fn rotate(&mut self, _vec: Vec3) {
         //! Rotates the sphere? Rly?
     }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 
-impl SceneObject for Sphere {
-    fn get_path(&self) -> String {
-        //! ## Returns
-        //! Path of the reference file. Does a sphere need one?
+/* impl Serialize for Sphere {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_struct("Sphere", 5)?;
+        s.serialize_field("center", &self.center)?;
+        s.serialize_field("radius", &self.radius)?;
+        s.serialize_field("color", &self.color)?;
+        s.serialize_field("name", &self.attr.name)?;
+        s.serialize_field("path", &self.attr.path)?;
+        s.end()
+    }
+}
+// https://docs.rs/serde/latest/serde/de/trait.DeserializeOwned.html ?
+impl Deserialize for Sphere {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de> {
         todo!()
     }
-
-    fn get_scale(&self) -> Vec3 {
-        //! ## Returns
-        //! Scale in relation to the reference
-        self.attr.scale
-    }
-
-    fn get_translation(&self) -> Vec3 {
-        //! ## Returns
-        //! Translation in relation to the reference as glam::Vec3
-        self.attr.translation
-    }
-
-    fn get_rotation(&self) -> Vec3 {
-        //! ## Returns
-        //!
-        self.attr.translation
-    }
-}
+} */

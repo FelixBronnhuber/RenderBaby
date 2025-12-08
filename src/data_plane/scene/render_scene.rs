@@ -3,13 +3,14 @@ use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, warn, error};
 use scene_objects::{
-    camera::Camera,
+    camera::{Camera, Resolution},
     light_source::{LightSource, LightType},
     material::Material,
     mesh::Mesh,
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
+use serde::Serialize;
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
@@ -21,12 +22,18 @@ use crate::{
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
+#[derive(Serialize)]
 pub struct Scene {
+    //#[serde(rename(serialize = "items"))]
+    #[serde(flatten)]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
+    #[serde(skip_serializing)]
     render_engine: Option<Engine>,
+    #[serde(skip_serializing)]
     pub(crate) first_render: bool,
+    #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
 }
 impl Default for Scene {
@@ -122,9 +129,9 @@ impl Scene {
     }*/
     pub fn new() -> Self {
         //! ## Returns
-        //! A new scenen with default values
+        //! A new scene with default values
         let cam = Camera::default();
-        let [width, height] = cam.get_resolution();
+        let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
         let rotation = crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().dir; //Engine uses currently a direction vector
         let pane_width =
@@ -143,8 +150,8 @@ impl Scene {
             render_engine: Option::from(Engine::new(
                 RenderConfigBuilder::new()
                     .uniforms_create(Uniforms::new(
-                        width,
-                        height,
+                        *width,
+                        *height,
                         render_camera,
                         Uniforms::default().total_samples, //replace later with gui impl for tatal_samples!
                         0,
@@ -159,6 +166,46 @@ impl Scene {
             first_render: true,
             last_render: None,
         } // todo: allow name and color as param
+    }
+
+    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
+        //! ## Paramter
+        //! 'json_data': &str of a serialized scene
+        //! ## Returns
+        //! Result of new Scene from deserialized scene
+        todo!("Deserialization of scene is not implemented")
+        /* let deserialized =serde_json::from_str(json_data);
+        match deserialized {
+            Ok(scene) => {Ok(scene)},
+            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
+        } */
+    }
+
+    pub fn update_from_json(&mut self, json_data: &str) -> Result<(), Error> {
+        //! ## Parameter
+        //! 'json_data': &str of a serialized scene
+        //! ## Returns
+        //! Result of () or Error
+        todo!("Deserialization of scene is not implemented")
+        /* let deserialized = serde_json::from_str(json_data);
+        match deserialized {
+            Ok(scene) => {
+                *self = scene;
+                Ok(())
+            },
+            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
+        } */
+    }
+
+    pub fn as_json(&self) -> Result<String, Error> {
+        let s = serde_json::to_string(&self);
+        match s {
+            Ok(data) => Ok(data),
+            Err(error) => {
+                let msg = format!("Error: Failed to serialize {self}: {error}");
+                Err(Error::msg(msg))
+            }
+        }
     }
 
     pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
