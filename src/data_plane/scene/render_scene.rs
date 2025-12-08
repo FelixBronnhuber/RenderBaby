@@ -153,7 +153,7 @@ impl Scene {
                         *width,
                         *height,
                         render_camera,
-                        Uniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+                        cam.get_ray_samples(),
                         0,
                         0,
                     ))
@@ -165,7 +165,7 @@ impl Scene {
             )),
             first_render: true,
             last_render: None,
-        } // todo: allow name and color as param
+        }
     }
 
     pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
