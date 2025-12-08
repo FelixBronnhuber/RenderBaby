@@ -1,4 +1,4 @@
-use crate::geometric_object::GeometricObject;
+use crate::geometric_object::{GeometricObject, SceneObject};
 
 /// This is where the mesh as an alternative to trigeometry will be implemented
 #[allow(dead_code)]
@@ -33,8 +33,22 @@ impl GeometricObject for Mesh {
     fn rotate(&mut self, vec: glam::Vec3) {
         todo!()
     }
+}
 
-    fn as_any(&self) -> &dyn std::any::Any {
+impl SceneObject for Mesh {
+    fn get_path(&self) -> String {
+        todo!()
+    }
+
+    fn get_scale(&self) -> glam::Vec3 {
+        todo!()
+    }
+
+    fn get_translation(&self) -> glam::Vec3 {
+        todo!()
+    }
+
+    fn get_rotation(&self) -> glam::Vec3 {
         todo!()
     }
 }
