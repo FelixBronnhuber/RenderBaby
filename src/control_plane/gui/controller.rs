@@ -61,6 +61,7 @@ impl Controller {
             view::Event::UpdateColorHash => {
                 self.model
                     .set_color_hash_enabled(self.pipeline.get_color_hash_enabled());
+            }
             view::Event::ExportImage => {
                 if let Some(path) = self.pipeline.take_export_file_path() {
                     self.model.export_image(&path);
