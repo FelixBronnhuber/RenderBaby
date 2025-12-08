@@ -97,7 +97,9 @@ impl Mesh {
 #[allow(unused)]
 impl GeometricObject for Mesh {
     fn scale(&mut self, factor: f32) {
-        todo!();
+        //! scales the geometry by the given factor
+        //! ## Parameter
+        //! 'factor': factor for scale
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] =
                 self.centroid.x + (self.vertices[i * 3] - self.centroid.x) * factor;
@@ -111,6 +113,9 @@ impl GeometricObject for Mesh {
     }
 
     fn translate(&mut self, vec: glam::Vec3) {
+        //! translates the points by the direction given
+        //! ## Parameter
+        //! 'vec': Vector by which the geometries are translated
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] += vec.x;
             self.vertices[i * 3 + 1] += vec.y;
@@ -120,14 +125,55 @@ impl GeometricObject for Mesh {
     }
 
     fn rotate(&mut self, vec: glam::Vec3) {
+        //! Rotates the points around the centroid
+        //! ## Parameter
+        //! 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
         // https://en.wikipedia.org/wiki/Euler_angles
         // https://en.wikipedia.org/wiki/Rotation_matrix
-        let rotation_matrix = [
-            [vec.z.cos(), vec.z.sin()],
-            [vec.y.cos(), vec.y.sin()],
-            [vec.x.cos(), vec.x.sin()],
+
+        let conv_factor = std::f32::consts::PI / 180.0;
+        let yaw = vec.z * conv_factor;
+        let pitch = vec.y * conv_factor;
+        let roll = vec.x * conv_factor;
+
+        let r = [
+            [yaw.cos(), yaw.sin()],
+            [pitch.cos(), pitch.sin()],
+            [roll.cos(), roll.sin()],
         ];
-        todo!();
+        let rotate_x = [
+            [1.0, 0.0, 0.0],
+            [0.0, r[2][0], -r[2][1]],
+            [0.0, r[2][1], r[2][0]],
+        ];
+        let rotate_y = [
+            [r[1][0], 0.0, r[1][1]],
+            [0.0, 1.0, 0.0],
+            [-r[1][1], 0.0, r[1][0]],
+        ];
+        let rotate_z = [
+            [r[0][0], -r[0][1], 0.0],
+            [r[0][1], r[0][0], 0.0],
+            [0.0, 0.0, 1.0],
+        ];
+        let multiplied = matrix_mult_helper(matrix_mult_helper(rotate_z, rotate_y), rotate_x);
+        for i in 0..self.vertices.len() / 3 {
+            let x_translated = self.vertices[i * 3] - self.centroid.x;
+            let y_translated = self.vertices[i * 3 + 1] - self.centroid.y;
+            let z_translated = self.vertices[i * 3 + 2] - self.centroid.z;
+            self.vertices[i * 3] = multiplied[0][0] * x_translated
+                + r[0][1] * y_translated
+                + multiplied[0][2] * z_translated
+                + self.centroid.x;
+            self.vertices[i * 3 + 1] = multiplied[1][0] * x_translated
+                + r[1][1] * y_translated
+                + multiplied[1][2] * z_translated
+                + self.centroid.x;
+            self.vertices[i * 3 + 2] = multiplied[2][0] * x_translated
+                + r[2][1] * y_translated
+                + multiplied[2][2] * z_translated
+                + self.centroid.x;
+        }
         self.rotation += vec;
     }
 }
@@ -148,4 +194,19 @@ impl SceneObject for Mesh {
     fn get_rotation(&self) -> glam::Vec3 {
         self.rotation
     }
+}
+
+fn matrix_mult_helper(a: [[f32; 3]; 3], b: [[f32; 3]; 3]) -> [[f32; 3]; 3] {
+    //! Helper fn for matrix multiplication
+    //! Parameter
+    //! 'a', 'b': Arrays representing 3x3 matrices
+    //! ## Returns
+    //! a*b as [f32; 3]
+    let mut res = [[0.0f32; 3]; 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            res[i][j] = a[i][0] * b[0][j] + a[i][1] * b[1][j] + a[i][2] * b[2][j];
+        }
+    }
+    res
 }
