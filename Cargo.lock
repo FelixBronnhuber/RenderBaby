@@ -3295,6 +3295,7 @@ dependencies = [
 name = "scene-objects"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "glam",
  "serde",
  "serde_json",
