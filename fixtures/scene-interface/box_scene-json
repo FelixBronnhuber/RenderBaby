@@ -1,0 +1,145 @@
+{
+    "tri_geometries": [
+        {
+            "name": "unnamed",
+            "path": null,
+            "scale": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "position": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        }
+    ],
+    "spheres": [
+        {
+            "center": [
+                0.0,
+                0.6,
+                2.0
+            ],
+            "radius": 0.5,
+            "color": [
+                1.0,
+                0.0,
+                1.0
+            ],
+            "name": "New Sphere",
+            "path": null
+        },
+        {
+            "center": [
+                -0.6,
+                0.0,
+                2.0
+            ],
+            "radius": 0.5,
+            "color": [
+                0.0,
+                1.0,
+                0.0
+            ],
+            "name": "New Sphere",
+            "path": null
+        },
+        {
+            "center": [
+                0.0,
+                0.0,
+                2.0
+            ],
+            "radius": 0.5,
+            "color": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "name": "New Sphere",
+            "path": null
+        },
+        {
+            "center": [
+                0.6,
+                0.0,
+                2.0
+            ],
+            "radius": 0.5,
+            "color": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "name": "New Sphere",
+            "path": null
+        },
+        {
+            "center": [
+                0.0,
+                -0.6,
+                2.0
+            ],
+            "radius": 0.5,
+            "color": [
+                0.0,
+                1.0,
+                1.0
+            ],
+            "name": "New Sphere",
+            "path": null
+        }
+    ],
+    "light_sources": [
+        {
+            "position": [
+                0.0,
+                0.0,
+                3.0
+            ],
+            "luminosity": 0.0,
+            "name": "proto_light",
+            "color": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "light_type": "Ambient"
+        }
+    ],
+    "camera": {
+        "position": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "rotation": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "fov": 50.0,
+        "resolution": {
+            "width": 500,
+            "height": 500
+        }
+    },
+    "background_color": [
+        1.0,
+        1.0,
+        1.0
+    ],
+    "name": "scene"
+}

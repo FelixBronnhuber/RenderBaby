@@ -121,12 +121,7 @@ impl Scene {
         //!  a reference to the camera
         self.scene_graph.get_camera()
     }
-    /*pub fn set_camera_position(&mut self, pos: Vec<f32>) {
-        self.get_camera().set_position(Vec3::new(pos[0], pos[1], pos[2]));
-    }
-    pub fn set_camera_rotation(&mut self, pitch: f32, yaw: f32) {
-        self.get_camera().set_rotation(pitch, yaw);
-    }*/
+
     pub fn new() -> Self {
         //! ## Returns
         //! A new scene with default values
