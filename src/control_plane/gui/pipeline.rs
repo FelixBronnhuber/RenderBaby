@@ -10,6 +10,7 @@ pub struct Pipeline {
     obj_file_path: Arc<Mutex<Option<String>>>,
     scene_file_path: Arc<Mutex<Option<String>>>,
     color_hash_enabled: Arc<Mutex<bool>>,
+    export_file_path: Arc<Mutex<Option<String>>>,
 }
 
 impl Pipeline {
@@ -22,6 +23,7 @@ impl Pipeline {
             obj_file_path: Arc::new(Mutex::new(None)),
             scene_file_path: Arc::new(Mutex::new(None)),
             color_hash_enabled: Arc::new(Mutex::new(true)),
+            export_file_path: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -87,5 +89,12 @@ impl Pipeline {
 
     pub fn get_color_hash_enabled(&self) -> bool {
         *self.color_hash_enabled.lock().unwrap()
+      
+    pub fn submit_export_file_path(&self, path: Option<String>) {
+        *self.export_file_path.lock().unwrap() = path;
+    }
+
+    pub fn take_export_file_path(&self) -> Option<String> {
+        self.export_file_path.lock().unwrap().take()
     }
 }

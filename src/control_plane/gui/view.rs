@@ -18,6 +18,7 @@ pub enum Event {
     UpdateResolution,
     UpdateFOV,
     UpdateColorHash,
+    ExportImage,
 }
 
 pub struct View {
@@ -27,8 +28,10 @@ pub struct View {
     bottom_visible: bool,
     file_dialog_obj: egui_file_dialog::FileDialog,
     file_dialog_scene: egui_file_dialog::FileDialog,
+    file_dialog_export: egui_file_dialog::FileDialog,
     obj_path: Option<PathBuf>,
     scene_path: Option<PathBuf>,
+    export_path: Option<PathBuf>,
     json_text: String,
 }
 
@@ -74,6 +77,17 @@ impl View {
         ));
         (self.handler)(Event::ImportScene);
     }
+
+    pub fn set_export_filepath(&mut self) {
+        self.pipeline.submit_export_file_path(Option::from(
+            self.export_path
+                .clone()
+                .expect("REASON")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        (self.handler)(Event::ExportImage);
+    }
 }
 
 impl ViewWrapper<Event, pipeline::Pipeline> for View {
@@ -89,8 +103,12 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
             file_dialog_scene: egui_file_dialog::FileDialog::new()
                 .add_file_filter_extensions("JSON", vec!["json"])
                 .default_file_filter("JSON"),
+            file_dialog_export: egui_file_dialog::FileDialog::new()
+                .add_file_filter_extensions("IMAGES", vec!["png"])
+                .default_file_filter("IMAGES"),
             obj_path: None,
             scene_path: None,
+            export_path: None,
             json_text: String::new(),
         }
     }
@@ -137,6 +155,27 @@ impl eframe::App for View {
                     self.set_scene_filepath();
                 }
                 self.file_dialog_scene.update(ctx);
+
+                if ui.button("Export PNG").clicked() {
+                    self.file_dialog_export.save_file();
+                }
+
+                self.file_dialog_export.update(ctx);
+
+                if let Some(path) = self.file_dialog_export.take_picked() {
+                    let mut final_path = path.to_path_buf();
+
+                    if final_path.is_dir() {
+                        final_path.push("export.png");
+                    }
+
+                    if final_path.extension().is_none() {
+                        final_path.set_extension("png");
+                    }
+
+                    self.export_path = Some(final_path.clone());
+                    self.set_export_filepath();
+                }
             })
         });
 
