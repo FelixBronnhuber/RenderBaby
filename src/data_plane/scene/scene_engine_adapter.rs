@@ -179,7 +179,7 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        let mut rc = if self.first_render {
+        let rc = if self.first_render {
             self.first_render = false;
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
