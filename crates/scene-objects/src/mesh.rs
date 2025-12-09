@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use glam::Vec3;
 use anyhow::Error;
 use serde::Serialize;
@@ -91,6 +93,10 @@ impl Mesh {
         }
         let len = len as f32;
         Ok(Vec3::new(x_sum / len, y_sum / len, z_sum / len))
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
     }
 }
 
@@ -209,4 +215,17 @@ fn matrix_mult_helper(a: [[f32; 3]; 3], b: [[f32; 3]; 3]) -> [[f32; 3]; 3] {
         }
     }
     res
+}
+
+impl Display for Mesh {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Mesh {}: {} vertices, {} triangles, center: {:?}",
+            self.name,
+            self.vertices.len() / 3,
+            self.tris.len() / 3,
+            self.centroid
+        )
+    }
 }
