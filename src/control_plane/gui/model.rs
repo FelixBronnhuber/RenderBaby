@@ -55,6 +55,10 @@ impl Model {
             .set_resolution(Resolution::new(width, height));
     }
 
+    pub fn set_color_hash_enabled(&mut self, enabled: bool) {
+        self.scene.set_color_hash_enabled(enabled);
+    }
+
     pub fn generate_render_output(&mut self) -> RenderOutput {
         if self.currently_rendering {
             log::warn!("Render already in progress, skipping new render request.");

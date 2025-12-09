@@ -75,6 +75,10 @@ impl Controller {
                 self.model.set_fov(self.pipeline.get_fov());
                 Ok(Box::new(()))
             }
+            view::Event::UpdateColorHash => {
+                self.model
+                    .set_color_hash_enabled(self.pipeline.get_color_hash_enabled());
+            }
             view::Event::ExportImage => {
                 if let Some(path) = self.pipeline.take_export_file_path() {
                     match self.model.export_image(&path) {

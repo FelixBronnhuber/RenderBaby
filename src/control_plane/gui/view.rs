@@ -19,6 +19,7 @@ pub enum Event {
     ImportScene,
     UpdateResolution,
     UpdateFOV,
+    UpdateColorHash,
     ExportImage,
 }
 
@@ -275,6 +276,17 @@ impl eframe::App for View {
                             .expect("TODO: panic message");
                     }
                 });
+                ui.separator();
+
+                let mut color_hash_enabled = self.pipeline.get_color_hash_enabled();
+                if ui
+                    .checkbox(&mut color_hash_enabled, "Enable Color Hash")
+                    .changed()
+                {
+                    self.pipeline.set_color_hash_enabled(color_hash_enabled);
+                    (self.handler)(Event::UpdateColorHash);
+                }
+
                 ui.separator();
 
                 ui.label("Scene JSON:");

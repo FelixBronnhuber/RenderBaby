@@ -23,7 +23,7 @@ struct Uniforms {
     width: u32,
     height: u32,
     total_passes: u32,
-    _pad0: u32,
+    color_hash_enabled: u32,
     camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
@@ -241,7 +241,11 @@ fn trace_ray(
                 closest_hit.t      = t;
                 closest_hit.pos  = origin + t * direction;
                 closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
-                closest_hit.color  = hash_to_color(k + 1u);
+                if (uniforms.color_hash_enabled != 0u) {
+                    closest_hit.color  = hash_to_color(k + 1u);
+                } else {
+                    closest_hit.color  = vec3<f32>(0.3, 0.3, 0.3);
+                }
             }
         }
 

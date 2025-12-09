@@ -42,13 +42,15 @@ fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
     triangles_count: u32,
+    color_hash_enabled: bool,
 ) -> Result<RenderUniforms, Error> {
     //! converts the given scene_object::camera::Camera to a render_config::Uniforms
     //! so that it can be passed to the render engine
     //! ## Parameter
     //! 'camera': scene_object::camer::Camera to be converted <br>
     //! 'spheres_count': Number of spheres to be rendered <br>
-    //! 'triangles_count': Number of triangles to be rendered
+    //! 'triangles_count': Number of triangles to be rendered <br>
+    //! 'color_hash_enabled': Whether color hash is enabled
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
     let Resolution { width, height } = camera.get_resolution();
@@ -68,7 +70,8 @@ fn camera_to_render_uniforms(
         camera.get_ray_samples(), //samples: ray per pixel
         spheres_count,
         triangles_count,
-    );
+    )
+    .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
 
@@ -112,7 +115,13 @@ impl Scene {
     ) -> RenderUniforms {
         //! ## Returns
         //! RenderUnfiform for the camera of the scene
-        camera_to_render_uniforms(self.get_camera(), spheres_count, triangles_count).unwrap()
+        camera_to_render_uniforms(
+            self.get_camera(),
+            spheres_count,
+            triangles_count,
+            self.get_color_hash_enabled(),
+        )
+        .unwrap()
     }
 
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
