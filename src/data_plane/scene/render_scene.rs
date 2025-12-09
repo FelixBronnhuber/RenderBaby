@@ -79,7 +79,7 @@ impl Scene {
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
-        info!("Scene: Initialising with 'proto' settings");
+        info!("{self}: Initialising with 'proto' settings");
         let green = [0.0, 1.0, 0.0];
         let magenta = [1.0, 0.0, 1.0];
         let red = [1.0, 0.0, 0.0];
@@ -92,7 +92,7 @@ impl Scene {
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
-        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Vec3::default());
+        let cam = Camera::default();
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,

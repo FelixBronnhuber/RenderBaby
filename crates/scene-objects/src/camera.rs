@@ -85,7 +85,7 @@ impl Default for Camera {
         Self {
             position: Vec3::default(),
             rotation: Vec3::new(0.0, 0.0, 1.0),
-            fov: 1.0,
+            fov: 10.0,
             resolution: Resolution::default(),
             ray_samples: 20,
         }
