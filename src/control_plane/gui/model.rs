@@ -1,3 +1,4 @@
+use anyhow::Error;
 use log::info;
 use scene_objects::camera::Resolution;
 use crate::data_plane::scene::render_scene::Scene;
@@ -6,19 +7,28 @@ use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {
     scene: Scene,
+    currently_rendering: bool, // should later be replaced with some mutex guard
 }
 
 impl Model {
     pub fn new() -> Self {
         let mut scene = Scene::new();
         scene.proto_init();
-        Self { scene }
+        Self {
+            scene,
+            currently_rendering: false,
+        }
     }
 
-    pub fn import_obj(&mut self, obj_file_path: &str) {
+    pub fn import_obj(&mut self, obj_file_path: &str) -> anyhow::Result<()> {
         info!("Received path (obj): {}", obj_file_path);
-
-        let _ = self.scene.load_object_from_file(obj_file_path.to_string());
+        match self.scene.load_object_from_file(obj_file_path.to_string()) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error loading OBJ file: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
     pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&Scene, SceneParseError> {
@@ -46,20 +56,27 @@ impl Model {
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
-        match self.scene.render() {
-            Ok(output) => output,
-            Err(e) => {
-                log::error!("Render failed: {}", e);
-                // Return a dummy output (magenta image) to avoid panic for now...
-                RenderOutput::new(1, 1, vec![255, 0, 255, 255])
-            }
+        if self.currently_rendering {
+            log::warn!("Render already in progress, skipping new render request.");
+            return RenderOutput::new(1, 1, vec![0, 0, 0, 255]);
         }
+        self.currently_rendering = true;
+        let output = self.scene.render();
+        self.currently_rendering = false;
+        output.unwrap_or_else(|e| {
+            log::error!("Render failed: {}", e);
+            // Return a dummy output (magenta image) to avoid panic for now...
+            RenderOutput::new(1, 1, vec![255, 0, 255, 255])
+        })
     }
 
-    pub fn export_image(&mut self, file_path: &str) {
+    pub fn export_image(&mut self, file_path: &str) -> anyhow::Result<()> {
         match self.scene.export_render_img(file_path) {
-            Ok(_) => log::info!("Image exported to {}", file_path),
-            Err(e) => log::error!("Failed to export image: {}", e),
-        };
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error exporting image: {:?}", e);
+                Err(Error::from(e))
+            }
+        }
     }
 }

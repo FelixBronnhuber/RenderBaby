@@ -4,9 +4,11 @@ use eframe::egui;
 use eframe::epaint;
 use egui_file_dialog;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use egui::Align;
 use view_wrappers::egui_view::EframeViewWrapper;
-use view_wrappers::ViewWrapper;
+use view_wrappers::{EventHandler, EventResult, ViewWrapper};
+use eframe_elements::message_popup::*;
 
 // E FRAME VIEW:
 
@@ -22,7 +24,7 @@ pub enum Event {
 
 pub struct View {
     pipeline: pipeline::Pipeline,
-    handler: Box<dyn FnMut(Event)>,
+    handler: Arc<Mutex<Box<EventHandler<Event>>>>,
     texture: Option<epaint::TextureHandle>,
     bottom_visible: bool,
     file_dialog_obj: egui_file_dialog::FileDialog,
@@ -32,16 +34,50 @@ pub struct View {
     scene_path: Option<PathBuf>,
     export_path: Option<PathBuf>,
     json_text: String,
+    message_popups: MessagePopupPipe,
 }
 
 impl View {
+    fn handle_event(&self, event: Event) -> EventResult {
+        let mut handler_lock = self.handler.lock().unwrap();
+        (handler_lock)(event)
+    }
+
+    fn handle_event_threaded<C>(&self, event: Event, callback: Option<C>)
+    where
+        C: FnOnce(EventResult) + Send + 'static,
+    {
+        let handler_clone = self.handler.clone();
+        std::thread::spawn(move || {
+            let result = {
+                let mut handler_lock = handler_clone.lock().unwrap();
+                (handler_lock)(event)
+            };
+            if let Some(cb) = callback {
+                cb(result);
+            }
+        });
+    }
+
+    pub fn do_standard_render(&self) {
+        let error_pipe_clone = self.message_popups.clone();
+        self.handle_event_threaded(
+            Event::DoRender,
+            Some(move |result: EventResult| {
+                if let Err(e) = result {
+                    error_pipe_clone.push_message(Message::from_error(e));
+                }
+            }),
+        );
+    }
+
     pub fn set_image(&mut self, ctx: &egui::Context, width: u32, height: u32, image: Vec<u8>) {
         let color_image =
             egui::ColorImage::from_rgba_unmultiplied([width as usize, height as usize], &image);
         self.texture = Some(ctx.load_texture("image", color_image, egui::TextureOptions::NEAREST));
     }
 
-    fn display_image(&mut self, ui: &mut egui::Ui) {
+    fn display_image(&self, ui: &mut egui::Ui) {
         if let Some(image) = &self.texture {
             let aspect = image.size_vec2().x / image.size_vec2().y;
             let size_scaled = if ui.available_size().x / ui.available_size().y > aspect {
@@ -55,7 +91,7 @@ impl View {
         }
     }
 
-    pub fn set_obj_filepath(&mut self) {
+    pub fn set_obj_filepath(&self) {
         self.pipeline.submit_obj_file_path(Option::from(
             self.obj_path
                 .clone()
@@ -63,10 +99,9 @@ impl View {
                 .to_string_lossy()
                 .into_owned(),
         ));
-        (self.handler)(Event::ImportObj);
     }
 
-    pub fn set_scene_filepath(&mut self) {
+    pub fn set_scene_filepath(&self) {
         self.pipeline.submit_scene_file_path(Option::from(
             self.scene_path
                 .clone()
@@ -74,7 +109,6 @@ impl View {
                 .to_string_lossy()
                 .into_owned(),
         ));
-        (self.handler)(Event::ImportScene);
     }
 
     pub fn set_export_filepath(&mut self) {
@@ -85,15 +119,14 @@ impl View {
                 .to_string_lossy()
                 .into_owned(),
         ));
-        (self.handler)(Event::ExportImage);
     }
 }
 
 impl ViewWrapper<Event, pipeline::Pipeline> for View {
-    fn new(pipeline: pipeline::Pipeline, handler: Box<dyn FnMut(Event)>) -> Self {
+    fn new(pipeline: pipeline::Pipeline, handler: Box<EventHandler<Event>>) -> Self {
         Self {
             pipeline,
-            handler,
+            handler: Arc::new(Mutex::new(handler)),
             texture: None,
             bottom_visible: true,
             file_dialog_obj: egui_file_dialog::FileDialog::new()
@@ -109,6 +142,7 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
             scene_path: None,
             export_path: None,
             json_text: String::new(),
+            message_popups: MessagePopupPipe::new(),
         }
     }
 
@@ -119,6 +153,8 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
 
 impl eframe::App for View {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.message_popups.show_last(ctx);
+
         let render_output_opt = self.pipeline.take_render_output();
         if let Some(output) = render_output_opt {
             self.set_image(
@@ -141,8 +177,12 @@ impl eframe::App for View {
                 if let Some(path) = self.file_dialog_obj.take_picked() {
                     self.obj_path = Some(path.to_path_buf());
                     self.set_obj_filepath();
+                    if let Err(e) = self.handle_event(Event::ImportObj) {
+                        self.message_popups.push_message(Message::from_error(e));
+                    }
                 }
                 self.file_dialog_obj.update(ctx);
+
                 if ui.button("Import Scene").clicked() {
                     self.file_dialog_scene.pick_file();
                 }
@@ -152,6 +192,9 @@ impl eframe::App for View {
                         self.json_text = text;
                     }
                     self.set_scene_filepath();
+                    if let Err(e) = self.handle_event(Event::ImportScene) {
+                        self.message_popups.push_message(Message::from_error(e));
+                    }
                 }
                 self.file_dialog_scene.update(ctx);
 
@@ -174,6 +217,12 @@ impl eframe::App for View {
 
                     self.export_path = Some(final_path.clone());
                     self.set_export_filepath();
+                    match self.handle_event(Event::ExportImage) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            self.message_popups.push_message(Message::from_error(e));
+                        }
+                    }
                 }
             })
         });
@@ -183,7 +232,7 @@ impl eframe::App for View {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    (self.handler)(Event::DoRender);
+                    self.do_standard_render();
                 }
 
                 let mut fov = self.pipeline.get_fov();
@@ -193,7 +242,8 @@ impl eframe::App for View {
                     .changed()
                 {
                     self.pipeline.set_fov(fov);
-                    (self.handler)(Event::UpdateFOV);
+                    self.handle_event(Event::UpdateFOV)
+                        .expect("TODO: panic message");
                 }
 
                 ui.horizontal(|ui| {
@@ -206,7 +256,8 @@ impl eframe::App for View {
                         .changed()
                     {
                         self.pipeline.set_width(width);
-                        (self.handler)(Event::UpdateResolution);
+                        self.handle_event(Event::UpdateResolution)
+                            .expect("TODO: panic message");
                     }
                 });
 
@@ -220,7 +271,8 @@ impl eframe::App for View {
                         .changed()
                     {
                         self.pipeline.set_height(height);
-                        (self.handler)(Event::UpdateResolution);
+                        self.handle_event(Event::UpdateResolution)
+                            .expect("TODO: panic message");
                     }
                 });
                 ui.separator();
@@ -263,8 +315,10 @@ impl eframe::App for View {
 
 impl EframeViewWrapper<Event, pipeline::Pipeline> for View {
     fn on_start(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        (self.handler)(Event::UpdateResolution);
-        (self.handler)(Event::UpdateFOV);
-        (self.handler)(Event::DoRender);
+        self.handle_event(Event::UpdateResolution)
+            .expect("Something's wrong");
+        self.handle_event(Event::UpdateFOV)
+            .expect("Something's wrong");
+        self.do_standard_render();
     }
 }

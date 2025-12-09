@@ -1,8 +1,8 @@
 [package]
-name = "view-wrappers"
+name = "eframe-elements"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-eframe = "0.33.0"
+egui = "0.33.2"
 anyhow = "1.0.100"
