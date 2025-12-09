@@ -89,7 +89,7 @@ impl Sphere {
             color,
             name: "New Sphere".to_owned(),
             path: /*Some("todo".to_owned())*/ None,
-            scale: Vec3::default(),
+            scale:  Vec3::new(1.0, 1.0, 1.0),
             translation: Vec3::default(),
             rotation: Vec3::default(),
         }
@@ -97,10 +97,10 @@ impl Sphere {
 }
 
 impl SceneObject for Sphere {
-    fn get_path(&self) -> String {
+    fn get_path(&self) -> Option<&str> {
         //! ## Returns
         //! Path of the reference file. Does a sphere need one?
-        todo!()
+        self.path.as_deref()
     }
 
     fn get_scale(&self) -> Vec3 {
@@ -127,39 +127,17 @@ impl GeometricObject for Sphere {
         //! ## Parameter
         //! 'factor': scale factor
         self.radius *= factor;
-        //self.radius
+        self.scale *= factor;
     }
     fn translate(&mut self, vec: Vec3) {
         //! Moves the center of the sphere
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
         self.center += vec;
-        //self.center
+        self.translation += vec;
     }
-    fn rotate(&mut self, _vec: Vec3) {
+    fn rotate(&mut self, vec: Vec3) {
         //! Rotates the sphere? Rly?
+        self.rotation += vec;
     }
 }
-
-/* impl Serialize for Sphere {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut s = serializer.serialize_struct("Sphere", 5)?;
-        s.serialize_field("center", &self.center)?;
-        s.serialize_field("radius", &self.radius)?;
-        s.serialize_field("color", &self.color)?;
-        s.serialize_field("name", &self.attr.name)?;
-        s.serialize_field("path", &self.attr.path)?;
-        s.end()
-    }
-}
-// https://docs.rs/serde/latest/serde/de/trait.DeserializeOwned.html ?
-impl Deserialize for Sphere {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de> {
-        todo!()
-    }
-} */

@@ -11,7 +11,7 @@ pub trait GeometricObject {
 #[allow(dead_code)]
 /// Defines functions that define how the object has changed from its base
 pub trait SceneObject: GeometricObject {
-    fn get_path(&self) -> String;
+    fn get_path(&self) -> Option<&str>;
     //fn set_path(&mut self, path: String);
     fn get_scale(&self) -> Vec3;
     fn get_translation(&self) -> Vec3;

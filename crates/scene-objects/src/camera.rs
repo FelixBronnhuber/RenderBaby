@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Camera {
     position: Vec3,
-    rotation: Vec3, // fov: f32 ?
+    rotation: Vec3,
     fov: f32,
     resolution: Resolution,
+    ray_samples: u32,
 }
 #[allow(dead_code)]
 impl Camera {
@@ -20,7 +21,7 @@ impl Camera {
     pub fn set_rotation(&mut self, rotation: Vec3) {
         //! sets the rotation of the camera
         //! ## Parameter
-        //! 'rotation': glam::Vec3 of the new position
+        //! 'rotation': glam::Vec3 of the new rotation
         self.rotation = rotation
     }
     pub fn get_position(&self) -> Vec3 {
@@ -28,10 +29,10 @@ impl Camera {
         //! Camera position as glam::Vec3
         self.position
     }
-    pub fn get_rotation(&self) -> &Vec3 {
+    pub fn get_rotation(&self) -> Vec3 {
         //! ## Returns
         //! Camera rotation as glam::Vec3
-        &self.rotation
+        self.rotation
     }
     pub fn get_fov(&self) -> f32 {
         //! ## Returns
@@ -67,7 +68,15 @@ impl Camera {
             rotation,
             fov: 1.0,
             resolution: Resolution::default(),
+            ray_samples: 20,
         }
+    }
+    pub fn get_ray_samples(&self) -> u32 {
+        self.ray_samples
+    }
+    pub fn set_ray_samples(&mut self, samples: u32) {
+        self.ray_samples = samples;
+        // here could be a check for values [1, 100] or so
     }
 }
 
@@ -75,9 +84,10 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             position: Vec3::default(),
-            rotation: Vec3::default(),
-            fov: 1.0,
+            rotation: Vec3::new(0.0, 0.0, 1.0),
+            fov: 10.0,
             resolution: Resolution::default(),
+            ray_samples: 20,
         }
     }
 }

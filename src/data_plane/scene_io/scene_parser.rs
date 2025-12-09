@@ -130,7 +130,12 @@ pub fn serialize_scene(sc: &mut Scene) {
     sc.get_tri_geometries().iter().for_each(|object| {
         objectarr.push(ParsingObject {
             name: object.get_name().clone(),
-            path: object.get_path(),
+            path: {
+                match object.get_path() {
+                    Some(p) => p.to_owned(),
+                    None => "".to_owned(),
+                }
+            },
             scale: Vec3d {
                 x: object.get_scale().x,
                 y: object.get_scale().y,

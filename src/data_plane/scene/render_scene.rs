@@ -136,7 +136,7 @@ impl Scene {
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
-        info!("Scene: Initialising with 'proto' settings");
+        info!("{self}: Initialising with 'proto' settings");
         let green = [0.0, 1.0, 0.0];
         let magenta = [1.0, 0.0, 1.0];
         let red = [1.0, 0.0, 0.0];
@@ -149,7 +149,7 @@ impl Scene {
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
-        let cam = Camera::new(Vec3::new(0.0, 0.0, 0.0), Vec3::default());
+        let cam = Camera::default();
         let light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,
@@ -178,12 +178,7 @@ impl Scene {
         //!  a reference to the camera
         self.scene_graph.get_camera()
     }
-    /*pub fn set_camera_position(&mut self, pos: Vec<f32>) {
-        self.get_camera().set_position(Vec3::new(pos[0], pos[1], pos[2]));
-    }
-    pub fn set_camera_rotation(&mut self, pitch: f32, yaw: f32) {
-        self.get_camera().set_rotation(pitch, yaw);
-    }*/
+
     pub fn new() -> Self {
         //! ## Returns
         //! A new scene with default values
@@ -210,7 +205,7 @@ impl Scene {
                         *width,
                         *height,
                         render_camera,
-                        Uniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+                        cam.get_ray_samples(),
                         0,
                         0,
                     ))
@@ -222,7 +217,7 @@ impl Scene {
             )),
             first_render: true,
             last_render: None,
-        } // todo: allow name and color as param
+        }
     }
 
     pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
@@ -255,13 +250,14 @@ impl Scene {
     }
 
     pub fn as_json(&self) -> Result<String, Error> {
+        //! ## Returns:
+        //! JSON serialization
         let s = serde_json::to_string(&self);
         match s {
             Ok(data) => Ok(data),
-            Err(error) => {
-                let msg = format!("Error: Failed to serialize {self}: {error}");
-                Err(Error::msg(msg))
-            }
+            Err(error) => Err(Error::msg(format!(
+                "Error: Failed to serialize {self}: {error}"
+            ))),
         }
     }
 
