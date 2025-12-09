@@ -76,6 +76,14 @@ impl Model {
         self.scene.get_camera_mut().set_ray_samples(samples);
     }
 
+    pub fn delete_spheres(&mut self) {
+        self.scene.clear_spheres();
+    }
+
+    pub fn delete_polygons(&mut self) {
+        self.scene.clear_polygons();
+    }
+
     pub fn generate_render_output(&mut self) -> RenderOutput {
         if self.currently_rendering {
             log::warn!("Render already in progress, skipping new render request.");

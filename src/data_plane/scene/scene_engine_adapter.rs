@@ -193,15 +193,11 @@ impl Scene {
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
             RenderConfigBuilder::new()
                 .uniforms(uniforms)
-                // TODO: Handle sphere deletion via state: `.spheres(render_spheres)`
-                .spheres_delete()
+                .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .build()
         };
-
-        #[allow(deprecated)]
-        rc.translate(0.0, 0.0, 2.0);
 
         let engine = self.get_render_engine_mut();
 

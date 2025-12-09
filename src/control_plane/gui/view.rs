@@ -22,6 +22,8 @@ pub enum Event {
     UpdateColorHash,
     UpdateCamera,
     UpdateSamples,
+    DeleteSpheres,
+    DeletePolygons,
     ExportImage,
 }
 
@@ -348,6 +350,18 @@ impl eframe::App for View {
                     self.pipeline.set_samples(samples);
                     self.handle_event(Event::UpdateSamples)
                         .expect("Failed to handle `Event::UpdateSamples`");
+                }
+
+                ui.separator();
+
+                if ui.button("Delete Spheres").clicked() {
+                    self.handle_event(Event::DeleteSpheres)
+                        .expect("Failed to handle DeleteSpheres");
+                }
+
+                if ui.button("Delete Polygons").clicked() {
+                    self.handle_event(Event::DeletePolygons)
+                        .expect("Failed to handle DeletePolygons");
                 }
 
                 ui.separator();

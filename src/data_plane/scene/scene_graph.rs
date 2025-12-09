@@ -94,6 +94,15 @@ impl SceneGraph {
         //! 'index': Index of the object that will be removed
         self.spheres.remove(index);
     }
+
+    pub fn clear_spheres(&mut self) {
+        self.spheres.clear();
+    }
+
+    pub fn clear_tri_geometries(&mut self) {
+        self.tri_geometries.clear();
+    }
+
     pub fn remove_tri_geomtry(&mut self, index: usize) {
         //! Removes TriGeometry at given index
         //! ## Parameter

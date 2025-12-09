@@ -92,6 +92,14 @@ impl Controller {
                 self.model.set_samples(self.pipeline.get_samples());
                 Ok(Box::new(()))
             }
+            view::Event::DeleteSpheres => {
+                self.model.delete_spheres();
+                Ok(Box::new(()))
+            }
+            view::Event::DeletePolygons => {
+                self.model.delete_polygons();
+                Ok(Box::new(()))
+            }
             view::Event::ExportImage => {
                 if let Some(path) = self.pipeline.take_export_file_path() {
                     match self.model.export_image(&path) {
