@@ -22,6 +22,8 @@ impl Controller {
         } = scene.get_camera().get_resolution();
         pipeline.set_width(*res_x);
         pipeline.set_height(*res_y);
+        pipeline.set_camera_pos(scene.get_camera().get_position().to_array());
+        pipeline.set_camera_dir(scene.get_camera().get_rotation().to_array());
     }
 
     pub fn handle_event(&mut self, event: view::Event) -> EventResult {
@@ -73,6 +75,11 @@ impl Controller {
             }
             view::Event::UpdateFOV => {
                 self.model.set_fov(self.pipeline.get_fov());
+                Ok(Box::new(()))
+            }
+            view::Event::UpdateCamera => {
+                self.model.set_camera_pos(self.pipeline.get_camera_pos());
+                self.model.set_camera_dir(self.pipeline.get_camera_dir());
                 Ok(Box::new(()))
             }
             view::Event::UpdateColorHash => {

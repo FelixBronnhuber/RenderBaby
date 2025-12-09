@@ -11,6 +11,8 @@ pub struct Pipeline {
     scene_file_path: Arc<Mutex<Option<String>>>,
     color_hash_enabled: Arc<Mutex<bool>>,
     export_file_path: Arc<Mutex<Option<String>>>,
+    camera_pos: Arc<Mutex<[f32; 3]>>,
+    camera_dir: Arc<Mutex<[f32; 3]>>,
 }
 
 impl Pipeline {
@@ -24,6 +26,8 @@ impl Pipeline {
             scene_file_path: Arc::new(Mutex::new(None)),
             color_hash_enabled: Arc::new(Mutex::new(true)),
             export_file_path: Arc::new(Mutex::new(None)),
+            camera_pos: Arc::new(Mutex::new([0.0, 0.0, 0.0])),
+            camera_dir: Arc::new(Mutex::new([0.0, 0.0, 1.0])),
         }
     }
 
@@ -97,5 +101,21 @@ impl Pipeline {
 
     pub fn take_export_file_path(&self) -> Option<String> {
         self.export_file_path.lock().unwrap().take()
+    }
+
+    pub fn set_camera_pos(&self, pos: [f32; 3]) {
+        *self.camera_pos.lock().unwrap() = pos;
+    }
+
+    pub fn get_camera_pos(&self) -> [f32; 3] {
+        *self.camera_pos.lock().unwrap()
+    }
+
+    pub fn set_camera_dir(&self, dir: [f32; 3]) {
+        *self.camera_dir.lock().unwrap() = dir;
+    }
+
+    pub fn get_camera_dir(&self) -> [f32; 3] {
+        *self.camera_dir.lock().unwrap()
     }
 }
