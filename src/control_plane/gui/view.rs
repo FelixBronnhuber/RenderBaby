@@ -284,7 +284,8 @@ impl eframe::App for View {
                     .changed()
                 {
                     self.pipeline.set_color_hash_enabled(color_hash_enabled);
-                    (self.handler)(Event::UpdateColorHash);
+                    self.handle_event(Event::UpdateColorHash)
+                        .expect("Failed to handle `Event::UpdateColorHash`");
                 }
 
                 ui.separator();
