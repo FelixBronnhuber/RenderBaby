@@ -21,6 +21,7 @@ pub enum Event {
     UpdateFOV,
     UpdateColorHash,
     UpdateCamera,
+    UpdateSamples,
     ExportImage,
 }
 
@@ -339,6 +340,18 @@ impl eframe::App for View {
 
                 ui.separator();
 
+                let mut samples = self.pipeline.get_samples();
+                if ui
+                    .add(egui::Slider::new(&mut samples, 1..=2000).text("Samples"))
+                    .changed()
+                {
+                    self.pipeline.set_samples(samples);
+                    self.handle_event(Event::UpdateSamples)
+                        .expect("Failed to handle `Event::UpdateSamples`");
+                }
+
+                ui.separator();
+
                 ui.label("Scene JSON:");
                 egui::ScrollArea::vertical()
                     .auto_shrink([false; 2])
@@ -382,6 +395,8 @@ impl EframeViewWrapper<Event, pipeline::Pipeline> for View {
         self.handle_event(Event::UpdateFOV)
             .expect("Something's wrong");
         self.handle_event(Event::UpdateCamera)
+            .expect("Something's wrong");
+        self.handle_event(Event::UpdateSamples)
             .expect("Something's wrong");
         self.do_standard_render();
     }

@@ -24,6 +24,7 @@ impl Controller {
         pipeline.set_height(*res_y);
         pipeline.set_camera_pos(scene.get_camera().get_position().to_array());
         pipeline.set_camera_dir(scene.get_camera().get_rotation().to_array());
+        pipeline.set_samples(scene.get_camera().get_ray_samples());
     }
 
     pub fn handle_event(&mut self, event: view::Event) -> EventResult {
@@ -85,6 +86,10 @@ impl Controller {
             view::Event::UpdateColorHash => {
                 self.model
                     .set_color_hash_enabled(self.pipeline.get_color_hash_enabled());
+                Ok(Box::new(()))
+            }
+            view::Event::UpdateSamples => {
+                self.model.set_samples(self.pipeline.get_samples());
                 Ok(Box::new(()))
             }
             view::Event::ExportImage => {

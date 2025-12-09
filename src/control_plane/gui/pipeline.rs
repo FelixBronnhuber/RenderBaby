@@ -13,6 +13,7 @@ pub struct Pipeline {
     export_file_path: Arc<Mutex<Option<String>>>,
     camera_pos: Arc<Mutex<[f32; 3]>>,
     camera_dir: Arc<Mutex<[f32; 3]>>,
+    samples: Arc<Mutex<u32>>,
 }
 
 impl Pipeline {
@@ -28,6 +29,7 @@ impl Pipeline {
             export_file_path: Arc::new(Mutex::new(None)),
             camera_pos: Arc::new(Mutex::new([0.0, 0.0, 0.0])),
             camera_dir: Arc::new(Mutex::new([0.0, 0.0, 1.0])),
+            samples: Arc::new(Mutex::new(100)),
         }
     }
 
@@ -117,5 +119,13 @@ impl Pipeline {
 
     pub fn get_camera_dir(&self) -> [f32; 3] {
         *self.camera_dir.lock().unwrap()
+    }
+
+    pub fn set_samples(&self, samples: u32) {
+        *self.samples.lock().unwrap() = samples;
+    }
+
+    pub fn get_samples(&self) -> u32 {
+        *self.samples.lock().unwrap()
     }
 }

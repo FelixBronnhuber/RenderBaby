@@ -72,6 +72,10 @@ impl Model {
         self.scene.set_color_hash_enabled(enabled);
     }
 
+    pub fn set_samples(&mut self, samples: u32) {
+        self.scene.get_camera_mut().set_ray_samples(samples);
+    }
+
     pub fn generate_render_output(&mut self) -> RenderOutput {
         if self.currently_rendering {
             log::warn!("Render already in progress, skipping new render request.");
