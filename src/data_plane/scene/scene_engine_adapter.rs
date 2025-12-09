@@ -1,8 +1,13 @@
 /// Serves as an adpter between the scene plane and the render engine.
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
+use glam::Vec3;
 use log::{info, error};
-use scene_objects::{camera::Camera, sphere::Sphere, tri_geometry::TriGeometry};
+use scene_objects::{
+    camera::{Camera, Resolution},
+    sphere::Sphere,
+    tri_geometry::TriGeometry,
+};
 use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
@@ -30,7 +35,9 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     .unwrap()
     //todo error handling
 }
-
+fn vec3_to_array(vec: Vec3) -> [f32; 3] {
+    [vec.x, vec.y, vec.z]
+}
 fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
@@ -46,23 +53,21 @@ fn camera_to_render_uniforms(
     //! 'color_hash_enabled': Whether color hash is enabled
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
-
-    //TODO: Replace defaults
-    let [width, height] = camera.get_resolution();
+    let Resolution { width, height } = camera.get_resolution();
     let position = camera.get_position();
-    let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
+    let rotation = camera.get_rotation(); //Engine uses currently a direction vector
     let pane_width = RenderCamera::default().pane_width;
     let render_camera = RenderCamera::new(
         camera.get_fov(),
         pane_width,
-        [position.x, position.y, position.z],
-        rotation,
+        vec3_to_array(position),
+        vec3_to_array(rotation),
     );
     let uniforms = RenderUniforms::new(
-        width,
-        height,
+        *width,
+        *height,
         render_camera,
-        RenderUniforms::default().total_samples, //replace later with gui impl for tatal_samples!
+        camera.get_ray_samples(), //samples: ray per pixel
         spheres_count,
         triangles_count,
     )
@@ -134,6 +139,7 @@ impl Scene {
         //! ## Returns
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
+
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
 
@@ -169,7 +175,7 @@ impl Scene {
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
-            all_triangles.len() / 3,
+            triangles_count,
             all_vertices.len() / 3
         );
 

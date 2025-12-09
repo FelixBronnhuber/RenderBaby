@@ -1,20 +1,26 @@
-use std::any::Any;
-
 use glam::Vec3;
+use serde::Serialize;
 
 use crate::{
-    geometric_object::{GeometricObject, SceneObject, SceneObjectAttributes},
+    geometric_object::{GeometricObject, SceneObject},
     material::Material,
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TriGeometry {
+    #[serde(skip_serializing)]
     triangles: Vec<Triangle>,
-    attr: SceneObjectAttributes,
-    file_path: String,
     name: String,
+    #[serde(skip_serializing)]
     material: Material,
+    path: Option<String>,
+    scale: Vec3,
+    #[serde(skip_serializing)]
+    translation: Vec3,
+    rotation: Vec3,
+    #[serde(rename(serialize = "position"))]
+    a_position: Option<Vec3>,
 }
 impl GeometricObject for TriGeometry {
     fn scale(&mut self, factor: f32) {
@@ -32,12 +38,9 @@ impl GeometricObject for TriGeometry {
     fn rotate(&mut self, _vec: Vec3) {
         todo!()
     }
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
 }
 impl SceneObject for TriGeometry {
-    fn get_path(&self) -> String {
+    fn get_path(&self) -> Option<&str> {
         todo!()
     }
 
@@ -64,33 +67,33 @@ impl TriGeometry {
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
-    pub fn get_path(&self) -> String {
-        self.file_path.clone()
-    }
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name
+    }
     pub fn new(triangles: Vec<Triangle>) -> Self {
-        let conf = SceneObjectAttributes {
-            name: "".to_owned(),
-            path: Some("".to_owned()),
-            scale: Vec3::new(0.0, 0.0, 0.0),
-            translation: Vec3::new(0.0, 0.0, 0.0),
-            rotation: Vec3::new(0.0, 0.0, 0.0),
-        };
+        let mut a_point: Option<Vec3> = None;
+        if let Some(t) = triangles.first() {
+            a_point = t.get_points().first().copied();
+        }
         TriGeometry {
             triangles,
-            attr: conf,
-            file_path: " ".to_owned(),
+            scale: Vec3::new(1.0, 1.0, 1.0),
+            translation: Vec3::default(),
+            rotation: Vec3::default(),
+            path: None,
             name: "unnamed".to_owned(),
             material: Material::default(),
+            a_position: a_point,
         }
     }
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Triangle {
-    points: Vec<Vec3>, // todo: Probably introduces a typ for 3 3dPoints
+    points: Vec<Vec3>,
     material: Option<Material>,
 }
 #[allow(dead_code)]
@@ -133,8 +136,5 @@ impl GeometricObject for Triangle {
 
     fn rotate(&mut self, _vec: Vec3) {
         todo!()
-    }
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }

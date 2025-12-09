@@ -130,7 +130,12 @@ pub fn serialize_scene(sc: &mut Scene) {
     sc.get_tri_geometries().iter().for_each(|object| {
         objectarr.push(ParsingObject {
             name: object.get_name().clone(),
-            path: object.get_path(),
+            path: {
+                match object.get_path() {
+                    Some(p) => p.to_owned(),
+                    None => "".to_owned(),
+                }
+            },
             scale: Vec3d {
                 x: object.get_scale().x,
                 y: object.get_scale().y,
@@ -178,8 +183,8 @@ pub fn serialize_scene(sc: &mut Scene) {
     });
 
     let mut map = HashMap::with_capacity(2);
-    map.insert("x".to_owned(), sc.get_camera().get_resolution()[0]);
-    map.insert("y".to_owned(), sc.get_camera().get_resolution()[1]);
+    map.insert("x".to_owned(), sc.get_camera().get_resolution().width);
+    map.insert("y".to_owned(), sc.get_camera().get_resolution().height);
     let _file = SceneFile {
         scene_name: sc.get_name().to_string(),
         objects: objectarr,
