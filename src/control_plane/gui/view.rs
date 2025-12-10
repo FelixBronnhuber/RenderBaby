@@ -20,6 +20,10 @@ pub enum Event {
     UpdateResolution,
     UpdateFOV,
     UpdateColorHash,
+    UpdateCamera,
+    UpdateSamples,
+    DeleteSpheres,
+    DeletePolygons,
     ExportImage,
 }
 
@@ -278,6 +282,54 @@ impl eframe::App for View {
                 });
                 ui.separator();
 
+                ui.label("Camera Position:");
+                let mut cam_pos = self.pipeline.get_camera_pos();
+                let mut changed = false;
+                ui.horizontal(|ui| {
+                    ui.label("X:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_pos[0]).speed(0.1))
+                        .changed();
+                    ui.label("Y:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_pos[1]).speed(0.1))
+                        .changed();
+                    ui.label("Z:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_pos[2]).speed(0.1))
+                        .changed();
+                });
+                if changed {
+                    self.pipeline.set_camera_pos(cam_pos);
+                    self.handle_event(Event::UpdateCamera)
+                        .expect("Failed to handle UpdateCamera");
+                }
+
+                ui.label("Camera Direction:");
+                let mut cam_dir = self.pipeline.get_camera_dir();
+                changed = false;
+                ui.horizontal(|ui| {
+                    ui.label("X:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_dir[0]).speed(0.01))
+                        .changed();
+                    ui.label("Y:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_dir[1]).speed(0.01))
+                        .changed();
+                    ui.label("Z:");
+                    changed |= ui
+                        .add(egui::DragValue::new(&mut cam_dir[2]).speed(0.01))
+                        .changed();
+                });
+                if changed {
+                    self.pipeline.set_camera_dir(cam_dir);
+                    self.handle_event(Event::UpdateCamera)
+                        .expect("Failed to handle UpdateCamera");
+                }
+
+                ui.separator();
+
                 let mut color_hash_enabled = self.pipeline.get_color_hash_enabled();
                 if ui
                     .checkbox(&mut color_hash_enabled, "Enable Color Hash")
@@ -286,6 +338,30 @@ impl eframe::App for View {
                     self.pipeline.set_color_hash_enabled(color_hash_enabled);
                     self.handle_event(Event::UpdateColorHash)
                         .expect("Failed to handle `Event::UpdateColorHash`");
+                }
+
+                ui.separator();
+
+                let mut samples = self.pipeline.get_samples();
+                if ui
+                    .add(egui::Slider::new(&mut samples, 1..=2000).text("Samples"))
+                    .changed()
+                {
+                    self.pipeline.set_samples(samples);
+                    self.handle_event(Event::UpdateSamples)
+                        .expect("Failed to handle `Event::UpdateSamples`");
+                }
+
+                ui.separator();
+
+                if ui.button("Delete Spheres").clicked() {
+                    self.handle_event(Event::DeleteSpheres)
+                        .expect("Failed to handle DeleteSpheres");
+                }
+
+                if ui.button("Delete Polygons").clicked() {
+                    self.handle_event(Event::DeletePolygons)
+                        .expect("Failed to handle DeletePolygons");
                 }
 
                 ui.separator();
@@ -331,6 +407,10 @@ impl EframeViewWrapper<Event, pipeline::Pipeline> for View {
         self.handle_event(Event::UpdateResolution)
             .expect("Something's wrong");
         self.handle_event(Event::UpdateFOV)
+            .expect("Something's wrong");
+        self.handle_event(Event::UpdateCamera)
+            .expect("Something's wrong");
+        self.handle_event(Event::UpdateSamples)
             .expect("Something's wrong");
         self.do_standard_render();
     }

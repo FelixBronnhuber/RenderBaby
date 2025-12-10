@@ -294,6 +294,14 @@ impl Scene {
         self.scene_graph.add_lightsource(light);
     }
 
+    pub fn clear_spheres(&mut self) {
+        self.scene_graph.clear_spheres();
+    }
+
+    pub fn clear_polygons(&mut self) {
+        self.scene_graph.clear_tri_geometries();
+    }
+
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
         //! ## Arguments

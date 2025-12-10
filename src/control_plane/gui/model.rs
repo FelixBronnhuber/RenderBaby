@@ -1,4 +1,5 @@
 use anyhow::Error;
+use glam::Vec3;
 use log::info;
 use scene_objects::camera::Resolution;
 use crate::data_plane::scene::render_scene::Scene;
@@ -55,8 +56,32 @@ impl Model {
             .set_resolution(Resolution::new(width, height));
     }
 
+    pub fn set_camera_pos(&mut self, pos: [f32; 3]) {
+        self.scene
+            .get_camera_mut()
+            .set_position(Vec3::from_array(pos));
+    }
+
+    pub fn set_camera_dir(&mut self, dir: [f32; 3]) {
+        self.scene
+            .get_camera_mut()
+            .set_rotation(Vec3::from_array(dir));
+    }
+
     pub fn set_color_hash_enabled(&mut self, enabled: bool) {
         self.scene.set_color_hash_enabled(enabled);
+    }
+
+    pub fn set_samples(&mut self, samples: u32) {
+        self.scene.get_camera_mut().set_ray_samples(samples);
+    }
+
+    pub fn delete_spheres(&mut self) {
+        self.scene.clear_spheres();
+    }
+
+    pub fn delete_polygons(&mut self) {
+        self.scene.clear_polygons();
     }
 
     pub fn generate_render_output(&mut self) -> RenderOutput {
