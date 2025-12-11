@@ -1,6 +1,6 @@
 use crate::bind_group;
 use crate::{GpuDevice, buffers, pipeline};
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
 use bytemuck::{Pod, Zeroable};
