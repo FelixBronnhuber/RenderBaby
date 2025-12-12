@@ -1,16 +1,19 @@
 use scene_objects::{camera::Camera, light_source::LightSource};
 use serde::{Deserialize, Serialize};
 
-use crate::data_plane::{scene::render_scene::RealScene, scene_proxy::proxy_mesh::ProxyMesh};
+use crate::data_plane::{
+    scene::render_scene::RealScene,
+    scene_proxy::{proxy_mesh::ProxyMesh},
+};
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize)]
 pub struct ProxyScene {
-    scene_name: String,
-    camera: Camera,
-    objects: Vec<ProxyMesh>,
-    lights: Vec<LightSource>,
-    background_color: [f32; 3],
+    pub scene_name: String,
+    pub camera: Camera,
+    pub objects: Vec<ProxyMesh>,
+    pub lights: Vec<LightSource>,
+    pub background_color: [f32; 3],
     pub misc: Vec<u32>, // temp type just for ray samples
 }
 #[allow(unused)]
@@ -25,7 +28,7 @@ impl ProxyScene {
             misc: todo!(),
         }
     } */
-    fn new_from_real_scene(scene: &RealScene) -> Self {
+    pub fn new_from_real_scene(scene: &RealScene) -> Self {
         Self {
             scene_name: scene.get_name().to_string(),
             camera: *scene.get_camera(),
