@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum OBJParseError {
@@ -53,17 +53,16 @@ pub struct OBJParser {
     pub faces: Vec<FaceLine>,                 //f
     pub normals: Option<Vec<f32>>,            //vn
     pub texture_coordinate: Option<Vec<f32>>, //vt
-    pub material_path: Option<Vec<String>>,
+    pub material_path: Option<Vec<String>>, // consider using Vec<PathBuf> instead!
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(paths: String) -> Result<OBJParser, OBJParseError> {
-        let mut path = Path::new(paths.as_str());
-        let data = fs::read_to_string(path)?;
+    pub fn parse(path: PathBuf) -> Result<OBJParser, OBJParseError> {
+        let path_clone = path.clone();
+        let data = fs::read_to_string(path_clone)?;
         if data.is_empty() {
             return Err(OBJParseError::FileRead("empty file".to_string()));
         }
-        let lineiter = data.lines();
 
         let mut v_numarr = Vec::with_capacity(30);
 
@@ -75,9 +74,9 @@ impl OBJParser {
         let mut mtl_path: Vec<String> = Vec::with_capacity(2);
 
         let mut currentmaterial = String::new();
-        path = path.parent().unwrap_or_else(|| Path::new(""));
 
-        lineiter.for_each(|l| {
+
+        for l in data.lines() {
             match l.split_once(" ") {
                 Some(("vn", vn)) => {
                     let vec = vn.split_whitespace().collect::<Vec<&str>>();
@@ -137,7 +136,8 @@ impl OBJParser {
 
                 _ => {}
             }
-        });
+        }
+
         let filename = path
             .file_name()
             .unwrap_or(OsStr::new(" "))

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use engine_config::RenderOutput;
 use std::sync::{Arc, Mutex};
 
@@ -7,10 +8,10 @@ pub struct Pipeline {
     fov: Arc<Mutex<f32>>,
     width: Arc<Mutex<u32>>,
     height: Arc<Mutex<u32>>,
-    obj_file_path: Arc<Mutex<Option<String>>>,
-    scene_file_path: Arc<Mutex<Option<String>>>,
+    obj_file_path: Arc<Mutex<Option<PathBuf>>>,
+    scene_file_path: Arc<Mutex<Option<PathBuf>>>,
     color_hash_enabled: Arc<Mutex<bool>>,
-    export_file_path: Arc<Mutex<Option<String>>>,
+    export_file_path: Arc<Mutex<Option<PathBuf>>>,
     camera_pos: Arc<Mutex<[f32; 3]>>,
     camera_dir: Arc<Mutex<[f32; 3]>>,
     samples: Arc<Mutex<u32>>,
@@ -73,19 +74,19 @@ impl Pipeline {
         self.render_output_ppl.lock().unwrap().take()
     }
 
-    pub fn submit_obj_file_path(&self, path: Option<String>) {
+    pub fn submit_obj_file_path(&self, path: Option<PathBuf>) {
         *self.obj_file_path.lock().unwrap() = path;
     }
 
-    pub fn take_obj_file_path(&self) -> Option<String> {
+    pub fn take_obj_file_path(&self) -> Option<PathBuf> {
         self.obj_file_path.lock().unwrap().take()
     }
 
-    pub fn submit_scene_file_path(&self, path: Option<String>) {
+    pub fn submit_scene_file_path(&self, path: Option<PathBuf>) {
         *self.scene_file_path.lock().unwrap() = path;
     }
 
-    pub fn take_scene_file_path(&self) -> Option<String> {
+    pub fn take_scene_file_path(&self) -> Option<PathBuf> {
         self.scene_file_path.lock().unwrap().take()
     }
 
@@ -97,11 +98,11 @@ impl Pipeline {
         *self.color_hash_enabled.lock().unwrap()
     }
 
-    pub fn submit_export_file_path(&self, path: Option<String>) {
+    pub fn submit_export_file_path(&self, path: Option<PathBuf>) {
         *self.export_file_path.lock().unwrap() = path;
     }
 
-    pub fn take_export_file_path(&self) -> Option<String> {
+    pub fn take_export_file_path(&self) -> Option<PathBuf> {
         self.export_file_path.lock().unwrap().take()
     }
 
