@@ -1,3 +1,3 @@
-pub mod message_popup;
-pub mod file_picker;
 mod effects;
+pub mod file_picker;
+pub mod message_popup;

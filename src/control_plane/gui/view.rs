@@ -10,7 +10,7 @@ use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::{EventHandler, EventResult, ViewWrapper};
 use eframe_elements::{
     message_popup::{Message, MessagePopupPipe},
-    file_picker::ThreadedNativeFileDialog
+    file_picker::ThreadedNativeFileDialog,
 };
 
 // E FRAME VIEW:
@@ -100,13 +100,12 @@ impl View {
         file_dialog: &ThreadedNativeFileDialog,
         file_dialog_fn: F,
         submit: Submit,
-        event: Event
-    )
-    where
+        event: Event,
+    ) where
         R: Send + 'static,
         F: for<'a> FnOnce(
             &'a ThreadedNativeFileDialog,
-            Box<dyn FnOnce(anyhow::Result<R>) + Send + 'static>
+            Box<dyn FnOnce(anyhow::Result<R>) + Send + 'static>,
         ),
         Submit: FnOnce(&pipeline::Pipeline, Option<R>) + Send + 'static,
     {
@@ -114,19 +113,20 @@ impl View {
         let message_popups_clone = self.message_popups.clone();
         let pipeline_clone = self.pipeline.clone();
 
-        file_dialog_fn(file_dialog, Box::new(move |res: anyhow::Result<R>| {
-            match res {
-                Ok(content) => {
-                    submit(&pipeline_clone, Option::from(content));
+        file_dialog_fn(
+            file_dialog,
+            Box::new(move |res: anyhow::Result<R>| {
+                match res {
+                    Ok(content) => {
+                        submit(&pipeline_clone, Option::from(content));
+                    }
+                    Err(e) => return info!("Error: {:?}", e.to_string()),
                 }
-                Err(e) => {
-                    return info!("Error: {:?}", e.to_string())
+                if let Err(e) = handle_event_clone.lock().unwrap()(event) {
+                    message_popups_clone.push_message(Message::from_error(e));
                 }
-            }
-            if let Err(e) = handle_event_clone.lock().unwrap()(event) {
-                message_popups_clone.push_message(Message::from_error(e));
-            }
-        }));
+            }),
+        );
     }
 }
 
@@ -138,16 +138,15 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
             texture: None,
             bottom_visible: true,
             file_dialog_obj: ThreadedNativeFileDialog::new(
-                FileDialog::new().add_filter("OBJ", &["obj"])
+                FileDialog::new().add_filter("OBJ", &["obj"]),
             ),
             file_dialog_scene: ThreadedNativeFileDialog::new(
-                FileDialog::new().add_filter("JSON", &["json"])
+                FileDialog::new().add_filter("JSON", &["json"]),
             ),
             file_dialog_export: ThreadedNativeFileDialog::new(
-                FileDialog::new().add_filter("IMAGE", &["png"])
+                FileDialog::new().add_filter("IMAGE", &["png"]),
             ),
             message_popups: MessagePopupPipe::new(),
-
         }
     }
 
@@ -181,7 +180,7 @@ impl eframe::App for View {
                         &self.file_dialog_obj,
                         ThreadedNativeFileDialog::pick_file,
                         pipeline::Pipeline::submit_obj_file_path,
-                        Event::ImportObj
+                        Event::ImportObj,
                     );
                 }
                 self.file_dialog_obj.update_effect(ctx);
@@ -191,7 +190,7 @@ impl eframe::App for View {
                         &self.file_dialog_scene,
                         ThreadedNativeFileDialog::pick_file,
                         pipeline::Pipeline::submit_scene_file_path,
-                        Event::ImportScene
+                        Event::ImportScene,
                     );
                 }
                 self.file_dialog_scene.update_effect(ctx);
@@ -201,7 +200,7 @@ impl eframe::App for View {
                         &self.file_dialog_export,
                         ThreadedNativeFileDialog::save_file,
                         pipeline::Pipeline::submit_export_file_path,
-                        Event::ExportImage
+                        Event::ExportImage,
                     );
                 }
                 self.file_dialog_export.update_effect(ctx);

@@ -53,7 +53,7 @@ pub struct OBJParser {
     pub faces: Vec<FaceLine>,                 //f
     pub normals: Option<Vec<f32>>,            //vn
     pub texture_coordinate: Option<Vec<f32>>, //vt
-    pub material_path: Option<Vec<String>>, // consider using Vec<PathBuf> instead!
+    pub material_path: Option<Vec<String>>,   // consider using Vec<PathBuf> instead!
 }
 impl OBJParser {
     #[allow(dead_code)]
@@ -74,7 +74,6 @@ impl OBJParser {
         let mut mtl_path: Vec<String> = Vec::with_capacity(2);
 
         let mut currentmaterial = String::new();
-
 
         for l in data.lines() {
             match l.split_once(" ") {

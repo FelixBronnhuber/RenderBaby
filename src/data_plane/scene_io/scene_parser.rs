@@ -225,7 +225,10 @@ pub fn serialize_scene(sc: &mut Scene) {
 pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<Scene> {
     // TODO: please add proper error handling!!!
     if !scene_path.is_file() {
-        return Err(anyhow::Error::msg(format!("File {} does not exist!", scene_path.display())));
+        return Err(anyhow::Error::msg(format!(
+            "File {} does not exist!",
+            scene_path.display()
+        )));
     }
     let _json_content = fs::read_to_string(scene_path);
     // let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();

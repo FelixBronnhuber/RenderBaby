@@ -12,9 +12,7 @@ rfd = "0.16.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
 glam = "0.30.9"
-tobj = "4.0.3"
 engine-config = { version = "0.1.0", path = "crates/engine-config" }
-engine-wgpu-wrapper = { version = "0.1.0", path = "crates/engine-wgpu-wrapper" }
 engine-pathtracer = { version = "0.1.0", path = "crates/engine-pathtracer" }
 engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
 view-wrappers = { path = "crates/view-wrappers" }
@@ -24,7 +22,6 @@ scene-objects = { path = "crates/scene-objects"}
 image = "0.25.9"
 thiserror = "2.0.17"
 eframe-elements = { path = "crates/eframe-elements" }
-
 
 [workspace]
 members = [

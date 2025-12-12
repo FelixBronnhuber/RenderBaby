@@ -1949,7 +1949,7 @@ dependencies = [
  "rgb",
  "tiff",
  "zune-core 0.5.0",
- "zune-jpeg 0.5.5",
+ "zune-jpeg 0.5.6",
 ]
 
 [[package]]
@@ -3207,7 +3207,6 @@ dependencies = [
  "engine-config",
  "engine-pathtracer",
  "engine-raytracer",
- "engine-wgpu-wrapper",
  "glam",
  "image",
  "log",
@@ -3217,7 +3216,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.17",
- "tobj",
  "view-wrappers",
 ]
 
@@ -3692,15 +3690,6 @@ checksum = "42d3e9c45c09de15d06dd8acf5f4e0e399e85927b7f00711024eb7ae10fa4869"
 dependencies = [
  "displaydoc",
  "zerovec",
-]
-
-[[package]]
-name = "tobj"
-version = "4.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04aca6092e5978e708ee784e8ab9b5cf3cdb598b28f99a2f257446e7081a7025"
-dependencies = [
- "ahash",
 ]
 
 [[package]]
@@ -5092,9 +5081,9 @@ dependencies = [
 
 [[package]]
 name = "zune-jpeg"
-version = "0.5.5"
+version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc6fb7703e32e9a07fb3f757360338b3a567a5054f21b5f52a666752e333d58e"
+checksum = "f520eebad972262a1dde0ec455bce4f8b298b1e5154513de58c114c4c54303e8"
 dependencies = [
  "zune-core 0.5.0",
 ]

@@ -27,13 +27,13 @@ impl ThreadedNativeFileDialog {
     fn do_threaded<R: 'static, A>(&self, after: A, dialog_fn: fn(FileDialog) -> Option<R>)
     where
         R: Send + 'static,
-        A: FnOnce(anyhow::Result<R>) + Send + 'static
+        A: FnOnce(anyhow::Result<R>) + Send + 'static,
     {
         if self.is_running() {
             thread::spawn(move || {
                 after(Err(anyhow::Error::msg("File picker already running")));
             });
-            return
+            return;
         }
         let dialog_clone = self.file_dialog.clone();
         let running_mutex = self.running.clone();
@@ -50,26 +50,29 @@ impl ThreadedNativeFileDialog {
     }
 
     pub fn pick_file<A>(&self, after: A)
-    where A: FnOnce(anyhow::Result<PathBuf>) + Send + 'static
+    where
+        A: FnOnce(anyhow::Result<PathBuf>) + Send + 'static,
     {
         self.do_threaded(after, |dialog| dialog.pick_file())
     }
 
     pub fn pick_files<A>(&self, after: A)
-    where A: FnOnce(anyhow::Result<Vec<PathBuf>>) + Send + 'static
+    where
+        A: FnOnce(anyhow::Result<Vec<PathBuf>>) + Send + 'static,
     {
         self.do_threaded(after, |dialog| dialog.pick_files())
     }
 
     pub fn save_file<A>(&self, after: A)
-    where A: FnOnce(anyhow::Result<PathBuf>) + Send + 'static
+    where
+        A: FnOnce(anyhow::Result<PathBuf>) + Send + 'static,
     {
         self.do_threaded(after, |dialog| dialog.save_file())
     }
 
     pub fn update_effect(&self, ctx: &egui::Context) {
         if self.is_running() {
-            effects::color_overlay(ctx, Color32::from_rgba_unmultiplied(0,0,0,60), false);
+            effects::color_overlay(ctx, Color32::from_rgba_unmultiplied(0, 0, 0, 60), false);
         }
     }
 }

@@ -2,7 +2,7 @@ use egui::{Area, Color32, Context, Id, LayerId, Order, Sense};
 
 pub fn color_overlay(ctx: &Context, rgba: Color32, click_through: bool) {
     let rect = ctx.content_rect();
-    let layer_id = LayerId::new(Order::Middle,Id::new("overlay"));
+    let layer_id = LayerId::new(Order::Middle, Id::new("overlay"));
     Area::new(layer_id.id)
         .order(Order::Middle)
         .fixed_pos(rect.min)

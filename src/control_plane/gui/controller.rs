@@ -53,7 +53,9 @@ impl Controller {
                     }
                 } else {
                     error!("ImportObj event received but no path was set");
-                    Err(anyhow::anyhow!("No OBJ file path provided in ImportObj event"))
+                    Err(anyhow::anyhow!(
+                        "No OBJ file path provided in ImportObj event"
+                    ))
                 }
             }
             view::Event::ImportScene => {
@@ -62,7 +64,7 @@ impl Controller {
                         Ok(scene) => {
                             Self::update_pipeline(&self.pipeline, scene);
                             Ok(Box::new(()))
-                        },
+                        }
                         Err(e) => {
                             error!("Error importing scene: {:?}", e);
                             Err(e.into())
@@ -70,7 +72,9 @@ impl Controller {
                     }
                 } else {
                     error!("ImportScene event received but no path was set");
-                    Err(anyhow::anyhow!("No scene file path provided in ImportScene event"))
+                    Err(anyhow::anyhow!(
+                        "No scene file path provided in ImportScene event"
+                    ))
                 }
             }
             view::Event::UpdateResolution => {
@@ -110,7 +114,10 @@ impl Controller {
                         Ok(_) => Ok(Box::new(())),
                         Err(_) => {
                             log::error!("Error exporting image to path: {}", path.display());
-                            Err(anyhow::anyhow!("Failed to export image to {}", path.display()))
+                            Err(anyhow::anyhow!(
+                                "Failed to export image to {}",
+                                path.display()
+                            ))
                         }
                     }
                 } else {
