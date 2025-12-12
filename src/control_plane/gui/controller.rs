@@ -1,7 +1,7 @@
 use log::error;
 use scene_objects::camera::Resolution;
 use crate::control_plane::gui::*;
-use crate::data_plane::scene::render_scene::Scene;
+use crate::data_plane::scene::render_scene::RealScene;
 use view_wrappers::EventResult;
 
 pub struct Controller {
@@ -14,7 +14,7 @@ impl Controller {
         Self { model, pipeline }
     }
 
-    fn update_pipeline(pipeline: &pipeline::Pipeline, scene: &Scene) {
+    fn update_pipeline(pipeline: &pipeline::Pipeline, scene: &RealScene) {
         pipeline.set_fov(scene.get_camera().get_fov());
         let Resolution {
             width: res_x,

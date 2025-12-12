@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use log::{error, info};
-use crate::data_plane::scene::render_scene::Scene;
+use crate::data_plane::scene::render_scene::RealScene;
 
 #[derive(Subcommand, Debug)]
 enum Mode {
@@ -77,8 +77,9 @@ impl CliApp {
     pub fn run(&self) {
         info!("Loading scene...");
 
-        let scene_res = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
-        let mut scene: Scene;
+        let scene_res =
+            RealScene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
+        let mut scene: RealScene;
         match scene_res {
             Err(e) => {
                 error!("Error loading scene: {:?}, exiting...", e);

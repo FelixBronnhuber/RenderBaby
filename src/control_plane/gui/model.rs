@@ -2,18 +2,18 @@ use anyhow::Error;
 use glam::Vec3;
 use log::info;
 use scene_objects::camera::Resolution;
-use crate::data_plane::scene::render_scene::Scene;
+use crate::data_plane::scene::render_scene::RealScene;
 use engine_config::RenderOutput;
 use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {
-    scene: Scene,
+    scene: RealScene,
     currently_rendering: bool, // should later be replaced with some mutex guard
 }
 
 impl Model {
     pub fn new() -> Self {
-        let mut scene = Scene::new();
+        let mut scene = RealScene::new();
         scene.proto_init();
         Self {
             scene,
@@ -32,9 +32,9 @@ impl Model {
         }
     }
 
-    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&Scene, SceneParseError> {
+    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&RealScene, SceneParseError> {
         info!("Received path (scene): {}", scene_file_path);
-        let scene_res = Scene::load_scene_from_file(scene_file_path.to_string());
+        let scene_res = RealScene::load_scene_from_file(scene_file_path.to_string());
         match scene_res {
             Err(e) => {
                 eprintln!("Error loading scene: {:?}", e);

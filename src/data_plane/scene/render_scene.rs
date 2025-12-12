@@ -25,7 +25,7 @@ use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
 #[derive(Serialize)]
-pub struct Scene {
+pub struct RealScene {
     //#[serde(rename(serialize = "items"))]
     #[serde(flatten)]
     scene_graph: SceneGraph,
@@ -39,15 +39,15 @@ pub struct Scene {
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }
-impl Default for Scene {
+impl Default for RealScene {
     fn default() -> Self {
         Self::new()
     }
 }
 #[allow(unused)]
-impl Scene {
+impl RealScene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: String) -> Result<Scene, SceneParseError> {
+    pub fn load_scene_from_file(path: String) -> Result<RealScene, SceneParseError> {
         info!("Scene: Loading new scene from {path}");
         parse_scene(path)
     }
@@ -222,7 +222,7 @@ impl Scene {
         } // todo: allow name and color as param
     }
 
-    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
+    pub fn new_from_json(json_data: &str) -> Result<RealScene, Error> {
         //! ## Paramter
         //! 'json_data': &str of a serialized scene
         //! ## Returns
@@ -416,7 +416,7 @@ impl Scene {
     }
 }
 
-impl std::fmt::Display for Scene {
+impl std::fmt::Display for RealScene {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Scene {}", self.get_name())
     }

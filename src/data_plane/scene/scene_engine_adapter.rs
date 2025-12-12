@@ -8,7 +8,7 @@ use scene_objects::{
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
-use crate::data_plane::scene::{render_scene::Scene};
+use crate::data_plane::scene::{render_scene::RealScene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
@@ -98,7 +98,7 @@ fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
-impl Scene {
+impl RealScene {
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere

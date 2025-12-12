@@ -12,7 +12,7 @@ use scene_objects::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::data_plane::scene::{render_scene::Scene};
+use crate::data_plane::scene::{render_scene::RealScene};
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug)]
 struct SceneFile {
@@ -77,8 +77,8 @@ impl From<Vec3> for Vec3d {
     }
 }
 #[allow(dead_code)]
-fn transform_to_scene(file: SceneFile) -> Scene {
-    let mut scene = Scene::new();
+fn transform_to_scene(file: SceneFile) -> RealScene {
+    let mut scene = RealScene::new();
     scene.set_name(file.scene_name);
     file.lights.iter().for_each(|light| {
         scene.add_lightsource(LightSource::new(
@@ -123,7 +123,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
     scene
 }
 #[allow(dead_code)]
-pub fn serialize_scene(sc: &mut Scene) {
+pub fn serialize_scene(sc: &mut RealScene) {
     //if let Some(p) = obj.as_any().downcast_ref::<Player>() ;
     //let scene_file = Scene_File{scene_name : sc.get_name().to_string(),objects : sc.get_objects().for_each().,camera: sc.get_camera(), lights: sc.get_light_sources(), background_color: sc.get_background_color()};
     let mut objectarr: Vec<ParsingObject> = Vec::new();
@@ -228,7 +228,7 @@ pub enum SceneParseError {
     NotAFile(String),
 }
 
-pub fn parse_scene(scene_path_str: String) -> Result<Scene, SceneParseError> {
+pub fn parse_scene(scene_path_str: String) -> Result<RealScene, SceneParseError> {
     // TODO: please add proper error handling!!!
     let scene_path = Path::new(&scene_path_str);
     if !scene_path.is_file() {
