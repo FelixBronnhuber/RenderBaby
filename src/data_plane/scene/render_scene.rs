@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
@@ -21,7 +22,6 @@ use crate::{
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
-use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
 #[derive(Serialize)]
@@ -47,17 +47,19 @@ impl Default for Scene {
 #[allow(unused)]
 impl Scene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: String) -> Result<Scene, SceneParseError> {
-        info!("Scene: Loading new scene from {path}");
+    pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        let path_str = path.to_str().unwrap();
+        info!("Scene: Loading new scene from {path_str}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        info!("Scene {self}: Loading object from {path}");
+        let path_str = path.to_str().unwrap();
+        info!("Scene {self}: Loading object from {path_str}");
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -129,7 +131,7 @@ impl Scene {
                 Result::Ok(tri)
             }
             Err(error) => {
-                error!("{self}: Parsing obj from {path} resulted in error: {error}");
+                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
                 Err(error.into())
             }
         }
@@ -404,7 +406,7 @@ impl Scene {
     }
 
     #[allow(dead_code)]
-    pub fn export_render_img(&self, path: &str) -> image::ImageResult<()> {
+    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),

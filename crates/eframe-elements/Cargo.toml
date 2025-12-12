@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 egui = "0.33.2"
 anyhow = "1.0.100"
+rfd = "0.16.0"
+log = "0.4.28"

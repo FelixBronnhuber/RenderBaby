@@ -77,7 +77,7 @@ impl CliApp {
     pub fn run(&self) {
         info!("Loading scene...");
 
-        let scene_res = Scene::load_scene_from_file(self.args.scene.to_str().unwrap().to_string());
+        let scene_res = Scene::load_scene_from_file(self.args.scene.clone());
         let mut scene: Scene;
         match scene_res {
             Err(e) => {
@@ -100,7 +100,7 @@ impl CliApp {
             }
         }
 
-        match scene.export_render_img(self.args.output.to_str().unwrap()) {
+        match scene.export_render_img(self.args.output.clone()) {
             Err(e) => {
                 error!("Error saving image: {:?}, exiting...", e);
                 std::process::exit(1);

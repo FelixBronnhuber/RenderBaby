@@ -43,30 +43,38 @@ impl Controller {
                 }
             }
             view::Event::ImportObj => {
-                let res = self
-                    .model
-                    .import_obj(&self.pipeline.take_obj_file_path().unwrap_or("".into()));
-                match res {
-                    Ok(_) => Ok(Box::new(())),
-                    Err(e) => {
-                        error!("Error importing OBJ: {:?}", e);
-                        Err(e)
+                if let Some(path) = self.pipeline.take_obj_file_path() {
+                    match self.model.import_obj(path) {
+                        Ok(_) => Ok(Box::new(())),
+                        Err(e) => {
+                            error!("Error importing OBJ: {:?}", e);
+                            Err(e)
+                        }
                     }
+                } else {
+                    error!("ImportObj event received but no path was set");
+                    Err(anyhow::anyhow!(
+                        "No OBJ file path provided in ImportObj event"
+                    ))
                 }
             }
             view::Event::ImportScene => {
-                let scene_path = self.pipeline.take_scene_file_path().unwrap_or("".into());
-                let import_res = self.model.import_scene(&scene_path);
-
-                match import_res {
-                    Ok(scene) => {
-                        Self::update_pipeline(&self.pipeline, scene);
-                        Ok(Box::new(()))
+                if let Some(path) = self.pipeline.take_scene_file_path() {
+                    match self.model.import_scene(path) {
+                        Ok(scene) => {
+                            Self::update_pipeline(&self.pipeline, scene);
+                            Ok(Box::new(()))
+                        }
+                        Err(e) => {
+                            error!("Error importing scene: {:?}", e);
+                            Err(e)
+                        }
                     }
-                    Err(e) => {
-                        error!("Error importing scene: {:?}", e);
-                        Err(e.into())
-                    }
+                } else {
+                    error!("ImportScene event received but no path was set");
+                    Err(anyhow::anyhow!(
+                        "No scene file path provided in ImportScene event"
+                    ))
                 }
             }
             view::Event::UpdateResolution => {
@@ -102,11 +110,14 @@ impl Controller {
             }
             view::Event::ExportImage => {
                 if let Some(path) = self.pipeline.take_export_file_path() {
-                    match self.model.export_image(&path) {
+                    match self.model.export_image(path.clone()) {
                         Ok(_) => Ok(Box::new(())),
                         Err(_) => {
-                            log::error!("Error exporting image to path: {}", path);
-                            Err(anyhow::anyhow!("Failed to export image to {}", path))
+                            log::error!("Error exporting image to path: {}", path.display());
+                            Err(anyhow::anyhow!(
+                                "Failed to export image to {}",
+                                path.display()
+                            ))
                         }
                     }
                 } else {
