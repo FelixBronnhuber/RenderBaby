@@ -67,7 +67,7 @@ impl Controller {
                         }
                         Err(e) => {
                             error!("Error importing scene: {:?}", e);
-                            Err(e.into())
+                            Err(e)
                         }
                     }
                 } else {

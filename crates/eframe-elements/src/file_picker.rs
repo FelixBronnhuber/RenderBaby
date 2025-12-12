@@ -24,14 +24,14 @@ impl ThreadedNativeFileDialog {
         *self.running.lock().unwrap()
     }
 
-    fn do_threaded<R: 'static, A>(&self, after: A, dialog_fn: fn(FileDialog) -> Option<R>)
+    fn do_threaded<R, A>(&self, after: A, dialog_fn: fn(FileDialog) -> Option<R>)
     where
         R: Send + 'static,
         A: FnOnce(anyhow::Result<R>) + Send + 'static,
     {
         if self.is_running() {
             thread::spawn(move || {
-                after(Err(anyhow::Error::msg("File picker already running")));
+                after(Err(anyhow::anyhow!("File picker already running")));
             });
             return;
         }
@@ -41,10 +41,10 @@ impl ThreadedNativeFileDialog {
         thread::spawn(move || {
             let res = dialog_fn(dialog_clone);
             *running_mutex.lock().unwrap() = false;
-            if res.is_none() {
-                after(Err(anyhow::Error::msg("No file(s)/path(s) selected.")));
+            if let Some(res) = res {
+                after(Ok(res));
             } else {
-                after(Ok(res.unwrap()));
+                after(Err(anyhow::anyhow!("No file(s)/path(s) selected")));
             }
         });
     }
