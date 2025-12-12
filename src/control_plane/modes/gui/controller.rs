@@ -1,6 +1,6 @@
 use log::error;
 use scene_objects::camera::Resolution;
-use crate::control_plane::gui::*;
+use crate::control_plane::modes::gui::*;
 use crate::data_plane::scene::render_scene::Scene;
 use view_wrappers::EventResult;
 
