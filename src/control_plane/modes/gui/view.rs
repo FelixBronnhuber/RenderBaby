@@ -1,4 +1,4 @@
-use crate::control_plane::gui::*;
+use crate::control_plane::modes::gui::*;
 use eframe;
 use eframe::egui;
 use eframe::epaint;

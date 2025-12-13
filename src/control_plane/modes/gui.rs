@@ -1,16 +1,17 @@
-use crate::control_plane::gui::*;
 use view_wrappers::ViewWrapper;
+use crate::control_plane::app::App;
 
-pub struct App {
+pub mod controller;
+pub mod model;
+pub mod pipeline;
+pub mod view;
+
+pub struct GuiApp {
     view: view::View,
 }
 
-impl App {
-    pub fn new() -> Self {
-        Self::new_eframe_app()
-    }
-
-    fn new_eframe_app() -> Self {
+impl App for GuiApp {
+    fn new() -> Self {
         let pipeline = pipeline::Pipeline::new();
         let mut controller = controller::Controller::new(model::Model::new(), pipeline.clone());
 
@@ -18,10 +19,10 @@ impl App {
 
         let view = view::View::new(pipeline, handler);
 
-        App { view }
+        GuiApp { view }
     }
 
-    pub fn show(self) {
+    fn show(self: Box<GuiApp>) {
         self.view.open();
     }
 }
