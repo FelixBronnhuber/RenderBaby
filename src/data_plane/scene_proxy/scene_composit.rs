@@ -1,13 +1,13 @@
 use anyhow::{Error, Ok, Result};
 use crate::data_plane::{scene::render_scene::RealScene, scene_proxy::proxy_scene::ProxyScene};
-pub(super) struct Scene {
+pub(super) struct SceneComposit {
     real_scene: RealScene,
     pub(super) proxy_scene: ProxyScene,
 }
 #[allow(unused)]
-impl Scene {
+impl SceneComposit {
     pub(crate) fn new() -> Self {
-        Scene {
+        SceneComposit {
             real_scene: RealScene::default(),
             proxy_scene: ProxyScene::new_from_real_scene(&RealScene::default()),
         }
