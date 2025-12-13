@@ -3,8 +3,7 @@ mod control_plane;
 mod data_plane;
 
 use std::env;
-use crate::control_plane::cli::CliApp;
-use crate::control_plane::gui::app::App;
+use control_plane::modes;
 
 fn main() {
     /* for testing without setting env vars yourself: */
@@ -13,10 +12,6 @@ fn main() {
     }
     log_buffer::get_builder().init();
 
-    if let Some(cli) = CliApp::parse() {
-        cli.run();
-    } else {
-        let app = App::new();
-        app.show();
-    }
+    let app = modes::get_app();
+    app.show();
 }
