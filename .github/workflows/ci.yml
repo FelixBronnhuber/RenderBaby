@@ -10,8 +10,8 @@ on:
       - master
       - 'sprint-[0-9]*'
     paths-ignore:
-      - '**.md'
-      - 'ci/**'
+      - '**/*.md'
+      - 'ci/**/*.sh'
       - '.gitignore'
 
 jobs:
