@@ -121,3 +121,13 @@ pub enum LightType {
     Point,
     Directional,
 }
+
+impl LightType {
+    pub fn as_string(&self) -> String {
+        match self {
+            LightType::Ambient => "ambient".to_owned(),
+            LightType::Point => "point".to_owned(),
+            LightType::Directional => "directional".to_owned(),
+        }
+    }
+}
