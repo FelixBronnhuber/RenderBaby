@@ -1,6 +1,9 @@
+use std::sync::mpsc::{Receiver, channel};
+use std::thread;
+
 use crate::bind_group;
 use crate::{GpuDevice, buffers, pipeline};
-use anyhow::{Ok, Result, anyhow};
+use anyhow::{Result, anyhow};
 use bind_group::{BindGroup, BindGroupLayout};
 use buffers::GpuBuffers;
 use bytemuck::{Pod, Zeroable};
@@ -8,6 +11,7 @@ use engine_config::render_config::{Change, Validate, ValidateInit};
 use engine_config::{RenderConfig, Uniforms};
 use log::info;
 use pipeline::ComputePipeline;
+use frame_buffer::frame_provider::{Frame, FrameProvider};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
@@ -379,5 +383,87 @@ impl GpuWrapper {
                 bytemuck::cast_slice(triangles),
             );
         }
+    }
+
+    pub fn render_progressive(mut self) -> Result<Box<dyn FrameProvider>> {
+        let (sender, receiver) = channel();
+        let total_passes = self.prh.total_passes;
+        let width = self.get_width() as usize;
+        let height = self.get_height() as usize;
+
+        self.queue.write_buffer(
+            &self.buffer_wrapper.accumulation,
+            0,
+            &vec![0u8; (width * height * 16) as usize],
+        );
+
+        thread::spawn(move || {
+            for pass in 0..total_passes {
+                log::info!("Rendering pass {}/{}", pass + 1, total_passes);
+
+                self.prh.current_pass = pass;
+                self.queue.write_buffer(
+                    &self.buffer_wrapper.progressive_render,
+                    0,
+                    bytemuck::cast_slice(&[self.prh]),
+                );
+
+                if let Err(e) = self.dispatch_compute_progressive(pass, total_passes) {
+                    log::error!("Failed to dispatch compute pass {}: {:?}", pass, e);
+                    break;
+                }
+
+                match self.read_pixels() {
+                    Ok(pixels) => {
+                        let frame = Frame::new(width, height, pixels);
+                        if sender.send(frame).is_err() {
+                            log::info!("Receiver dropped, stopping render");
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to read pixels for pass {}: {:?}", pass, e);
+                        break;
+                    }
+                }
+            }
+            log::info!("Progressive rendering completed: {} passes", total_passes);
+        });
+
+        Ok(Box::new(ProgressiveFrameProvider::new(receiver)))
+    }
+}
+
+pub struct ProgressiveFrameProvider {
+    receiver: Receiver<Frame>,
+    has_next: bool,
+}
+
+impl ProgressiveFrameProvider {
+    fn new(receiver: Receiver<Frame>) -> Self {
+        Self {
+            receiver,
+            has_next: true,
+        }
+    }
+}
+
+impl FrameProvider for ProgressiveFrameProvider {
+    fn has_next(&self) -> bool {
+        self.has_next
+    }
+
+    fn next(&mut self) -> anyhow::Result<Frame> {
+        match self.receiver.recv() {
+            Ok(frame) => Ok(frame),
+            Err(_) => {
+                self.has_next = false;
+                anyhow::bail!("Rendering complete - all passes finished")
+            }
+        }
+    }
+
+    fn destroy(&mut self) {
+        self.has_next = false;
     }
 }

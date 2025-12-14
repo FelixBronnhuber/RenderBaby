@@ -1,2 +1,2 @@
 mod frame_buffer;
-mod frame_provider;
+pub mod frame_provider;
