@@ -72,21 +72,10 @@ impl Camera {
         //! 'rotation': Rotation of the new Camera as glam::Vec3
         //! # Returns
         //! A new camera with the given position and rotation
-        let resolution = Resolution::default();
-        let pane_width = 100.0;
-        let ratio = resolution.height as f32 / resolution.width as f32;
-        let pane_height = pane_width * ratio;
-        Camera {
-            position,
-            rotation,
-            resolution,
-            ray_samples: 20,
-            look_at: Vec3::default(),
-            up: Vec3::new(0.0, 1.0, 0.0),
-            pane_distance: 2.5,
-            pane_width,
-            pane_height,
-        }
+        let mut res = Camera::default();
+        res.set_position(position);
+        res.set_rotation(rotation);
+        res
     }
     pub fn get_ray_samples(&self) -> u32 {
         self.ray_samples
@@ -100,7 +89,7 @@ impl Camera {
 impl Default for Camera {
     fn default() -> Self {
         let resolution = Resolution::default();
-        let pane_width = 100.0;
+        let pane_width = 10.0;
         let ratio = resolution.height as f32 / resolution.width as f32;
         let pane_height = pane_width * ratio;
         Self {

@@ -55,10 +55,9 @@ fn camera_to_render_uniforms(
     //! render_config::Unfiforms for the given parameters
     let position = camera.get_position();
     let dir = camera.look_at - camera.get_position(); //Engine uses currently a direction vector
-    let pane_width = camera.pane_width;
     let render_camera = RenderCamera::new(
         camera.pane_distance,
-        pane_width,
+        camera.pane_width,
         vec3_to_array(position),
         vec3_to_array(dir),
     );
