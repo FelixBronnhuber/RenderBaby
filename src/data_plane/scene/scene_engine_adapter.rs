@@ -56,9 +56,9 @@ fn camera_to_render_uniforms(
     let Resolution { width, height } = camera.get_resolution();
     let position = camera.get_position();
     let rotation = camera.get_rotation(); //Engine uses currently a direction vector
-    let pane_width = RenderCamera::default().pane_width;
+    let pane_width = camera.pane_width;
     let render_camera = RenderCamera::new(
-        camera.get_fov(),
+        camera.pane_distance,
         pane_width,
         vec3_to_array(position),
         vec3_to_array(rotation),

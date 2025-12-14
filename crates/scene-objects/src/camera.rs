@@ -7,11 +7,11 @@ pub struct Camera {
     position: Vec3,
     rotation: Vec3,
     fov: f32, // todo delete
-    pane_distance: f32,
-    pane_width: f32,
-    pane_height: f32, // todo maybe leave out?
-    look_at: Vec3,
-    up: Vec3,
+    pub pane_distance: f32,
+    pub pane_width: f32,
+    pub pane_height: f32, // todo maybe leave out?
+    pub look_at: Vec3,
+    pub up: Vec3,
     resolution: Resolution,
     ray_samples: u32, // todo move to scene
 }
