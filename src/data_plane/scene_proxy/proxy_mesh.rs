@@ -1,15 +1,15 @@
-use glam::Vec3;
 use scene_objects::{geometric_object::SceneObject, tri_geometry::TriGeometry};
 use serde::{Deserialize, Serialize};
+use crate::data_plane::scene_proxy::position::Position;
 
 #[derive(Serialize, Deserialize)]
 #[allow(unused)]
 pub(crate) struct ProxyMesh {
     pub name: String,
     pub path: String,
-    pub scale: Vec3,
-    pub rotation: Vec3,
-    pub translation: Vec3,
+    pub scale: Position,
+    pub rotation: Position,
+    pub translation: Position,
 }
 
 impl ProxyMesh {
@@ -22,9 +22,9 @@ impl ProxyMesh {
                     None => "".to_owned(),
                 }
             },
-            scale: mesh.get_scale(),
-            rotation: mesh.get_rotation(),
-            translation: mesh.get_translation(),
+            scale: Position::new_from_vec3(mesh.get_scale()),
+            rotation: Position::new_from_vec3(mesh.get_rotation()),
+            translation: Position::new_from_vec3(mesh.get_translation()),
         }
     }
 }
