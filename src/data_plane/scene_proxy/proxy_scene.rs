@@ -29,10 +29,14 @@ impl ProxyScene {
         }
     } */
     pub fn new_from_real_scene(scene: &RealScene) -> Self {
+        let mut objects = vec![];
+        for obj in scene.get_tri_geometries() {
+            objects.push(ProxyMesh::new_from_real_mesh(obj));
+        }
         Self {
             scene_name: scene.get_name().to_string(),
             camera: *scene.get_camera(),
-            objects: todo!(),
+            objects,
             lights: scene.get_light_sources().to_vec(),
             background_color: scene.get_background_color(),
             misc: vec![scene.get_camera().get_ray_samples()],
