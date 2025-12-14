@@ -6,9 +6,14 @@ use serde::{Deserialize, Serialize};
 pub struct Camera {
     position: Vec3,
     rotation: Vec3,
-    fov: f32,
+    fov: f32, // todo delete
+    pane_distance: f32,
+    pane_width: f32,
+    pane_height: f32, // todo maybe leave out?
+    look_at: Vec3,
+    up: Vec3,
     resolution: Resolution,
-    ray_samples: u32,
+    ray_samples: u32, // todo move to scene
 }
 #[allow(dead_code)]
 impl Camera {
@@ -63,12 +68,21 @@ impl Camera {
         //! 'rotation': Rotation of the new Camera as glam::Vec3
         //! # Returns
         //! A new camera with the given position and rotation
+        let resolution = Resolution::default();
+        let pane_width = 100.0;
+        let ratio = resolution.height as f32 / resolution.width as f32;
+        let pane_height = pane_width * ratio;
         Camera {
             position,
             rotation,
             fov: 1.0,
-            resolution: Resolution::default(),
+            resolution,
             ray_samples: 20,
+            look_at: Vec3::default(),
+            up: Vec3::new(0.0, 1.0, 0.0),
+            pane_distance: 10.0,
+            pane_width,
+            pane_height,
         }
     }
     pub fn get_ray_samples(&self) -> u32 {
@@ -82,12 +96,21 @@ impl Camera {
 
 impl Default for Camera {
     fn default() -> Self {
+        let resolution = Resolution::default();
+        let pane_width = 100.0;
+        let ratio = resolution.height as f32 / resolution.width as f32;
+        let pane_height = pane_width * ratio;
         Self {
             position: Vec3::default(),
             rotation: Vec3::new(0.0, 0.0, 1.0),
             fov: 10.0,
-            resolution: Resolution::default(),
+            resolution,
             ray_samples: 20,
+            look_at: Vec3::default(),
+            up: Vec3::new(0.0, 1.0, 0.0),
+            pane_distance: 10.0,
+            pane_width,
+            pane_height,
         }
     }
 }
