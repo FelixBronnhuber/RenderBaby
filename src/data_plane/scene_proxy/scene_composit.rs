@@ -1,16 +1,16 @@
 use anyhow::{Error, Ok, Result};
 use log::info;
-use crate::data_plane::{scene::render_scene::RealScene, scene_proxy::proxy_scene::ProxyScene};
+use crate::data_plane::{scene::render_scene::Scene, scene_proxy::proxy_scene::ProxyScene};
 pub(super) struct SceneComposit {
-    real_scene: RealScene,
+    real_scene: Scene,
     pub(super) proxy_scene: ProxyScene,
 }
 #[allow(unused)]
 impl SceneComposit {
     pub(crate) fn new() -> Self {
         SceneComposit {
-            real_scene: RealScene::default(),
-            proxy_scene: ProxyScene::new_from_real_scene(&RealScene::default()),
+            real_scene: Scene::default(),
+            proxy_scene: ProxyScene::new_from_real_scene(&Scene::default()),
         }
     }
     pub(crate) fn update_proxy(&mut self) -> Result<(), Error> {

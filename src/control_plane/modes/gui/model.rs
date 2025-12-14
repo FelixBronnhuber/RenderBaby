@@ -1,19 +1,18 @@
+use std::path::PathBuf;
 use anyhow::Error;
 use glam::Vec3;
-use log::info;
 use scene_objects::camera::Resolution;
-use crate::data_plane::scene::render_scene::RealScene;
+use crate::data_plane::scene::render_scene::Scene;
 use engine_config::RenderOutput;
-use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 pub struct Model {
-    scene: RealScene,
+    scene: Scene,
     currently_rendering: bool, // should later be replaced with some mutex guard
 }
 
 impl Model {
     pub fn new() -> Self {
-        let mut scene = RealScene::new();
+        let mut scene = Scene::new();
         scene.proto_init();
         Self {
             scene,
@@ -21,9 +20,8 @@ impl Model {
         }
     }
 
-    pub fn import_obj(&mut self, obj_file_path: &str) -> anyhow::Result<()> {
-        info!("Received path (obj): {}", obj_file_path);
-        match self.scene.load_object_from_file(obj_file_path.to_string()) {
+    pub fn import_obj(&mut self, obj_file_path: PathBuf) -> anyhow::Result<()> {
+        match self.scene.load_object_from_file(obj_file_path) {
             Ok(_) => Ok(()),
             Err(e) => {
                 eprintln!("Error loading OBJ file: {:?}", e);
@@ -32,10 +30,8 @@ impl Model {
         }
     }
 
-    pub fn import_scene(&mut self, scene_file_path: &str) -> Result<&RealScene, SceneParseError> {
-        info!("Received path (scene): {}", scene_file_path);
-        let scene_res = RealScene::load_scene_from_file(scene_file_path.to_string());
-        match scene_res {
+    pub fn import_scene(&mut self, scene_file_path: PathBuf) -> anyhow::Result<&Scene> {
+        match Scene::load_scene_from_file(scene_file_path) {
             Err(e) => {
                 eprintln!("Error loading scene: {:?}", e);
                 Err(e)
@@ -99,7 +95,7 @@ impl Model {
         })
     }
 
-    pub fn export_image(&mut self, file_path: &str) -> anyhow::Result<()> {
+    pub fn export_image(&mut self, file_path: PathBuf) -> anyhow::Result<()> {
         match self.scene.export_render_img(file_path) {
             Ok(_) => Ok(()),
             Err(e) => {

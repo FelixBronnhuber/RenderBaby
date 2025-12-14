@@ -1,14 +1,17 @@
-use crate::control_plane::gui::*;
+use crate::control_plane::modes::gui::*;
 use eframe;
 use eframe::egui;
 use eframe::epaint;
-use egui_file_dialog;
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use egui::Align;
+use log::info;
+use rfd::FileDialog;
 use view_wrappers::egui_view::EframeViewWrapper;
 use view_wrappers::{EventHandler, EventResult, ViewWrapper};
-use eframe_elements::message_popup::*;
+use eframe_elements::{
+    message_popup::{Message, MessagePopupPipe},
+    file_picker::ThreadedNativeFileDialog,
+};
 
 // E FRAME VIEW:
 
@@ -32,20 +35,16 @@ pub struct View {
     handler: Arc<Mutex<Box<EventHandler<Event>>>>,
     texture: Option<epaint::TextureHandle>,
     bottom_visible: bool,
-    file_dialog_obj: egui_file_dialog::FileDialog,
-    file_dialog_scene: egui_file_dialog::FileDialog,
-    file_dialog_export: egui_file_dialog::FileDialog,
-    obj_path: Option<PathBuf>,
-    scene_path: Option<PathBuf>,
-    export_path: Option<PathBuf>,
-    json_text: String,
+    file_dialog_obj: ThreadedNativeFileDialog,
+    file_dialog_scene: ThreadedNativeFileDialog,
+    file_dialog_export: ThreadedNativeFileDialog,
     message_popups: MessagePopupPipe,
 }
 
 impl View {
     fn handle_event(&self, event: Event) -> EventResult {
         let mut handler_lock = self.handler.lock().unwrap();
-        (handler_lock)(event)
+        handler_lock(event)
     }
 
     fn handle_event_threaded<C>(&self, event: Event, callback: Option<C>)
@@ -56,7 +55,7 @@ impl View {
         std::thread::spawn(move || {
             let result = {
                 let mut handler_lock = handler_clone.lock().unwrap();
-                (handler_lock)(event)
+                handler_lock(event)
             };
             if let Some(cb) = callback {
                 cb(result);
@@ -96,34 +95,38 @@ impl View {
         }
     }
 
-    pub fn set_obj_filepath(&self) {
-        self.pipeline.submit_obj_file_path(Option::from(
-            self.obj_path
-                .clone()
-                .expect("REASON")
-                .to_string_lossy()
-                .into_owned(),
-        ));
-    }
+    fn do_file_dialog<R, F, Submit>(
+        &self,
+        file_dialog: &ThreadedNativeFileDialog,
+        file_dialog_fn: F,
+        submit: Submit,
+        event: Event,
+    ) where
+        R: Send + 'static,
+        F: for<'a> FnOnce(
+            &'a ThreadedNativeFileDialog,
+            Box<dyn FnOnce(anyhow::Result<R>) + Send + 'static>,
+        ),
+        Submit: FnOnce(&pipeline::Pipeline, Option<R>) + Send + 'static,
+    {
+        let handle_event_clone = self.handler.clone();
+        let message_popups_clone = self.message_popups.clone();
+        let pipeline_clone = self.pipeline.clone();
 
-    pub fn set_scene_filepath(&self) {
-        self.pipeline.submit_scene_file_path(Option::from(
-            self.scene_path
-                .clone()
-                .expect("REASON")
-                .to_string_lossy()
-                .into_owned(),
-        ));
-    }
-
-    pub fn set_export_filepath(&mut self) {
-        self.pipeline.submit_export_file_path(Option::from(
-            self.export_path
-                .clone()
-                .expect("REASON")
-                .to_string_lossy()
-                .into_owned(),
-        ));
+        file_dialog_fn(
+            file_dialog,
+            Box::new(move |res: anyhow::Result<R>| {
+                match res {
+                    Ok(content) => {
+                        submit(&pipeline_clone, Option::from(content));
+                    }
+                    Err(e) => return info!("Error: {:?}", e.to_string()),
+                }
+                if let Err(e) = handle_event_clone.lock().unwrap()(event) {
+                    message_popups_clone.push_message(Message::from_error(e));
+                }
+            }),
+        );
     }
 }
 
@@ -134,19 +137,15 @@ impl ViewWrapper<Event, pipeline::Pipeline> for View {
             handler: Arc::new(Mutex::new(handler)),
             texture: None,
             bottom_visible: true,
-            file_dialog_obj: egui_file_dialog::FileDialog::new()
-                .add_file_filter_extensions("OBJ", vec!["obj"])
-                .default_file_filter("OBJ"),
-            file_dialog_scene: egui_file_dialog::FileDialog::new()
-                .add_file_filter_extensions("JSON", vec!["json"])
-                .default_file_filter("JSON"),
-            file_dialog_export: egui_file_dialog::FileDialog::new()
-                .add_file_filter_extensions("IMAGES", vec!["png"])
-                .default_file_filter("IMAGES"),
-            obj_path: None,
-            scene_path: None,
-            export_path: None,
-            json_text: String::new(),
+            file_dialog_obj: ThreadedNativeFileDialog::new(
+                FileDialog::new().add_filter("OBJ", &["obj"]),
+            ),
+            file_dialog_scene: ThreadedNativeFileDialog::new(
+                FileDialog::new().add_filter("JSON", &["json"]),
+            ),
+            file_dialog_export: ThreadedNativeFileDialog::new(
+                FileDialog::new().add_filter("IMAGE", &["png"]),
+            ),
             message_popups: MessagePopupPipe::new(),
         }
     }
@@ -177,58 +176,34 @@ impl eframe::App for View {
                     self.bottom_visible = !self.bottom_visible;
                 }
                 if ui.button("Import Obj").clicked() {
-                    self.file_dialog_obj.pick_file();
+                    self.do_file_dialog(
+                        &self.file_dialog_obj,
+                        ThreadedNativeFileDialog::pick_file,
+                        pipeline::Pipeline::submit_obj_file_path,
+                        Event::ImportObj,
+                    );
                 }
-                if let Some(path) = self.file_dialog_obj.take_picked() {
-                    self.obj_path = Some(path.to_path_buf());
-                    self.set_obj_filepath();
-                    if let Err(e) = self.handle_event(Event::ImportObj) {
-                        self.message_popups.push_message(Message::from_error(e));
-                    }
-                }
-                self.file_dialog_obj.update(ctx);
+                self.file_dialog_obj.update_effect(ctx);
 
                 if ui.button("Import Scene").clicked() {
-                    self.file_dialog_scene.pick_file();
+                    self.do_file_dialog(
+                        &self.file_dialog_scene,
+                        ThreadedNativeFileDialog::pick_file,
+                        pipeline::Pipeline::submit_scene_file_path,
+                        Event::ImportScene,
+                    );
                 }
-                if let Some(path) = self.file_dialog_scene.take_picked() {
-                    self.scene_path = Some(path.to_path_buf());
-                    if let Ok(text) = std::fs::read_to_string(&path) {
-                        self.json_text = text;
-                    }
-                    self.set_scene_filepath();
-                    if let Err(e) = self.handle_event(Event::ImportScene) {
-                        self.message_popups.push_message(Message::from_error(e));
-                    }
-                }
-                self.file_dialog_scene.update(ctx);
+                self.file_dialog_scene.update_effect(ctx);
 
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.save_file();
+                    self.do_file_dialog(
+                        &self.file_dialog_export,
+                        ThreadedNativeFileDialog::save_file,
+                        pipeline::Pipeline::submit_export_file_path,
+                        Event::ExportImage,
+                    );
                 }
-
-                self.file_dialog_export.update(ctx);
-
-                if let Some(path) = self.file_dialog_export.take_picked() {
-                    let mut final_path = path.to_path_buf();
-
-                    if final_path.is_dir() {
-                        final_path.push("export.png");
-                    }
-
-                    if final_path.extension().is_none() {
-                        final_path.set_extension("png");
-                    }
-
-                    self.export_path = Some(final_path.clone());
-                    self.set_export_filepath();
-                    match self.handle_event(Event::ExportImage) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            self.message_popups.push_message(Message::from_error(e));
-                        }
-                    }
-                }
+                self.file_dialog_export.update_effect(ctx);
             })
         });
 
@@ -363,19 +338,6 @@ impl eframe::App for View {
                     self.handle_event(Event::DeletePolygons)
                         .expect("Failed to handle DeletePolygons");
                 }
-
-                ui.separator();
-
-                ui.label("Scene JSON:");
-                egui::ScrollArea::vertical()
-                    .auto_shrink([false; 2])
-                    .show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut self.json_text)
-                                .frame(true)
-                                .lock_focus(true),
-                        );
-                    });
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {

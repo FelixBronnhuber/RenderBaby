@@ -2,7 +2,7 @@ use scene_objects::{camera::Camera, light_source::LightSource};
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::{
-    scene::render_scene::RealScene,
+    scene::render_scene::Scene,
     scene_proxy::{proxy_mesh::ProxyMesh},
 };
 
@@ -28,7 +28,7 @@ impl ProxyScene {
             misc: todo!(),
         }
     } */
-    pub fn new_from_real_scene(scene: &RealScene) -> Self {
+    pub fn new_from_real_scene(scene: &Scene) -> Self {
         let mut objects = vec![];
         for obj in scene.get_tri_geometries() {
             objects.push(ProxyMesh::new_from_real_mesh(obj));

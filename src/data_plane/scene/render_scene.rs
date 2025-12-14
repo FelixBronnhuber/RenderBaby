@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
@@ -21,11 +22,10 @@ use crate::{
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
-use crate::data_plane::scene_io::scene_parser::SceneParseError;
 
 /// The scene holds all relevant objects, lightsources, camera
 #[derive(Serialize)]
-pub struct RealScene {
+pub struct Scene {
     //#[serde(rename(serialize = "items"))]
     #[serde(flatten)]
     scene_graph: SceneGraph,
@@ -39,25 +39,27 @@ pub struct RealScene {
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }
-impl Default for RealScene {
+impl Default for Scene {
     fn default() -> Self {
         Self::new()
     }
 }
 #[allow(unused)]
-impl RealScene {
+impl Scene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: String) -> Result<RealScene, SceneParseError> {
-        info!("Scene: Loading new scene from {path}");
+    pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        let path_str = path.to_str().unwrap();
+        info!("Scene: Loading new scene from {path_str}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: String) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        info!("Scene {self}: Loading object from {path}");
+        let path_str = path.to_str().unwrap();
+        info!("Scene {self}: Loading object from {path_str}");
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -129,7 +131,7 @@ impl RealScene {
                 Result::Ok(tri)
             }
             Err(error) => {
-                error!("{self}: Parsing obj from {path} resulted in error: {error}");
+                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
                 Err(error.into())
             }
         }
@@ -222,7 +224,7 @@ impl RealScene {
         } // todo: allow name and color as param
     }
 
-    pub fn new_from_json(json_data: &str) -> Result<RealScene, Error> {
+    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
         //! ## Paramter
         //! 'json_data': &str of a serialized scene
         //! ## Returns
@@ -404,7 +406,7 @@ impl RealScene {
     }
 
     #[allow(dead_code)]
-    pub fn export_render_img(&self, path: &str) -> image::ImageResult<()> {
+    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
@@ -416,7 +418,7 @@ impl RealScene {
     }
 }
 
-impl std::fmt::Display for RealScene {
+impl std::fmt::Display for Scene {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Scene {}", self.get_name())
     }

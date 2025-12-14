@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::path::Path;
+use std::path::PathBuf;
 
 use glam::Vec3;
 use scene_objects::{
@@ -12,7 +12,7 @@ use scene_objects::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::data_plane::scene::{render_scene::RealScene};
+use crate::data_plane::scene::{render_scene::Scene};
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug)]
 struct SceneFile {
@@ -77,8 +77,8 @@ impl From<Vec3> for Vec3d {
     }
 }
 #[allow(dead_code)]
-fn transform_to_scene(file: SceneFile) -> RealScene {
-    let mut scene = RealScene::new();
+fn transform_to_scene(file: SceneFile) -> Scene {
+    let mut scene = Scene::new();
     scene.set_name(file.scene_name);
     file.lights.iter().for_each(|light| {
         scene.add_lightsource(LightSource::new(
@@ -123,7 +123,7 @@ fn transform_to_scene(file: SceneFile) -> RealScene {
     scene
 }
 #[allow(dead_code)]
-pub fn serialize_scene(sc: &mut RealScene) {
+pub fn serialize_scene(sc: &mut Scene) {
     //if let Some(p) = obj.as_any().downcast_ref::<Player>() ;
     //let scene_file = Scene_File{scene_name : sc.get_name().to_string(),objects : sc.get_objects().for_each().,camera: sc.get_camera(), lights: sc.get_light_sources(), background_color: sc.get_background_color()};
     let mut objectarr: Vec<ParsingObject> = Vec::new();
@@ -222,17 +222,13 @@ pub fn serialize_scene(sc: &mut RealScene) {
     todo!("Fix serde_json");
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum SceneParseError {
-    #[error("Failed to read scene file: {0}")]
-    NotAFile(String),
-}
-
-pub fn parse_scene(scene_path_str: String) -> Result<RealScene, SceneParseError> {
+pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<Scene> {
     // TODO: please add proper error handling!!!
-    let scene_path = Path::new(&scene_path_str);
     if !scene_path.is_file() {
-        return Err(SceneParseError::NotAFile(scene_path_str));
+        return Err(anyhow::Error::msg(format!(
+            "File {} does not exist!",
+            scene_path.display()
+        )));
     }
     let _json_content = fs::read_to_string(scene_path);
     // let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();
