@@ -2,7 +2,7 @@ use crate::ViewWrapper;
 use eframe::egui::Context;
 use eframe::{App, CreationContext, Frame};
 
-pub trait EframeViewWrapper<E, P>: ViewWrapper<E, P> + App + 'static {
+pub trait EframeViewWrapper: ViewWrapper + App + 'static {
     fn on_start(&mut self, ctx: &Context, frame: &mut Frame);
 
     fn open_native(self, app_name: &str) {
@@ -11,15 +11,14 @@ pub trait EframeViewWrapper<E, P>: ViewWrapper<E, P> + App + 'static {
             app_name,
             options,
             Box::new(move |_cc: &CreationContext| -> Result<Box<dyn App>, Box<dyn std::error::Error + Send + Sync>> {
-                struct Wrapper<T: App + EframeViewWrapper<E, P>, E, P> {
+                struct Wrapper<T: EframeViewWrapper> {
                     inner: T,
                     started: bool,
-                    _phantom: std::marker::PhantomData<(E, P)>,
                 }
 
-                impl<T, E, P> App for Wrapper<T, E, P>
+                impl<T> App for Wrapper<T>
                 where
-                    T: App + EframeViewWrapper<E, P>,
+                    T: EframeViewWrapper,
                 {
                     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
                         if !self.started {
@@ -30,10 +29,9 @@ pub trait EframeViewWrapper<E, P>: ViewWrapper<E, P> + App + 'static {
                     }
                 }
 
-                Ok(Box::new(Wrapper::<Self, E, P> {
+                Ok(Box::new(Wrapper::<Self> {
                     inner: self,
                     started: false,
-                    _phantom: std::marker::PhantomData,
                 }) as Box<dyn App>)
             }),
         );
