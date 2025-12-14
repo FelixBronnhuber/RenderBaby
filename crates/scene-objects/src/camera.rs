@@ -85,7 +85,7 @@ impl Camera {
             ray_samples: 20,
             look_at: Vec3::default(),
             up: Vec3::new(0.0, 1.0, 0.0),
-            pane_distance: 10.0,
+            pane_distance: 2.5,
             pane_width,
             pane_height,
         }
@@ -113,7 +113,7 @@ impl Default for Camera {
             ray_samples: 20,
             look_at: Vec3::default(),
             up: Vec3::new(0.0, 1.0, 0.0),
-            pane_distance: 10.0,
+            pane_distance: 2.5,
             pane_width,
             pane_height,
         }
