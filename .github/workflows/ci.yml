@@ -9,6 +9,10 @@ on:
     branches:
       - master
       - 'sprint-[0-9]*'
+    paths-ignore:
+      - '**.md'
+      - 'ci/**'
+      - '.gitignore'
 
 jobs:
   build-test-lint:
