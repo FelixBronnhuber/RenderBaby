@@ -41,14 +41,16 @@ impl Camera {
     }
     pub fn get_fov(&self) -> f32 {
         //! ## Returns
-        //! Camera field of view
-        self.fov
+        //! Camera field of view, calculated drom width and distance
+        //self.fov
+        2.0 * (self.pane_width / (2.0 * self.pane_distance)).atan()
     }
     pub fn set_fov(&mut self, fov: f32) {
         //! Sets the camera field of view. Value should be between ...
         //! ## Parameter
         //! fov: new field of view
-        self.fov = fov;
+        self.fov = fov; // todo: replace with pane width or similar
+        self.pane_width = fov;
     }
     pub fn get_resolution(&self) -> &Resolution {
         //! ## Returns
