@@ -53,16 +53,16 @@ fn camera_to_render_uniforms(
     //! 'color_hash_enabled': Whether color hash is enabled
     //! ## Returns
     //! render_config::Unfiforms for the given parameters
-    let Resolution { width, height } = camera.get_resolution();
     let position = camera.get_position();
-    let rotation = camera.get_rotation(); //Engine uses currently a direction vector
-    let pane_width = RenderCamera::default().pane_width;
+    let dir = camera.look_at - camera.get_position(); //Engine uses currently a direction vector
     let render_camera = RenderCamera::new(
-        camera.get_fov(),
-        pane_width,
+        camera.pane_distance,
+        camera.pane_width,
         vec3_to_array(position),
-        vec3_to_array(rotation),
+        vec3_to_array(dir),
     );
+
+    let Resolution { width, height } = camera.get_resolution();
     let uniforms = RenderUniforms::new(
         *width,
         *height,
