@@ -6,10 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct Camera {
     position: Vec3,
     rotation: Vec3,
-    fov: f32, // todo delete
     pub pane_distance: f32,
     pub pane_width: f32,
-    pub pane_height: f32, // todo maybe leave out?
+    pub pane_height: f32,
     pub look_at: Vec3,
     pub up: Vec3,
     resolution: Resolution,
@@ -49,7 +48,6 @@ impl Camera {
         //! Sets the camera field of view. Value should be between ...
         //! ## Parameter
         //! fov: new field of view
-        self.fov = fov; // todo: replace with pane width or similar
         // quick hack for now
         self.pane_width = fov;
         self.pane_height =
@@ -80,7 +78,6 @@ impl Camera {
         Camera {
             position,
             rotation,
-            fov: 1.0,
             resolution,
             ray_samples: 20,
             look_at: Vec3::default(),
@@ -108,7 +105,6 @@ impl Default for Camera {
         Self {
             position: Vec3::default(),
             rotation: Vec3::new(0.0, 0.0, 1.0),
-            fov: 10.0,
             resolution,
             ray_samples: 20,
             look_at: Vec3::default(),
