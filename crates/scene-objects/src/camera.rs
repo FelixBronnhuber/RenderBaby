@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Camera {
     position: Vec3,
-    rotation: Vec3,
     pub pane_distance: f32,
     pub pane_width: f32,
     pub pane_height: f32,
@@ -22,21 +21,21 @@ impl Camera {
         //! 'position': glam::Vec3 of the new position
         self.position = position;
     }
-    pub fn set_rotation(&mut self, rotation: Vec3) {
-        //! sets the rotation of the camera
+    pub fn set_look_at(&mut self, look_at: Vec3) {
+        //! sets the direction of the camera
         //! ## Parameter
-        //! 'rotation': glam::Vec3 of the new rotation
-        self.rotation = rotation
+        //! 'look_at': glam::Vec3 of the new direction
+        self.look_at = look_at
     }
     pub fn get_position(&self) -> Vec3 {
         //! ## Returns
         //! Camera position as glam::Vec3
         self.position
     }
-    pub fn get_rotation(&self) -> Vec3 {
+    pub fn get_look_at(&self) -> Vec3 {
         //! ## Returns
-        //! Camera rotation as glam::Vec3
-        self.rotation
+        //! Camera look at point as glam::Vec3
+        self.look_at
     }
     pub fn get_fov(&self) -> f32 {
         //! ## Returns
@@ -74,7 +73,7 @@ impl Camera {
         //! A new camera with the given position and rotation
         let mut res = Camera::default();
         res.set_position(position);
-        res.set_rotation(rotation);
+        res.set_look_at(rotation);
         res
     }
     pub fn get_ray_samples(&self) -> u32 {
@@ -94,7 +93,6 @@ impl Default for Camera {
         let pane_height = pane_width * ratio;
         Self {
             position: Vec3::default(),
-            rotation: Vec3::new(0.0, 0.0, 1.0),
             resolution,
             ray_samples: 20,
             look_at: Vec3::default(),
