@@ -110,3 +110,9 @@ impl FrameBuffer {
         }
     }
 }
+
+impl Default for FrameBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}

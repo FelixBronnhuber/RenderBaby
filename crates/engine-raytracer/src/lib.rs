@@ -3,9 +3,7 @@ pub use engine_config::RenderConfig;
 use engine_config::{RenderOutput, Renderer};
 use engine_wgpu_wrapper::{GpuWrapper};
 
-use std::fs::File;
-use std::io::BufWriter;
-use frame_buffer::frame_provider::Frame;
+use frame_buffer::frame_buffer::FrameBuffer;
 
 // pub struct Engine {
 //     gpu_wrapper: GpuWrapper,
@@ -57,38 +55,23 @@ impl Renderer for Engine {
         wrapper.update(rc)?;
         wrapper.update_uniforms();
 
-        // Test progressive rendering
-        let mut receiver = wrapper.render_progressive()?;
+        let buffer = FrameBuffer::new();
 
-        log::info!("Starting progressive render test...");
-        let mut frames = Vec::new();
-        let mut frame_count = 0;
-        while let Ok(frame) = receiver.next() {
-            frame_count += 1;
-            log::info!(
-                "Frame {}: {}x{} ({} bytes)",
-                frame_count,
-                frame.width,
-                frame.height,
-                frame.pixels.len()
-            );
-            frames.push(frame);
-        }
-        log::info!(
-            "Progressive render complete: {} frames received",
-            frame_count
-        );
+        buffer.provide(wrapper.render_progressive()?);
 
-        for (i, frame) in frames.iter().enumerate() {
-            let path = format!("tmp/progressive_frame_{:03}.png", i);
-            if let Err(e) = save_frame_as_png(&path, frame) {
-                log::warn!("Failed to save frame {}: {:?}", i, e);
-            } else {
-                log::info!("Saved frame to {}", path);
+        let mut last_frame = RenderOutput::new(100, 100, [1].to_vec());
+
+        while buffer.is_running() {
+            if let Some(Ok(recv)) = buffer.try_recv() {
+                println!("Frame recieved {} x {}", recv.width, recv.height);
+                last_frame = RenderOutput::new(recv.width, recv.height, recv.pixels);
+                // buffer.stop_current_provider();
             }
         }
 
-        Ok(RenderOutput::new(100, 100, vec![1]))
+        print!("Finished");
+
+        Ok(last_frame)
     }
 }
 
@@ -99,19 +82,4 @@ impl Engine {
             gpu_wrapper: Some(wrapper),
         }
     }
-}
-
-//copied code
-fn save_frame_as_png(path: &str, frame: &Frame) -> Result<()> {
-    let file = File::create(path)?;
-    let buf_writer = BufWriter::new(file);
-
-    let mut encoder = png::Encoder::new(buf_writer, frame.width as u32, frame.height as u32);
-    encoder.set_color(png::ColorType::Rgba);
-    encoder.set_depth(png::BitDepth::Eight);
-
-    let mut writer = encoder.write_header()?;
-    writer.write_image_data(&frame.pixels)?;
-
-    Ok(())
 }
