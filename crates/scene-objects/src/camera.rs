@@ -49,9 +49,10 @@ impl Camera {
         //! ## Parameter
         //! fov: new field of view
         // quick hack for now
-        self.pane_width = fov;
+        /* self.pane_width = fov;
         self.pane_height =
-            fov * (self.get_resolution().height as f32 / self.get_resolution().width as f32);
+            fov * (self.get_resolution().height as f32 / self.get_resolution().width as f32); */
+        self.pane_distance = fov;
     }
     pub fn get_resolution(&self) -> &Resolution {
         //! ## Returns
