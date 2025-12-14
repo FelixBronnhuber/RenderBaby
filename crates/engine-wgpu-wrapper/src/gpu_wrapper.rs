@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use crate::{bind_group};
 use crate::{GpuDevice, buffers, pipeline};
 use anyhow::{Ok, Result, anyhow};
@@ -382,57 +384,60 @@ impl GpuWrapper {
         }
     }
 
-    pub fn render_progressive(self) -> Result<Box<dyn FrameProvider>> {
-        self.queue.write_buffer(
-            &self.buffer_wrapper.accumulation,
-            0,
-            &vec![0u8; (self.get_width() * self.get_height() * 16) as usize],
-        );
+    pub fn render_progressive(wrapper: Arc<Mutex<Self>>) -> Result<Box<dyn FrameProvider>> {
+        {
+            let mut w = wrapper.lock().unwrap();
+            w.prh.current_pass = 0;
+            w.queue.write_buffer(
+                &w.buffer_wrapper.accumulation,
+                0,
+                &vec![0u8; (w.get_width() * w.get_height() * 16) as usize],
+            );
+        }
 
-        Ok(Box::new(ProgressiveFrameProvider::new(self)))
+        Ok(Box::new(ProgressiveFrameProvider::new(wrapper)))
     }
 }
 
 pub struct ProgressiveFrameProvider {
-    wrapper: GpuWrapper,
+    wrapper: Arc<Mutex<GpuWrapper>>,
 }
 
 impl ProgressiveFrameProvider {
-    pub fn new(wrapper: GpuWrapper) -> Self {
+    pub fn new(wrapper: Arc<Mutex<GpuWrapper>>) -> Self {
         Self { wrapper }
     }
 }
 
 impl FrameProvider for ProgressiveFrameProvider {
     fn has_next(&self) -> bool {
-        let ret = self.wrapper.prh.current_pass < self.wrapper.prh.total_passes;
+        let wrapper = self.wrapper.lock().unwrap();
+        let ret = wrapper.prh.current_pass < wrapper.prh.total_passes;
         println!("{}", ret);
         ret
     }
     fn next(&mut self) -> anyhow::Result<Frame> {
+        let mut wrapper = self.wrapper.lock().unwrap();
         info!(
             "Rendering pass {}/{}",
-            self.wrapper.prh.current_pass + 1,
-            self.wrapper.prh.total_passes
+            wrapper.prh.current_pass + 1,
+            wrapper.prh.total_passes
         );
-        self.wrapper.queue.write_buffer(
-            &self.wrapper.buffer_wrapper.progressive_render,
+        wrapper.queue.write_buffer(
+            &wrapper.buffer_wrapper.progressive_render,
             0,
-            bytemuck::cast_slice(&[self.wrapper.prh]),
+            bytemuck::cast_slice(&[wrapper.prh]),
         );
 
-        self.wrapper.dispatch_compute_progressive(
-            self.wrapper.prh.current_pass,
-            self.wrapper.prh.total_passes,
-        )?;
+        wrapper.dispatch_compute_progressive(wrapper.prh.current_pass, wrapper.prh.total_passes)?;
 
-        let pixels = self.wrapper.read_pixels()?;
+        let pixels = wrapper.read_pixels()?;
 
-        self.wrapper.prh.current_pass += 1;
+        wrapper.prh.current_pass += 1;
 
         Ok(Frame {
-            width: self.wrapper.get_width() as usize,
-            height: self.wrapper.get_height() as usize,
+            width: wrapper.get_width() as usize,
+            height: wrapper.get_height() as usize,
             pixels,
         })
     }

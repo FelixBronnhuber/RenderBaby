@@ -51,6 +51,7 @@ impl FrameBuffer {
             if let Some(p) = provider.as_mut() {
                 if !p.has_next() {
                     provider = None;
+                    let _ = frame_tx.send(Err(anyhow::anyhow!("Provider has no more frames"))); //only temporary
                     continue;
                 }
 
