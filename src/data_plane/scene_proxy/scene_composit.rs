@@ -65,4 +65,10 @@ impl SceneComposit {
     fn update_real_misc(&mut self) -> Result<(), Error> {
         todo!()
     }
+
+    pub fn load_obj(&mut self, path: String) -> Result<(), Error> {
+        self.real_scene.load_object_from_file(path.into())?;
+        self.update_proxy()?;
+        Ok(())
+    }
 }
