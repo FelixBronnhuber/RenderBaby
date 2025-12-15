@@ -3,14 +3,15 @@ use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::ImageArea;
 use eframe_elements::message_popup::MessagePopupPipe;
+use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 
 #[allow(dead_code)]
 pub struct SceneScreen {
+    model: Model,
     bottom_visible: bool,
     file_dialog_obj: ThreadedNativeFileDialog,
-    file_dialog_scene: ThreadedNativeFileDialog,
     file_dialog_export: ThreadedNativeFileDialog,
     image_area: ImageArea,
     message_popup_pipe: MessagePopupPipe,
@@ -18,14 +19,12 @@ pub struct SceneScreen {
 
 #[allow(dead_code)]
 impl SceneScreen {
-    pub fn new() -> Self {
+    pub fn new(model: Model) -> Self {
         Self {
+            model,
             bottom_visible: false,
             file_dialog_obj: ThreadedNativeFileDialog::new(
                 FileDialog::new().add_filter("OBJ", &["obj"]),
-            ),
-            file_dialog_scene: ThreadedNativeFileDialog::new(
-                FileDialog::new().add_filter("JSON", &["json"]),
             ),
             file_dialog_export: ThreadedNativeFileDialog::new(
                 FileDialog::new().add_filter("IMAGE", &["png"]),
@@ -90,15 +89,6 @@ impl Screen for SceneScreen {
                     });
                 }
                 self.file_dialog_obj.update_effect(ctx);
-
-                if ui.button("Import Scene").clicked() {
-                    self.file_dialog_scene.pick_file(|res| {
-                        if let Ok(path) = res {
-                            println!("Selected file: {:?}", path);
-                        }
-                    });
-                }
-                self.file_dialog_scene.update_effect(ctx);
 
                 if ui.button("Export PNG").clicked() {
                     self.file_dialog_export.pick_file(|res| {

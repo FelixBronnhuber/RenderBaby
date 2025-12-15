@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-use include_dir::*;
 /*
 static SCENE_TEMPLATES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates/scene");
 static OBJ_TEMPLATES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/templates/obj");
