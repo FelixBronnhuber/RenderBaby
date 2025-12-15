@@ -1,9 +1,9 @@
-use scene_objects::camera::Camera;
+use scene_objects::camera::{Camera, Resolution};
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::scene_proxy::position::Vec3d;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[allow(unused)]
 pub(crate) struct ProxyCamera {
     position: Vec3d,
@@ -39,5 +39,23 @@ impl PartialEq<Camera> for ProxyCamera {
             && self.resolution[1] == other.get_resolution().height
             && self.look_at == other.look_at
             && self.up == other.up
+    }
+}
+impl From<ProxyCamera> for Camera {
+    fn from(value: ProxyCamera) -> Self {
+        let resolution = value.resolution;
+        Self {
+            position: value.position.into(),
+            pane_distance: value.pane_distance,
+            pane_width: value.pane_width,
+            pane_height: value.pane_width * resolution[0] as f32 / resolution[0] as f32,
+            look_at: value.look_at.into(),
+            up: value.up.into(),
+            resolution: Resolution {
+                width: resolution[0],
+                height: resolution[1],
+            },
+            ray_samples: 100,
+        }
     }
 }

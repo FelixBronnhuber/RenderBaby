@@ -466,7 +466,7 @@ impl Scene {
     }
     fn update_real_camera(&mut self) -> Result<(), Error> {
         if self.proxy_scene.camera == *self.get_camera() {
-            //self.proxy_scene.camera = ProxyCamera::new_from_real_camera(self.get_camera());
+            self.set_camera(self.proxy_scene.camera.clone().into());
         }
         Ok(())
     }
@@ -475,6 +475,7 @@ impl Scene {
     }
     fn update_real_misc(&mut self) -> Result<(), Error> {
         todo!()
+        //Ok(())
     }
 }
 
