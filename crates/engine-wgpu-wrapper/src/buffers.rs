@@ -13,6 +13,16 @@ pub struct GpuBuffers {
     pub triangles: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
+    pub light: Buffer,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct PointLight {
+    pub position: [f32; 3],
+    pub intensity: f32,
+    pub color: [f32; 3],
+    pub _pad: f32,
 }
 
 impl GpuBuffers {
@@ -44,6 +54,13 @@ impl GpuBuffers {
             mapped_at_creation: false,
         });
 
+        let light = PointLight {
+            position: [2.0, 4.0, 1.0],
+            intensity: 20.0,
+            color: [1.0, 1.0, 1.0],
+            _pad: 0.0,
+        };
+
         Self {
             spheres: Self::create_storage_buffer(device, "Spheres Buffer", spheres),
             uniforms: Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms),
@@ -57,6 +74,7 @@ impl GpuBuffers {
                 "Progressive Render Buffer",
                 &[*prh],
             ),
+            light: Self::create_uniform_buffer(device, "Light Buffer", &light),
         }
     }
 

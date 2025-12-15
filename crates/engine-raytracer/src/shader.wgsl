@@ -46,6 +46,13 @@ struct HitRecord {
     color: vec3<f32>,
 }
 
+struct PointLight {
+    position: vec3<f32>,
+    intensity: f32,
+    color: vec3<f32>,
+    _pad: f32,
+};
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -53,6 +60,7 @@ struct HitRecord {
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
 @group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
+@group(0) @binding(7) var<uniform> point_light: PointLight;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -135,13 +143,13 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
     if (abs(ray_dir.y) < 1e-6) {
         return -1.0;
     }
-    
+
     let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
-    
+
     if (t > 0.0) {
         return t;
     }
-    
+
     return -1.0;
 }
 
@@ -185,6 +193,52 @@ fn random_unit_vector(seed: u32) -> vec3<f32> {
     );
 
     return normalize(fallback);
+}
+
+fn is_shadow(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
+    if (GROUND_ENABLED) {
+        let t = intersect_ground(origin, light_dir);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    for (var k = 0u; k < uniforms.triangles_count; k = k + 1u) {
+        let v0_idx = triangles[k * 3u + 0u];
+        let v1_idx = triangles[k * 3u + 1u];
+        let v2_idx = triangles[k * 3u + 2u];
+
+        let v0 = vec3<f32>(
+            vertices[v0_idx * 3u + 0u],
+            vertices[v0_idx * 3u + 1u],
+            vertices[v0_idx * 3u + 2u]
+        );
+        let v1 = vec3<f32>(
+            vertices[v1_idx * 3u + 0u],
+            vertices[v1_idx * 3u + 1u],
+            vertices[v1_idx * 3u + 2u]
+        );
+        let v2 = vec3<f32>(
+            vertices[v2_idx * 3u + 0u],
+            vertices[v2_idx * 3u + 1u],
+            vertices[v2_idx * 3u + 2u]
+        );
+
+        let tri = TriangleData(v0, v1, v2, 0u);
+        let t = intersect_triangle(origin, light_dir, tri);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
+        let t = intersect_sphere(origin, light_dir, spheres[k]);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 fn trace_ray(
@@ -273,6 +327,16 @@ fn trace_ray(
             break;
         }
 
+        let to_light = point_light.position - closest_hit.pos;
+        let light_distance = length(to_light);
+        let light_dir = to_light / light_distance;
+
+        let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
+
+        if (is_shadow(shadow_origin, light_dir, light_distance)) {
+             attenuation *= 0.5;
+        }
+
         // Hit + scatter ray
         seed = hash(seed + u32(depth));
         let scatter_dir = closest_hit.normal + random_unit_vector(seed);
@@ -299,7 +363,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let pixel_index = y * uniforms.width + x;
-    
+
     // Load previous accumulation
     var accumulated_color = accumulation[pixel_index].xyz;
     var total_samples = u32(accumulation[pixel_index].w);
