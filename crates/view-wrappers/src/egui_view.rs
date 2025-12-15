@@ -10,7 +10,8 @@ pub trait EframeViewWrapper: ViewWrapper + App + 'static {
         let _ = eframe::run_native(
             app_name,
             options,
-            Box::new(move |_cc: &CreationContext| -> Result<Box<dyn App>, Box<dyn std::error::Error + Send + Sync>> {
+            Box::new(move |cc: &CreationContext| -> Result<Box<dyn App>, Box<dyn std::error::Error + Send + Sync>> {
+
                 struct Wrapper<T: EframeViewWrapper> {
                     inner: T,
                     started: bool,

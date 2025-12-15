@@ -1,6 +1,7 @@
 mod compute_plane;
 mod control_plane;
 mod data_plane;
+mod included_dirs;
 
 use std::env;
 use control_plane::modes;

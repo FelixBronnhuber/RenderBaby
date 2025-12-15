@@ -1,22 +1,31 @@
+use std::path::PathBuf;
+use eframe::emath::Vec2;
+use crate::control_plane::modes::gui::screens::scene::SceneScreen;
 use crate::control_plane::modes::gui::screens::Screen;
 
 pub struct StartScreen {
     show_template_dialog: bool,
+    templates: Vec<PathBuf>,
 }
 
 impl StartScreen {
     pub(crate) fn new() -> Self {
+        let templates = vec![];
+
         Self {
             show_template_dialog: false,
+            templates,
         }
     }
 }
 
 impl StartScreen {
-    fn template_dialog(&mut self, ctx: &egui::Context) {
+    fn template_dialog(&mut self, ctx: &egui::Context) -> Option<Box<dyn Screen>> {
         if !self.show_template_dialog {
-            return;
+            return None;
         }
+
+        let mut res: Option<Box<dyn Screen>> = None;
 
         egui::Window::new("Choose Template")
             .collapsible(false)
@@ -27,10 +36,11 @@ impl StartScreen {
 
                 ui.add_space(10.0);
 
-                for template in ["Basic", "Outdoor", "Studio", "Custom"] {
+                for template in ["ferris", "cube"] {
                     if ui.button(template).clicked() {
-                        // you handle template selection
                         self.show_template_dialog = false;
+                        println!("Selected template: {}", template);
+                        res = Some(Box::new(SceneScreen::new()));
                     }
                 }
 
@@ -40,42 +50,43 @@ impl StartScreen {
                     self.show_template_dialog = false;
                 }
             });
+        res
     }
 }
 
 impl Screen for StartScreen {
+    fn default_size(&self) -> Vec2 {
+        Vec2::new(440.0, 265.0)
+    }
+
+    fn resizable(&self) -> bool {
+        false
+    }
+
     fn update(
         &mut self,
         ctx: &egui::Context,
         _frame: &mut eframe::Frame,
     ) -> Option<Box<dyn Screen>> {
-        //frame.set_window_size(egui::vec2(600.0, 300.0));
-        //frame.set_resizable(false);
-
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
-                ui.add_space(40.0);
+                ui.vertical_centered_justified(|ui| {
+                    ui.spacing_mut().item_spacing.y = 5.0;
 
-                ui.heading("Start");
-                ui.add_space(30.0);
-
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 20.0;
-
-                    let button_size = egui::vec2(160.0, 80.0);
+                    let button_size = egui::vec2(400.0, 80.0);
 
                     if ui
                         .add_sized(button_size, egui::Button::new("Import Scene"))
                         .clicked()
                     {
-                        // you handle logic
+                        //
                     }
 
                     if ui
                         .add_sized(button_size, egui::Button::new("Empty Scene"))
                         .clicked()
                     {
-                        // you handle logic
+                        //
                     }
 
                     if ui
@@ -88,7 +99,6 @@ impl Screen for StartScreen {
             });
         });
 
-        self.template_dialog(ctx);
-        None
+        self.template_dialog(ctx)
     }
 }

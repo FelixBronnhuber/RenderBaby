@@ -4,6 +4,7 @@ use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::ImageArea;
 use eframe_elements::message_popup::MessagePopupPipe;
 use crate::control_plane::modes::gui::screens::Screen;
+use crate::control_plane::modes::gui::screens::start::StartScreen;
 
 #[allow(dead_code)]
 pub struct SceneScreen {
@@ -57,11 +58,20 @@ impl SceneScreen {
 }
 
 impl Screen for SceneScreen {
+    fn default_size(&self) -> egui::Vec2 {
+        egui::Vec2::new(1200.0, 800.0)
+    }
+
     fn update(
         &mut self,
         ctx: &egui::Context,
         _frame: &mut eframe::Frame,
     ) -> Option<Box<dyn Screen>> {
+        if ctx.input(|i| i.viewport().close_requested()) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            return Some(Box::new(StartScreen::new()));
+        }
+
         // TODO: set image_area image
 
         self.message_popup_pipe.show_last(ctx);
