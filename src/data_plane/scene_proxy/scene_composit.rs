@@ -19,8 +19,11 @@ impl SceneComposit {
     }
     pub(crate) fn update_real(&mut self) -> Result<(), Error> {
         self.update_real_name()?;
-        self.update_real_background_color()?;
         self.update_real_objects()?;
+        self.update_real_camera()?;
+        self.update_real_lights()?;
+        self.update_real_background_color()?;
+        self.update_real_misc()?;
         Ok(())
     }
 
@@ -53,17 +56,13 @@ impl SceneComposit {
         for i in 0..real_objects.len() {}
         todo!()
     }
-    /*     fn update_real_paths(&mut self) -> Result<(), Error> {
-        for object in &self.proxy_scene.objects {}
+    fn update_real_camera(&mut self) -> Result<(), Error> {
         todo!()
     }
-    fn update_real_scales(&mut self) -> Result<(), Error> {
+    fn update_real_lights(&mut self) -> Result<(), Error> {
         todo!()
     }
-    fn update_real_rotations(&mut self) -> Result<(), Error> {
+    fn update_real_misc(&mut self) -> Result<(), Error> {
         todo!()
     }
-    fn update_real_translations(&mut self) -> Result<(), Error> {
-        todo!()
-    } */
 }
