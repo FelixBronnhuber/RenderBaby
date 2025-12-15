@@ -1,3 +1,4 @@
+use scene_objects::camera::Camera;
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::{
@@ -34,6 +35,19 @@ impl ProxyScene {
             lights,
             background_color: scene.get_background_color(),
             misc: vec![scene.get_camera().get_ray_samples()],
+        }
+    }
+}
+
+impl Default for ProxyScene {
+    fn default() -> Self {
+        Self {
+            scene_name: "scene".to_owned(),
+            camera: ProxyCamera::new_from_real_camera(&Camera::default()),
+            objects: vec![],
+            lights: vec![],
+            background_color: [0.0, 0.0, 0.0],
+            misc: vec![],
         }
     }
 }
