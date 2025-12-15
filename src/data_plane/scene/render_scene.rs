@@ -19,7 +19,7 @@ use crate::{
     data_plane::{
         scene::scene_graph::SceneGraph,
         scene_io::{img_export::export_img_png, obj_parser::OBJParser, scene_parser::parse_scene},
-        scene_proxy::{proxy_camera::ProxyCamera, proxy_scene::ProxyScene},
+        scene_proxy::proxy_scene::ProxyScene,
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
