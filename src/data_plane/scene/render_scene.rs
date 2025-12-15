@@ -130,13 +130,14 @@ impl Scene {
                 let mut tri = TriGeometry::new(trianglevector);
                 tri.set_name(objs.name);
                 self.add_tri_geometry(tri.clone());
-                Result::Ok(tri)
+                return Result::Ok(tri);
             }
             Err(error) => {
                 error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
-                Err(error.into())
+                return Err(error.into());
             }
         }
+        self.update_proxy();
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
@@ -229,47 +230,6 @@ impl Scene {
         res
     }
 
-    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
-        //! ## Paramter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of new Scene from deserialized scene
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized =serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {Ok(scene)},
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn update_from_json(&mut self, json_data: &str) -> Result<(), Error> {
-        //! ## Parameter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of () or Error
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized = serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {
-                *self = scene;
-                Ok(())
-            },
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn as_json(&self) -> Result<String, Error> {
-        //! ## Returns:
-        //! JSON serialization
-        let s = serde_json::to_string(&self);
-        match s {
-            Ok(data) => Ok(data),
-            Err(error) => Err(Error::msg(format!(
-                "Error: Failed to serialize {self}: {error}"
-            ))),
-        }
-    }
-
     pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
         //! adds an object to the scene
         //! ## Arguments
@@ -277,6 +237,7 @@ impl Scene {
         //!
         info!("{self}: adding TriGeometry {:?}", tri.get_name());
         self.scene_graph.add_tri_geometry(tri);
+        self.update_proxy();
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
@@ -284,6 +245,7 @@ impl Scene {
         //! 'sphere': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", sphere);
         self.scene_graph.add_sphere(sphere);
+        self.update_proxy();
     }
     pub fn add_mesh(&mut self, mesh: Mesh) {
         //! adds an object to the scene
@@ -291,6 +253,7 @@ impl Scene {
         //! 'mesh': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", mesh);
         self.scene_graph.add_mesh(mesh);
+        self.update_proxy();
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
@@ -299,16 +262,18 @@ impl Scene {
         //! 'light': LightSource that is to be added
         info!("{self}: adding LightSource {light}");
         self.scene_graph.add_lightsource(light);
+        self.update_proxy();
     }
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
+        self.update_proxy();
     }
 
     pub fn clear_polygons(&mut self) {
         self.scene_graph.clear_tri_geometries();
+        self.update_proxy();
     }
-
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
         //! ## Arguments
