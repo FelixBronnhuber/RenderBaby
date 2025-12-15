@@ -1,7 +1,8 @@
-mod color;
-mod position;
-mod proxy_camera;
-mod proxy_light;
-mod proxy_mesh;
-pub(super) mod proxy_scene;
-pub(super) mod scene_composit;
+pub mod color;
+pub mod position;
+pub mod proxy_camera;
+pub mod proxy_light;
+pub mod proxy_mesh;
+pub mod proxy_scene;
+pub mod scene_composit;
+pub mod util;

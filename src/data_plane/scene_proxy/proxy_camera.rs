@@ -29,3 +29,15 @@ impl ProxyCamera {
         }
     }
 }
+
+impl PartialEq<Camera> for ProxyCamera {
+    fn eq(&self, other: &Camera) -> bool {
+        self.position == other.get_position()
+            && self.pane_distance == other.pane_distance
+            && self.pane_width == other.pane_width
+            && self.resolution[0] == other.get_resolution().width
+            && self.resolution[1] == other.get_resolution().height
+            && self.look_at == other.look_at
+            && self.up == other.up
+    }
+}

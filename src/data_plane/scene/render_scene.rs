@@ -18,7 +18,8 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png},
+        scene_io::{img_export::export_img_png, obj_parser::OBJParser, scene_parser::parse_scene},
+        scene_proxy::{proxy_camera::ProxyCamera, proxy_scene::ProxyScene},
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
@@ -38,6 +39,7 @@ pub struct Scene {
     #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
+    proxy_scene: ProxyScene,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -197,7 +199,7 @@ impl Scene {
             [position.x, position.y, position.z],
             rotation,
         );
-        Self {
+        let mut res = Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
@@ -221,7 +223,10 @@ impl Scene {
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-        } // todo: allow name and color as param
+            proxy_scene: ProxyScene::default(),
+        };
+        res.update_proxy();
+        res
     }
 
     pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
@@ -415,6 +420,61 @@ impl Scene {
 
         info!("{self}: Saved image to {:?}", path);
         export_img_png(path, render)
+    }
+
+    //proxy updates
+    pub(crate) fn update_proxy(&mut self) -> Result<(), Error> {
+        self.proxy_scene = ProxyScene::new_from_real_scene(self);
+        Ok(())
+    }
+    pub(crate) fn update_real(&mut self) -> Result<(), Error> {
+        self.update_real_name()?;
+        self.update_real_objects()?;
+        self.update_real_camera()?;
+        self.update_real_lights()?;
+        self.update_real_background_color()?;
+        self.update_real_misc()?;
+        Ok(())
+    }
+
+    fn update_real_name(&mut self) -> Result<(), Error> {
+        if &self.proxy_scene.scene_name != self.get_name() {
+            info!("{}:Changing name to  {}", self, self.proxy_scene.scene_name);
+            self.name = self.proxy_scene.scene_name.clone();
+        }
+        Ok(())
+    }
+
+    fn update_real_background_color(&mut self) -> Result<(), Error> {
+        let c0 = &self.proxy_scene.background_color;
+        let c1 = self.get_background_color();
+
+        if *c0 == c1 {
+            info!(
+                "{}: Changing Background color to {:?}",
+                self, self.proxy_scene.background_color
+            );
+            self.background_color = [c0.r, c0.g, c0.b];
+        }
+        Ok(())
+    }
+    fn update_real_objects(&mut self) -> Result<(), Error> {
+        let mut real_objects = self.get_tri_geometries();
+        let proxy_objects = &self.proxy_scene.objects;
+        for i in 0..real_objects.len() {}
+        todo!()
+    }
+    fn update_real_camera(&mut self) -> Result<(), Error> {
+        if self.proxy_scene.camera == *self.get_camera() {
+            //self.proxy_scene.camera = ProxyCamera::new_from_real_camera(self.get_camera());
+        }
+        Ok(())
+    }
+    fn update_real_lights(&mut self) -> Result<(), Error> {
+        todo!()
+    }
+    fn update_real_misc(&mut self) -> Result<(), Error> {
+        todo!()
     }
 }
 

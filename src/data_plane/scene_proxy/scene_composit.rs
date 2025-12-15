@@ -40,13 +40,15 @@ impl SceneComposit {
     }
 
     fn update_real_background_color(&mut self) -> Result<(), Error> {
-        if self.proxy_scene.background_color != self.real_scene.get_background_color() {
+        let c0 = &self.proxy_scene.background_color;
+        let c1 = self.real_scene.get_background_color();
+
+        if c0.r != c1[0] || c0.g != c1[1] || c0.g != c1[2] {
             info!(
                 "{}: Changing Background color to {:?}",
                 self.real_scene, self.proxy_scene.background_color
             );
-            self.real_scene
-                .set_background_color(self.proxy_scene.background_color);
+            self.real_scene.set_background_color([c0.r, c0.g, c0.b]);
         }
         Ok(())
     }
@@ -64,11 +66,5 @@ impl SceneComposit {
     }
     fn update_real_misc(&mut self) -> Result<(), Error> {
         todo!()
-    }
-
-    pub fn load_obj(&mut self, path: String) -> Result<(), Error> {
-        self.real_scene.load_object_from_file(path.into())?;
-        self.update_proxy()?;
-        Ok(())
     }
 }
