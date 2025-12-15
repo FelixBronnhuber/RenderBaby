@@ -8,6 +8,7 @@ pub(crate) struct ProxyLight {
     pub luminosity: f32,
     pub name: String,
     pub color: Color,
+    #[serde(rename = "type")]
     pub light_type: String,
     // todo: 'type' is a rust keyword! rename in serialization
     pub rotation: Vec3d,
