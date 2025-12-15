@@ -392,7 +392,7 @@ impl Scene {
         self.proxy_scene = ProxyScene::new_from_real_scene(self);
         Ok(())
     }
-    pub(crate) fn update_real(&mut self) -> Result<(), Error> {
+    pub(crate) fn update_from_proxy(&mut self) -> Result<(), Error> {
         self.update_real_name()?;
         self.update_real_objects()?;
         self.update_real_camera()?;

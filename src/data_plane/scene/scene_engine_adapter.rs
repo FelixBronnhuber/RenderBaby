@@ -138,6 +138,7 @@ impl Scene {
         //! calls the render engine for the scene self.
         //! ## Returns
         //! Result of either the RenderOutput or a error
+        let _ = self.update_from_proxy();
         info!("{self}: Render has been called. Collecting render parameters");
 
         let render_spheres = self.get_render_spheres();
