@@ -18,7 +18,8 @@ pub struct Mesh {
     #[serde(skip_serializing)]
     tris: Vec<u32>,
     #[serde(skip_serializing)]
-    materials: Vec<Material>,
+    materials: Option<Vec<Material>>,
+    material_index: Option<Vec<usize>>,
     path: Option<String>,
     name: String,
     scale: Vec3,
@@ -34,7 +35,10 @@ impl Mesh {
     pub fn new(
         vertices: Vec<f32>,
         tris: Vec<u32>,
-        materials: Vec<Material>,
+        materials: Option<Vec<Material>>,
+        material_index: Option<Vec<usize>>,
+        name: Option<String>,
+        path: Option<String>,
     ) -> Result<Self, Error> {
         //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
@@ -42,8 +46,9 @@ impl Mesh {
                 vertices,
                 tris,
                 materials,
+                material_index,
                 path: None,
-                name: "new mash".to_owned(),
+                name: name.unwrap_or("unnamed mesh".to_owned()),
                 scale: Vec3::new(1.0, 1.0, 1.0),
                 rotation: Vec3::default(),
                 translation: Vec3::default(),

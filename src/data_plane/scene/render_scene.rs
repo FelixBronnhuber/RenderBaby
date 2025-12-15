@@ -13,7 +13,7 @@ use scene_objects::{
 };
 use scene_objects::tri_geometry::Triangle;
 use serde::Serialize;
-
+use scene_objects::geometric_object::GeometricObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
@@ -52,7 +52,7 @@ impl Scene {
         info!("Scene: Loading new scene from {path_str}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -82,7 +82,7 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: mtl file at {i} could not be parsed");
+                                info!("{self}: Parsing mtl from {i} resulted in error: {error}" );
                             }
                         }
                     }
@@ -92,47 +92,29 @@ impl Scene {
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
                 let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
-                objs.faces.len();
+
+                let mut tris = Vec::with_capacity(100);
+                let mut material_index = Vec::with_capacity(10);
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        let triangle = vec![
-                            Vec3::new(
-                                objs.vertices[((vs.0 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.1 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.2 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                        ];
-
-                        let material_name = face.material_name.clone();
-                        if let Some(material) =
-                            material_list.iter().find(|a| a.name == material_name)
-                        {
-                            trianglevector.push(Triangle::new(triangle, Some(material.clone())));
-                        } else {
-                            trianglevector.push(Triangle::new(triangle, None));
-                        };
+                        tris.push(0u32);
+                        tris.push(i as u32);
+                        tris.push((i + 1) as u32);
+                        if let Some(m) = material_list.iter().position(|x| x.name == face.material_name.clone()) {
+                            material_index.push(m);
+                        }
                     }
+
                 }
-                let mut tri = TriGeometry::new(trianglevector);
-                tri.set_name(objs.name);
-                self.add_tri_geometry(tri.clone());
-                Result::Ok(tri)
+                let mesh = Mesh::new(objs.vertices, tris, Some(material_list),Some(material_index), Some(objs.name), Some(path.to_string_lossy().to_string()))?;
+                info!("Scene {self}: Successfully loaded object from {path_str}");
+                Result::Ok(mesh)
             }
-            Err(error) => {
-                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
-                Err(error.into())
+
+                Err(error) => {
+            error ! ("{self}: Parsing obj from {path_str} resulted in error: {error}");
+            Err(error.into())
             }
         }
     }

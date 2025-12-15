@@ -59,7 +59,9 @@ impl OBJParser {
     #[allow(dead_code)]
     pub fn parse(path: PathBuf) -> Result<OBJParser, OBJParseError> {
         let path_clone = path.clone();
-        let data = fs::read_to_string(path_clone)?;
+        let data = fs::read_to_string(path_clone.clone())?;
+        let mut directory_path = path_clone;
+        directory_path.pop();
         if data.is_empty() {
             return Err(OBJParseError::FileRead("empty file".to_string()));
         }
@@ -130,7 +132,7 @@ impl OBJParser {
                     currentmaterial = usemtl.trim().to_string();
                 }
                 Some(("mtllib", mtllib)) => {
-                    mtl_path.push(path.join(mtllib.trim()).to_string_lossy().to_string())
+                    mtl_path.push(directory_path.join(mtllib.trim()).to_string_lossy().to_string())
                 }
 
                 _ => {}

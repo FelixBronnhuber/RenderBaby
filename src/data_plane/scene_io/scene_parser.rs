@@ -230,8 +230,8 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<Scene> {
             scene_path.display()
         )));
     }
-    let _json_content = fs::read_to_string(scene_path);
-    // let read = serde_json::from_str::<SceneFile>(&json_content).unwrap();
+    let _json_content = fs::read_to_string(scene_path).unwrap();
+    let read = serde_json::from_str::<SceneFile>(&_json_content).unwrap();
     // transform_to_scene(read)
     todo!("Fix serde_json");
 }
