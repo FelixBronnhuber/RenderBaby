@@ -6,12 +6,12 @@ use crate::data_plane::scene_proxy::position::Vec3d;
 #[derive(Serialize, Deserialize, Clone)]
 #[allow(unused)]
 pub(crate) struct ProxyCamera {
-    position: Vec3d,
-    pane_distance: f32,
-    pane_width: f32,
-    resolution: [u32; 2],
-    look_at: Vec3d,
-    up: Vec3d,
+    pub position: Vec3d,
+    pub pane_distance: f32,
+    pub pane_width: f32,
+    pub resolution: [u32; 2],
+    pub look_at: Vec3d,
+    pub up: Vec3d,
 }
 
 impl ProxyCamera {

@@ -39,7 +39,7 @@ pub struct Scene {
     #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
-    proxy_scene: ProxyScene,
+    pub proxy_scene: ProxyScene,
 }
 impl Default for Scene {
     fn default() -> Self {
