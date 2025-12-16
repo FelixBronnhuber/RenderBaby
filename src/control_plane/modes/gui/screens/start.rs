@@ -1,7 +1,8 @@
-use std::path::PathBuf;
 use eframe::emath::Vec2;
+use include_dir::File;
 use log::info;
 use rfd::FileDialog;
+use eframe_elements::effects::{Effect, FillEffect};
 use eframe_elements::message_popup::{Message, MessagePopupPipe};
 use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::scene::SceneScreen;
@@ -9,17 +10,24 @@ use crate::control_plane::modes::gui::screens::Screen;
 
 pub struct StartScreen {
     show_template_dialog: bool,
-    templates: Vec<PathBuf>,
+    fill_effect: FillEffect,
+    templates: Vec<&'static File<'static>>,
     message_popup_pipe: MessagePopupPipe,
     file_dialog_scene: FileDialog,
 }
 
 impl StartScreen {
     pub(crate) fn new() -> Self {
-        let templates = vec![PathBuf::from("ferris"), PathBuf::from("cube")];
+        let templates = crate::included_files::list_scene_templates();
 
         Self {
             show_template_dialog: false,
+            fill_effect: FillEffect::new(
+                egui::Id::new("template_dialog_overlay_effect"),
+                egui::Color32::from_rgba_unmultiplied(0, 0, 0, 60),
+                false,
+                None,
+            ),
             templates,
             message_popup_pipe: MessagePopupPipe::new(),
             file_dialog_scene: FileDialog::new().add_filter("JSON", &["json"]),
@@ -33,33 +41,43 @@ impl StartScreen {
             return None;
         }
 
+        self.fill_effect.update(ctx);
+
         let mut next_screen: Option<Box<dyn Screen>> = None;
+
+        let max_height = ctx.available_rect().height() * 0.8;
 
         egui::Window::new("Choose Template")
             .collapsible(false)
             .resizable(false)
+            .default_width(230.0)
             .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
             .show(ctx, |ui| {
-                ui.label("Select a template:");
-
-                ui.add_space(10.0);
-
-                for template in self.templates.iter() {
-                    let name = template.file_name().unwrap().to_str().unwrap();
-                    if ui.button(name).clicked() {
-                        self.show_template_dialog = false;
-                        info!("Selected template: {}", name);
-                        match Model::new_from_template(PathBuf::from(template)) {
-                            Ok(model) => {
-                                next_screen = Some(Box::new(SceneScreen::new(model)));
-                            }
-                            Err(err) => {
-                                self.message_popup_pipe
-                                    .push_message(Message::from_error(err));
+                egui::ScrollArea::vertical()
+                    .max_height(max_height - 85.0)
+                    .auto_shrink([false; 2])
+                    .show(ui, |ui| {
+                        for template in self.templates.iter() {
+                            let path = template.path();
+                            let name = path.file_name().unwrap().to_str().unwrap();
+                            if ui
+                                .add_sized([ui.available_width(), 30.0], egui::Button::new(name))
+                                .clicked()
+                            {
+                                self.show_template_dialog = false;
+                                info!("Selected template: {}", name);
+                                match Model::new_from_template(template) {
+                                    Ok(model) => {
+                                        next_screen = Some(Box::new(SceneScreen::new(model)));
+                                    }
+                                    Err(err) => {
+                                        self.message_popup_pipe
+                                            .push_message(Message::from_error(err));
+                                    }
+                                }
                             }
                         }
-                    }
-                }
+                    });
 
                 ui.separator();
 

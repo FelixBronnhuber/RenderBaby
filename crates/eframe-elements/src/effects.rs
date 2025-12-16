@@ -16,7 +16,7 @@ pub struct FillEffect {
 }
 
 impl FillEffect {
-    pub(crate) fn new(
+    pub fn new(
         id: Id,
         rgba: Color32,
         click_through: bool,
@@ -35,15 +35,10 @@ impl FillEffect {
         Area::new(self.id.id)
             .order(Order::Middle)
             .fixed_pos(rect.min)
+            .interactable(self.click_through)
             .show(ctx, |ui| {
                 ui.set_min_size(rect.size());
-
-                if !self.click_through {
-                    ui.allocate_rect(rect, Sense::click_and_drag());
-                }
-
                 ui.painter().rect_filled(rect, 0.0, self.rgba);
-
                 if let Some(extra) = self.additional_fn.as_mut() {
                     extra(ui, rect);
                 }

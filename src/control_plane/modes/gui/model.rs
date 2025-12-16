@@ -1,9 +1,10 @@
 use std::path::PathBuf;
+use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 
 #[allow(dead_code)]
 pub struct Model {
-    pub scene: Scene,
+    scene: Scene,
 }
 
 #[allow(dead_code)]
@@ -15,7 +16,7 @@ impl Model {
         }
     }
 
-    pub fn new_from_template(_path: PathBuf) -> anyhow::Result<Self> {
+    pub fn new_from_template(_file: &'static File<'static>) -> anyhow::Result<Self> {
         todo!()
     }
 
@@ -25,15 +26,29 @@ impl Model {
         }
     }
 
-    pub fn set_path(_path: PathBuf) -> anyhow::Result<()> {
+    pub fn set_output_path(_path: PathBuf) -> anyhow::Result<()> {
         // ask scene to change the output path. This would require the destination not to already exist
-        Ok(())
+        todo!()
     }
 
     pub fn save() -> anyhow::Result<()> {
         // throws an error if an output path isn't set
-        Ok(())
+        todo!()
     }
 
-    pub fn render(&self) {}
+    pub fn render(&self) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    pub fn scene_config_guard(&self) -> &mut String {
+        todo!()
+    }
+
+    pub fn render_config_guard(&self) -> &mut String {
+        todo!()
+    }
+
+    pub fn frame_buffer_ref(&self) -> &String {
+        todo!()
+    }
 }
