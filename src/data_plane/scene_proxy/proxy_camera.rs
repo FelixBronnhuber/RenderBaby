@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data_plane::scene_proxy::position::Vec3d;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[allow(unused)]
 pub(crate) struct ProxyCamera {
     pub position: Vec3d,

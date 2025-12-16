@@ -389,16 +389,17 @@ impl Scene {
 
     //proxy updates
     pub(crate) fn update_proxy(&mut self) -> Result<(), Error> {
+        info!("{self}: updating proxy");
         self.proxy_scene = ProxyScene::new_from_real_scene(self);
         Ok(())
     }
     pub(crate) fn update_from_proxy(&mut self) -> Result<(), Error> {
         self.update_real_name()?;
-        self.update_real_objects()?;
+        //self.update_real_objects()?;
         self.update_real_camera()?;
-        self.update_real_lights()?;
+        //self.update_real_lights()?;
         self.update_real_background_color()?;
-        self.update_real_misc()?;
+        //self.update_real_misc()?;
         Ok(())
     }
 
@@ -431,6 +432,7 @@ impl Scene {
     }
     fn update_real_camera(&mut self) -> Result<(), Error> {
         if self.proxy_scene.camera == *self.get_camera() {
+            info!("{self}: Updating camera to {:?}", self.proxy_scene.camera);
             self.set_camera(self.proxy_scene.camera.clone().into());
         }
         Ok(())
