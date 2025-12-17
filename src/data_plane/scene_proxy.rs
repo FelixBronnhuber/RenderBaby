@@ -1,4 +1,5 @@
 pub mod color;
+pub mod misc;
 pub mod position;
 pub mod proxy_camera;
 pub mod proxy_light;
@@ -13,16 +14,22 @@ mod tests {
 
     use crate::data_plane::{scene::render_scene::Scene, scene_proxy::position::Vec3d};
     #[test]
-    fn basic_test() {
+    fn basic_proxy_test() {
         let mut scene = Scene::new();
         let camera_pos = scene.get_camera().get_position();
+        let diff = Vec3::new(1.0, 1.0, 1.0);
         scene.proxy_scene.camera.position = Vec3d {
-            x: scene.proxy_scene.camera.position.x + 1.0,
-            y: scene.proxy_scene.camera.position.y + 1.0,
-            z: scene.proxy_scene.camera.position.z + 1.0,
+            x: scene.proxy_scene.camera.position.x + diff.x,
+            y: scene.proxy_scene.camera.position.y + diff.y,
+            z: scene.proxy_scene.camera.position.z + diff.z,
         };
-        let _ = scene.update_from_proxy();
-        let diff = scene.get_camera().get_position() - camera_pos;
-        assert_eq!(diff, Vec3::new(1.0, 1.0, 1.0));
+        if scene.update_from_proxy().is_ok() {
+            assert_eq!(scene.get_camera().get_position() - camera_pos, diff);
+        } else {
+            panic!("Scene: Update from proxy failed")
+        }
     }
+
+    #[test]
+    fn object_test() {}
 }
