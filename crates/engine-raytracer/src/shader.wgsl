@@ -34,9 +34,22 @@ struct Uniforms {
 struct Sphere {
     center: vec3<f32>,
     radius: f32,
-    color: vec3<f32>,
-    _pad: u32,
+    material: Material,
 };
+
+struct Material {
+    ambient: vec3<f32>,
+    _pad0: f32,
+    diffuse: vec3<f32>,
+    _pad1: f32,
+    specular: vec3<f32>,
+    shininess: f32,
+    emissive: vec3<f32>,
+    ior: f32,
+    opacity: f32,
+    illum: u32,
+    _pad2: vec2<u32>,
+}
 
 struct HitRecord {
     hit: bool,
@@ -259,7 +272,7 @@ fn trace_ray(
                 closest_hit.t      = t;
                 closest_hit.pos  = origin + t * direction;
                 closest_hit.normal = normalize(closest_hit.pos - sphere.center);
-                closest_hit.color  = sphere.color;
+                closest_hit.color  = sphere.material.diffuse;
             }
         }
 
