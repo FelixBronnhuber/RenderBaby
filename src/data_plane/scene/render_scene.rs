@@ -431,7 +431,7 @@ impl Scene {
         todo!()
     }
     fn update_real_camera(&mut self) -> Result<(), Error> {
-        if self.proxy_scene.camera == *self.get_camera() {
+        if self.proxy_scene.camera != *self.get_camera() {
             info!("{self}: Updating camera to {:?}", self.proxy_scene.camera);
             self.set_camera(self.proxy_scene.camera.clone().into());
         }
