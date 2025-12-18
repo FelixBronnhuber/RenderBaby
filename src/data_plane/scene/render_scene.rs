@@ -215,6 +215,7 @@ impl Scene {
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])
+                    .meshes_create(vec![])
                     .build(),
                 RenderEngine::Raytracer,
             )),

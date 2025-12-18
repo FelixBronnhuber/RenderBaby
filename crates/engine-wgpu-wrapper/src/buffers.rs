@@ -1,4 +1,4 @@
-use engine_config::{RenderConfig, Uniforms, Sphere};
+use engine_config::{Mesh, RenderConfig, Sphere, Uniforms};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
@@ -11,6 +11,7 @@ pub struct GpuBuffers {
     pub staging: Buffer,
     pub vertices: Buffer,
     pub triangles: Buffer,
+    pub meshes: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
 }
@@ -33,6 +34,10 @@ impl GpuBuffers {
             Change::Create(t) => t.as_slice(),
             _ => panic!("Triangles must be Create during initialization"),
         };
+        let meshes = match &rc.meshes {
+            Change::Create(t) => t.as_slice(),
+            _ => panic!("Meshes must be Create during initialization"),
+        };
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
 
@@ -51,6 +56,7 @@ impl GpuBuffers {
             staging: Self::create_staging_buffer(device, size),
             vertices: Self::create_storage_buffer(device, "Vertices Buffer", vertices),
             triangles: Self::create_storage_buffer(device, "Triangles Buffer", triangles),
+            meshes: Self::create_storage_buffer(device, "Meshes Buffer", meshes),
             accumulation: accumulation_buffer,
             progressive_render: Self::create_uniform_buffer(
                 device,
@@ -81,6 +87,10 @@ impl GpuBuffers {
 
     pub fn grow_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn grow_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
+        self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
 
     fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
@@ -144,6 +154,10 @@ impl GpuBuffers {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
     }
 
+    pub fn init_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
+        self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    }
+
     // Update methods for existing buffers
     pub fn update_uniforms(&mut self, device: &Device, uniforms: &Uniforms) {
         self.uniforms = Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms);
@@ -159,6 +173,10 @@ impl GpuBuffers {
 
     pub fn update_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn update_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
+        self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
 
     // Delete methods (create minimal empty buffers)
@@ -181,5 +199,10 @@ impl GpuBuffers {
     pub fn delete_triangles(&mut self, device: &Device) {
         self.triangles =
             Self::create_storage_buffer(device, "Triangles Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_meshes(&mut self, device: &Device) {
+        self.meshes =
+            Self::create_storage_buffer(device, "Meshes Buffer (deleted)", &[] as &[Mesh]);
     }
 }

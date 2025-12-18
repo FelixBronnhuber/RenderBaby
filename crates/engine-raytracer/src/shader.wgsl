@@ -37,6 +37,13 @@ struct Sphere {
     material: Material,
 };
 
+struct Mesh {
+    triangle_index_start: u32,
+    triangle_count: u32,
+    _pad: vec2<u32>,
+    material: Material,
+}
+
 struct Material {
     ambient: vec3<f32>,
     _pad0: f32,
@@ -64,8 +71,9 @@ struct HitRecord {
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 @group(0) @binding(3) var<storage, read> vertices: array<f32>;
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
-@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
-@group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
+@group(0) @binding(5) var<storage, read> meshes: array<Mesh>;
+@group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
+@group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -229,35 +237,40 @@ fn trace_ray(
         }
 
         // Triangles
-        for (var k = 0u; k < uniforms.triangles_count; k = k + 1u) {
-            let v0_idx = triangles[k * 3u + 0u];
-            let v1_idx = triangles[k * 3u + 1u];
-            let v2_idx = triangles[k * 3u + 2u];
-
-            let v0 = vec3<f32>(vertices[v0_idx * 3u + 0u],
-                               vertices[v0_idx * 3u + 1u],
-                               vertices[v0_idx * 3u + 2u]);
-
-            let v1 = vec3<f32>(vertices[v1_idx * 3u + 0u],
-                               vertices[v1_idx * 3u + 1u],
-                               vertices[v1_idx * 3u + 2u]);
-
-            let v2 = vec3<f32>(vertices[v2_idx * 3u + 0u],
-                               vertices[v2_idx * 3u + 1u],
-                               vertices[v2_idx * 3u + 2u]);
-
-            let tri = TriangleData(v0, v1, v2, 0u);
-            let t   = intersect_triangle(origin, direction, tri);
-
-            if (t > 0.001 && t < closest_hit.t) {
-                closest_hit.hit    = true;
-                closest_hit.t      = t;
-                closest_hit.pos  = origin + t * direction;
-                closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
-                if (uniforms.color_hash_enabled != 0u) {
-                    closest_hit.color  = hash_to_color(k + 1u);
-                } else {
-                    closest_hit.color  = vec3<f32>(0.3, 0.3, 0.3);
+        for (var mesh_idx = 0u; mesh_idx < arrayLength(&meshes); mesh_idx = mesh_idx + 1u) {
+            let mesh = meshes[mesh_idx];
+            let tri_start = mesh.triangle_index_start;
+            let tri_end = tri_start + mesh.triangle_count;
+            
+            for (var k = tri_start; k < tri_end; k = k + 1u) {
+                let v0_idx = triangles[k * 3u + 0u];
+                let v1_idx = triangles[k * 3u + 1u];
+                let v2_idx = triangles[k * 3u + 2u];
+                
+                let v0 = vec3<f32>(vertices[v0_idx * 3u + 0u],
+                                   vertices[v0_idx * 3u + 1u],
+                                   vertices[v0_idx * 3u + 2u]);
+                let v1 = vec3<f32>(vertices[v1_idx * 3u + 0u],
+                                   vertices[v1_idx * 3u + 1u],
+                                   vertices[v1_idx * 3u + 2u]);
+                let v2 = vec3<f32>(vertices[v2_idx * 3u + 0u],
+                                   vertices[v2_idx * 3u + 1u],
+                                   vertices[v2_idx * 3u + 2u]);
+                
+                let tri = TriangleData(v0, v1, v2, mesh_idx);
+                let t = intersect_triangle(origin, direction, tri);
+                
+                if (t > 0.001 && t < closest_hit.t) {
+                    closest_hit.hit = true;
+                    closest_hit.t = t;
+                    closest_hit.pos = origin + t * direction;
+                    closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
+                    
+                    if (uniforms.color_hash_enabled != 0u) {
+                        closest_hit.color = hash_to_color(k + 1u);
+                    } else {
+                        closest_hit.color = mesh.material.diffuse;
+                    }
                 }
             }
         }
