@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
@@ -48,9 +48,24 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        let mut directory_path = path.clone();
+        directory_path.pop();
         let path_str = path.to_str().unwrap();
         info!("Scene: Loading new scene from {path_str}");
-        parse_scene(path)
+        let scene_and_path = parse_scene(path)?;
+        let mut scene = scene_and_path.0;
+        let mut paths = scene_and_path.1;
+        let mut meshes = Vec::with_capacity(1);
+        let mut pathbuf = Vec::with_capacity(1);
+        paths.iter().for_each(|mut path| {pathbuf.push(directory_path.join(path))});
+        println!("{:?}",pathbuf);
+        for i in pathbuf {
+            meshes.push(scene.load_object_from_file(i)?);
+        }
+        for i in meshes {
+            scene.add_mesh(i);
+        }
+            Ok(scene)
     }
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
@@ -98,14 +113,13 @@ impl Scene {
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        tris.push(0u32);
-                        tris.push(i as u32);
-                        tris.push((i + 1) as u32);
+                        tris.push(*face.v.first().unwrap() as u32);
+                        tris.push(*face.v.get(i).unwrap() as u32);
+                        tris.push(*face.v.get(i + 1).unwrap() as u32);
                         if let Some(m) = material_list.iter().position(|x| x.name == face.material_name.clone()) {
                             material_index.push(m);
                         }
                     }
-
                 }
                 let mesh = Mesh::new(objs.vertices, tris, Some(material_list),Some(material_index), Some(objs.name), Some(path.to_string_lossy().to_string()))?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
