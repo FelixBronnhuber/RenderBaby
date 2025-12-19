@@ -35,7 +35,7 @@ impl ProxyScene {
             camera: ProxyCamera::new_from_real_camera(scene.get_camera()),
             objects,
             lights,
-            background_color: Color::new_from_array(scene.get_background_color()),
+            background_color: scene.get_background_color().into(),
             misc: vec![scene.get_camera().get_ray_samples()],
         }
     }

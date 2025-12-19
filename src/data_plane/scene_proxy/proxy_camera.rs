@@ -17,15 +17,15 @@ pub(crate) struct ProxyCamera {
 impl ProxyCamera {
     pub(crate) fn new_from_real_camera(camera: &Camera) -> Self {
         Self {
-            position: Vec3d::new_from_vec3(camera.get_position()),
+            position: camera.get_position().into(),
             pane_distance: camera.pane_distance,
             pane_width: camera.pane_width,
             resolution: [
                 camera.get_resolution().width,
                 camera.get_resolution().height,
             ],
-            look_at: Vec3d::new_from_vec3(camera.get_look_at()),
-            up: Vec3d::new_from_vec3(camera.up),
+            look_at: camera.get_look_at().into(),
+            up: camera.up.into(),
         }
     }
 }

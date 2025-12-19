@@ -22,9 +22,9 @@ impl ProxyMesh {
                     None => "".to_owned(),
                 }
             },
-            scale: Vec3d::new_from_vec3(mesh.get_scale()),
-            rotation: Vec3d::new_from_vec3(mesh.get_rotation()),
-            translation: Vec3d::new_from_vec3(mesh.get_translation()),
+            scale: mesh.get_scale().into(),
+            rotation: mesh.get_rotation().into(),
+            translation: mesh.get_translation().into(),
         }
     }
 }

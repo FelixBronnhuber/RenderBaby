@@ -17,12 +17,12 @@ pub(crate) struct ProxyLight {
 impl ProxyLight {
     pub(crate) fn new_from_real_light(light: &LightSource) -> Self {
         Self {
-            position: Vec3d::new_from_vec3(light.get_position()),
+            position: light.get_position().into(),
             luminosity: light.get_luminositoy(),
             name: light.get_name().to_string(),
-            color: Color::new_from_array(light.get_color()),
+            color: light.get_color().into(),
             light_type: light.get_light_type().as_string(),
-            rotation: Vec3d::new_from_vec3(light.get_rotation()),
+            rotation: light.get_rotation().into(),
         }
     }
 }
