@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use glam::Vec3;
 use anyhow::Error;
-use serde::Serialize;
 
 use crate::{
     geometric_object::{GeometricObject, SceneObject},
@@ -11,21 +10,16 @@ use crate::{
 
 /// This is where the mesh as an alternative to trigeometry will be implemented
 #[allow(dead_code)]
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Mesh {
-    #[serde(skip_serializing)]
     vertices: Vec<f32>,
-    #[serde(skip_serializing)]
     tris: Vec<u32>,
-    #[serde(skip_serializing)]
     materials: Vec<Material>,
     path: Option<String>,
     name: String,
     scale: Vec3,
-    #[serde(skip_serializing)]
     translation: Vec3,
     rotation: Vec3,
-    #[serde(rename(serialize = "position"))]
     centroid: Vec3,
 }
 

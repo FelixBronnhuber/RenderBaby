@@ -12,7 +12,6 @@ use scene_objects::{
     tri_geometry::TriGeometry,
 };
 use scene_objects::tri_geometry::Triangle;
-use serde::Serialize;
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
@@ -24,18 +23,12 @@ use crate::{
 use crate::data_plane::scene_io::mtl_parser;
 
 /// The scene holds all relevant objects, lightsources, camera
-#[derive(Serialize)]
 pub struct Scene {
-    //#[serde(rename(serialize = "items"))]
-    #[serde(flatten)]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
-    #[serde(skip_serializing)]
     render_engine: Option<Engine>,
-    #[serde(skip_serializing)]
     pub(crate) first_render: bool,
-    #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }

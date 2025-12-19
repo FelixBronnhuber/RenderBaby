@@ -2,7 +2,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 /// Defines light sources for the scene
 #[allow(dead_code)]
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct LightSource {
     pub position: Vec3,
     pub luminosity: f32,
