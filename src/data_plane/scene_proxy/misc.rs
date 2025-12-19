@@ -17,7 +17,7 @@ impl Misc {
         Self {
             ray_samples: scene.get_camera().get_ray_samples(),
             color_hash_enabled: scene.get_color_hash_enabled(),
-            spheres: spheres,
+            spheres,
         }
     }
 }
