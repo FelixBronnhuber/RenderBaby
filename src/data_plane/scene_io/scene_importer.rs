@@ -1,11 +1,12 @@
-use std::collections::HashMap;
 use std::fs;
-use std::fs::File;
-use std::ops::Deref;
 use std::path::PathBuf;
-
+use anyhow::Context;
 use glam::Vec3;
-use scene_objects::{camera, camera::Camera, geometric_object::SceneObject, light_source::{LightSource, LightType}, tri_geometry::TriGeometry};
+use scene_objects::{
+    camera,
+    camera::Camera,
+    light_source::{LightSource, LightType},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::scene::{render_scene::Scene};
@@ -65,7 +66,7 @@ struct Vec3d {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Resolution {
     x: u32,
-    y: u32
+    y: u32,
 }
 
 impl From<Vec3> for Vec3d {
@@ -78,14 +79,14 @@ impl From<Vec3> for Vec3d {
     }
 }
 #[allow(dead_code)]
-fn transform_to_scene(file: SceneFile) -> (Scene, Vec<String>) {
+fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
     let mut scene = Scene::new();
 
     //name
     scene.set_name(file.scene_name);
 
     //lights
-    file.lights.iter().for_each(|light| {
+    for light in file.lights {
         scene.add_lightsource(LightSource::new(
             Vec3::new(light.position.x, light.position.y, light.position.z),
             light.luminosity,
@@ -95,7 +96,7 @@ fn transform_to_scene(file: SceneFile) -> (Scene, Vec<String>) {
                 if light.rotation.is_some() {
                     let rotation = light.rotation.clone().unwrap();
                     Vec3::new(rotation.x, rotation.y, rotation.z)
-                }else {
+                } else {
                     Vec3::new(0.0, 0.0, 0.0)
                 }
             },
@@ -106,25 +107,29 @@ fn transform_to_scene(file: SceneFile) -> (Scene, Vec<String>) {
                 _ => LightType::Ambient,
             },
         ))
-    });
+    }
 
     //camera
     let (fx, fy, fz): (f32, f32, f32) = (
-        file.camera.look_at.x / 3.0 - file.camera.position.x / 3.0,
-        file.camera.look_at.y / 3.0 - file.camera.position.y / 3.0,
-        file.camera.look_at.z / 3.0 - file.camera.position.z / 3.0,
+        file.camera.look_at.x - file.camera.position.x,
+        file.camera.look_at.y - file.camera.position.y,
+        file.camera.look_at.z - file.camera.position.z,
     );
-    let yaw = fx.atan2(fz);
-    let pitch = fy.atan2((fx * fx + fz * fz).sqrt());
+    let length = (fx.powi(2) + fy.powi(2) + fz.powi(2)).sqrt();
     scene.set_camera(Camera::new(
         Vec3::new(
             file.camera.position.x,
             file.camera.position.y,
             file.camera.position.z,
         ),
-        Vec3::new(pitch, yaw, 0.0),
+        Vec3::new(fx / length, fy / length, fz / length),
     ));
-    scene.get_camera_mut().set_resolution(camera::Resolution::new(file.camera.resolution.x,file.camera.resolution.y));
+    scene
+        .get_camera_mut()
+        .set_resolution(camera::Resolution::new(
+            file.camera.resolution.x,
+            file.camera.resolution.y,
+        ));
     let fov_rad = 2.0 * (file.camera.pane_width / (2.0 * file.camera.pane_distance)).atan();
     let fov_deg = fov_rad.to_degrees();
     scene.get_camera_mut().set_fov(fov_deg);
@@ -135,19 +140,23 @@ fn transform_to_scene(file: SceneFile) -> (Scene, Vec<String>) {
         file.background_color.g,
         file.background_color.b,
     ]);
-    let paths = file.objects.iter().map(|o| o.path.clone()).collect::<Vec<String>>();
-    (scene, paths)
+    let paths = file
+        .objects
+        .iter()
+        .map(|o| o.path.clone())
+        .collect::<Vec<String>>();
+    Ok((scene, paths))
 }
 pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> {
-    // TODO: please add proper error handling!!!
     if !scene_path.is_file() {
         return Err(anyhow::Error::msg(format!(
             "File {} does not exist!",
             scene_path.display()
         )));
     }
-    let _json_content = fs::read_to_string(scene_path)?;
-    let read = serde_json::from_str::<SceneFile>(&_json_content)?;
-    let res = transform_to_scene(read);
+    let _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
+    let read = serde_json::from_str::<SceneFile>(&_json_content).context("invalid JSON")?;
+    let res = transform_to_scene(read)
+        .context("JSON content could not be properly transformed into scene")?;
     Result::Ok(res)
 }

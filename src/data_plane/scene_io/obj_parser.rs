@@ -131,9 +131,12 @@ impl OBJParser {
                 Some(("usemtl", usemtl)) => {
                     currentmaterial = usemtl.trim().to_string();
                 }
-                Some(("mtllib", mtllib)) => {
-                    mtl_path.push(directory_path.join(mtllib.trim()).to_string_lossy().to_string())
-                }
+                Some(("mtllib", mtllib)) => mtl_path.push(
+                    directory_path
+                        .join(mtllib.trim())
+                        .to_string_lossy()
+                        .to_string(),
+                ),
 
                 _ => {}
             }

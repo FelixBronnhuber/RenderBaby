@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
-use anyhow::Error;
+use std::path::{PathBuf};
+use anyhow::{Error};
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, error};
@@ -13,12 +13,13 @@ use scene_objects::{
 };
 use scene_objects::tri_geometry::Triangle;
 use serde::Serialize;
-use scene_objects::geometric_object::GeometricObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png},
+        scene_io::{
+            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+        },
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
@@ -52,22 +53,32 @@ impl Scene {
         directory_path.pop();
         let path_str = path.to_str().unwrap();
         info!("Scene: Loading new scene from {path_str}");
-        let scene_and_path = parse_scene(path)?;
-        let mut scene = scene_and_path.0;
-        let mut paths = scene_and_path.1;
-        let mut meshes = Vec::with_capacity(1);
-        let mut pathbuf = Vec::with_capacity(1);
-        paths.iter().for_each(|mut path| {pathbuf.push(directory_path.join(path))});
-        println!("{:?}",pathbuf);
-        for i in pathbuf {
-            meshes.push(scene.load_object_from_file(i)?);
+        let scene_and_path = parse_scene(path.clone());
+        match scene_and_path {
+            Ok(scene_and_path) => {
+                let mut scene = scene_and_path.0;
+                let mut paths = scene_and_path.1;
+                let mut meshes = Vec::with_capacity(1);
+                let mut pathbuf = Vec::with_capacity(1);
+                paths
+                    .iter()
+                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
+                for i in pathbuf {
+                    meshes.push(scene.load_object_from_file(i)?);
+                }
+                for i in meshes {
+                    scene.add_tri_geometry(i);
+                }
+                Ok(scene)
+            }
+            Err(error) => {
+                error!("Scene: Importing Scene resulted in error: {error}");
+                Err(error)
+            }
         }
-        for i in meshes {
-            scene.add_mesh(i);
-        }
-            Ok(scene)
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<Mesh, Error> {
+    //will be removed once Mesh Structure can be used to render
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -97,7 +108,92 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: Parsing mtl from {i} resulted in error: {error}" );
+                                info!("{self}: mtl file at {i} could not be parsed");
+                            }
+                        }
+                    }
+
+                    material_list
+                        .iter()
+                        .for_each(|mat| material_name_list.push(mat.name.clone()));
+                }
+                let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
+                objs.faces.len();
+                for face in objs.faces {
+                    let leng = face.v.len();
+                    for i in 1..(leng - 1) {
+                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
+                        let triangle = vec![
+                            Vec3::new(
+                                objs.vertices[((vs.0 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                            Vec3::new(
+                                objs.vertices[((vs.1 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                            Vec3::new(
+                                objs.vertices[((vs.2 - 1.0) * 3.0) as usize],
+                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize],
+                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize],
+                            ),
+                        ];
+
+                        let material_name = face.material_name.clone();
+                        if let Some(material) =
+                            material_list.iter().find(|a| a.name == material_name)
+                        {
+                            trianglevector.push(Triangle::new(triangle, Some(material.clone())));
+                        } else {
+                            trianglevector.push(Triangle::new(triangle, None));
+                        };
+                    }
+                }
+                let mut tri = TriGeometry::new(trianglevector);
+                tri.set_name(objs.name);
+                self.add_tri_geometry(tri.clone());
+                Result::Ok(tri)
+            }
+            Err(error) => {
+                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                Err(error.into())
+            }
+        }
+    }
+    //will replace load_object_from_file, when Meshes can be used
+    pub fn load_object_from_file2(&mut self, path: PathBuf) -> Result<Mesh, Error> {
+        //! Adds new object from a obj file at path
+        //! ## Parameter
+        //! 'path': Path to the obj file
+        //! ## Returns
+        //! Result of either a reference to the new object or an error
+        let path_str = path.to_str().unwrap();
+        info!("Scene {self}: Loading object from {path_str}");
+        let result = OBJParser::parse(path.clone());
+
+        match result {
+            Ok(objs) => {
+                let mut material_name_list: Vec<String> = Vec::new();
+                let mut material_list: Vec<Material> = Vec::new();
+
+                if let Some(obj) = objs.material_path {
+                    for i in obj {
+                        let parsed = mtl_parser::MTLParser::parse(i.as_str());
+                        match parsed {
+                            Ok(parsed) => parsed.iter().for_each(|mat| {
+                                material_list.push(Material::new(
+                                    mat.name.clone(),
+                                    mat.ka.iter().map(|a| *a as f64).collect(),
+                                    mat.kd.iter().map(|a| *a as f64).collect(),
+                                    mat.ks.iter().map(|a| *a as f64).collect(),
+                                    mat.ns.into(),
+                                    mat.d.into(),
+                                ))
+                            }),
+                            Err(error) => {
+                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
                             }
                         }
                     }
@@ -116,19 +212,29 @@ impl Scene {
                         tris.push(*face.v.first().unwrap() as u32);
                         tris.push(*face.v.get(i).unwrap() as u32);
                         tris.push(*face.v.get(i + 1).unwrap() as u32);
-                        if let Some(m) = material_list.iter().position(|x| x.name == face.material_name.clone()) {
+                        if let Some(m) = material_list
+                            .iter()
+                            .position(|x| x.name == face.material_name.clone())
+                        {
                             material_index.push(m);
                         }
                     }
                 }
-                let mesh = Mesh::new(objs.vertices, tris, Some(material_list),Some(material_index), Some(objs.name), Some(path.to_string_lossy().to_string()))?;
+                let mesh = Mesh::new(
+                    objs.vertices,
+                    tris,
+                    Some(material_list),
+                    Some(material_index),
+                    Some(objs.name),
+                    Some(path.to_string_lossy().to_string()),
+                )?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
                 Result::Ok(mesh)
             }
 
-                Err(error) => {
-            error ! ("{self}: Parsing obj from {path_str} resulted in error: {error}");
-            Err(error.into())
+            Err(error) => {
+                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                Err(error.into())
             }
         }
     }
