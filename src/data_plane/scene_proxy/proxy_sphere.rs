@@ -10,7 +10,6 @@ pub struct ProxySphere {
     pub color: Color,
 }
 #[allow(unused)]
-
 impl ProxySphere {
     pub fn new_from_real_sphere(sphere: &Sphere) -> Self {
         Self {
