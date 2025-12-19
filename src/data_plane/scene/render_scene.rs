@@ -190,7 +190,7 @@ impl Scene {
             [position.x, position.y, position.z],
             rotation,
         );
-        let mut res = Self {
+        Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
@@ -214,8 +214,7 @@ impl Scene {
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-        };
-        res
+        }
     }
 
     pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
