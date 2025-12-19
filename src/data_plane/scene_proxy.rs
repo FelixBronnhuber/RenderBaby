@@ -6,7 +6,6 @@ pub mod proxy_light;
 pub mod proxy_mesh;
 pub mod proxy_scene;
 pub mod proxy_sphere;
-pub mod util;
 
 #[cfg(test)]
 mod tests {
