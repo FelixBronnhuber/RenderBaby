@@ -19,7 +19,6 @@ use crate::{
     data_plane::{
         scene::scene_graph::SceneGraph,
         scene_io::{img_export::export_img_png, obj_parser::OBJParser, scene_parser::parse_scene},
-        scene_proxy::proxy_scene::ProxyScene,
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
@@ -39,7 +38,6 @@ pub struct Scene {
     #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
-    pub proxy_scene: ProxyScene,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -137,7 +135,6 @@ impl Scene {
                 return Err(error.into());
             }
         }
-        self.update_proxy();
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
@@ -224,9 +221,7 @@ impl Scene {
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-            proxy_scene: ProxyScene::default(),
         };
-        res.update_proxy();
         res
     }
 
@@ -237,7 +232,6 @@ impl Scene {
         //!
         info!("{self}: adding TriGeometry {:?}", tri.get_name());
         self.scene_graph.add_tri_geometry(tri);
-        self.update_proxy();
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
@@ -245,7 +239,6 @@ impl Scene {
         //! 'sphere': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", sphere);
         self.scene_graph.add_sphere(sphere);
-        self.update_proxy();
     }
     pub fn add_mesh(&mut self, mesh: Mesh) {
         //! adds an object to the scene
@@ -253,7 +246,6 @@ impl Scene {
         //! 'mesh': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", mesh);
         self.scene_graph.add_mesh(mesh);
-        self.update_proxy();
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
@@ -262,17 +254,14 @@ impl Scene {
         //! 'light': LightSource that is to be added
         info!("{self}: adding LightSource {light}");
         self.scene_graph.add_lightsource(light);
-        self.update_proxy();
     }
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
-        self.update_proxy();
     }
 
     pub fn clear_polygons(&mut self) {
         self.scene_graph.clear_tri_geometries();
-        self.update_proxy();
     }
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
@@ -385,64 +374,6 @@ impl Scene {
 
         info!("{self}: Saved image to {:?}", path);
         export_img_png(path, render)
-    }
-
-    //proxy updates
-    pub(crate) fn update_proxy(&mut self) -> Result<(), Error> {
-        info!("{self}: updating proxy");
-        self.proxy_scene = ProxyScene::new_from_real_scene(self);
-        Ok(())
-    }
-    pub(crate) fn update_from_proxy(&mut self) -> Result<(), Error> {
-        self.update_real_name()?;
-        //self.update_real_objects()?;
-        self.update_real_camera()?;
-        //self.update_real_lights()?;
-        self.update_real_background_color()?;
-        //self.update_real_misc()?;
-        Ok(())
-    }
-
-    fn update_real_name(&mut self) -> Result<(), Error> {
-        if &self.proxy_scene.scene_name != self.get_name() {
-            info!("{}:Changing name to  {}", self, self.proxy_scene.scene_name);
-            self.name = self.proxy_scene.scene_name.clone();
-        }
-        Ok(())
-    }
-
-    fn update_real_background_color(&mut self) -> Result<(), Error> {
-        let c0 = &self.proxy_scene.background_color;
-        let c1 = self.get_background_color();
-
-        if *c0 == c1 {
-            info!(
-                "{}: Changing Background color to {:?}",
-                self, self.proxy_scene.background_color
-            );
-            self.background_color = [c0.r, c0.g, c0.b];
-        }
-        Ok(())
-    }
-    fn update_real_objects(&mut self) -> Result<(), Error> {
-        let mut real_objects = self.get_tri_geometries();
-        let proxy_objects = &self.proxy_scene.objects;
-        for i in 0..real_objects.len() {}
-        todo!()
-    }
-    fn update_real_camera(&mut self) -> Result<(), Error> {
-        if self.proxy_scene.camera != *self.get_camera() {
-            info!("{self}: Updating camera to {:?}", self.proxy_scene.camera);
-            self.set_camera(self.proxy_scene.camera.clone().into());
-        }
-        Ok(())
-    }
-    fn update_real_lights(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-    fn update_real_misc(&mut self) -> Result<(), Error> {
-        todo!()
-        //Ok(())
     }
 }
 
