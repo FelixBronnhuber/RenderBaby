@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use crate::data_plane::{
     scene::render_scene::Scene,
     scene_proxy::{
-        color::Color, proxy_camera::ProxyCamera, proxy_light::ProxyLight, proxy_mesh::ProxyMesh,
+        color::Color, misc::Misc, proxy_camera::ProxyCamera, proxy_light::ProxyLight,
+        proxy_mesh::ProxyMesh,
     },
 };
 
@@ -16,7 +17,7 @@ pub struct ProxyScene {
     pub objects: Vec<ProxyMesh>,
     pub lights: Vec<ProxyLight>,
     pub background_color: Color, // todo: change to Color
-    pub misc: Vec<u32>,          // temp type just for ray samples, maybe replace with map
+    pub misc: Misc,              // temp type just for ray samples, maybe replace with map
 }
 // todo: ray samples are missing: have to be moved from camera to scene!
 #[allow(unused)]
@@ -36,7 +37,7 @@ impl ProxyScene {
             objects,
             lights,
             background_color: scene.get_background_color().into(),
-            misc: vec![scene.get_camera().get_ray_samples()],
+            misc: Misc::new_from_scene(scene),
         }
     }
 }
@@ -53,7 +54,7 @@ impl Default for ProxyScene {
                 g: 0.0,
                 b: 1.0,
             },
-            misc: vec![],
+            misc: Misc::default(),
         }
     }
 }
