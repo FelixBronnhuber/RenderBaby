@@ -110,19 +110,17 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
     }
 
     //camera
-    let (fx, fy, fz): (f32, f32, f32) = (
-        file.camera.look_at.x - file.camera.position.x,
-        file.camera.look_at.y - file.camera.position.y,
-        file.camera.look_at.z - file.camera.position.z,
-    );
-    let length = (fx.powi(2) + fy.powi(2) + fz.powi(2)).sqrt();
     scene.set_camera(Camera::new(
         Vec3::new(
             file.camera.position.x,
             file.camera.position.y,
             file.camera.position.z,
         ),
-        Vec3::new(fx / length, fy / length, fz / length),
+        Vec3::new(
+            file.camera.look_at.x,
+            file.camera.look_at.y,
+            file.camera.look_at.z,
+        ),
     ));
     scene
         .get_camera_mut()
@@ -130,10 +128,8 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
             file.camera.resolution.x,
             file.camera.resolution.y,
         ));
-    let fov_rad = 2.0 * (file.camera.pane_width / (2.0 * file.camera.pane_distance)).atan();
-    let fov_deg = fov_rad.to_degrees();
-    scene.get_camera_mut().set_fov(fov_deg);
-
+    scene.get_camera_mut().pane_width = file.camera.pane_width;
+    scene.get_camera_mut().pane_distance = file.camera.pane_distance;
     //Background
     scene.set_background_color([
         file.background_color.r,
