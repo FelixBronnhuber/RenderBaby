@@ -121,11 +121,11 @@ impl Scene {
                 let mut tri = TriGeometry::new(trianglevector);
                 tri.set_name(objs.name);
                 self.add_tri_geometry(tri.clone());
-                return Result::Ok(tri);
+                Result::Ok(tri)
             }
             Err(error) => {
                 error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
-                return Err(error.into());
+                Err(error.into())
             }
         }
     }
