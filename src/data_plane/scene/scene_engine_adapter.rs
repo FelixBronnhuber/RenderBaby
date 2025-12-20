@@ -7,7 +7,6 @@ use scene_objects::{
     camera::{Camera, Resolution},
     mesh::Mesh,
     sphere::Sphere,
-    tri_geometry::TriGeometry,
 };
 use crate::data_plane::scene::{render_scene::Scene};
 
