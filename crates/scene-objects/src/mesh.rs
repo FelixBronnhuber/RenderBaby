@@ -38,7 +38,7 @@ impl Mesh {
         materials: Option<Vec<Material>>,
         material_index: Option<Vec<usize>>,
         name: Option<String>,
-        path: Option<String>,
+        _path: Option<String>,
     ) -> Result<Self, Error> {
         //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
