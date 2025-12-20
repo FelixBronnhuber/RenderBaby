@@ -8,7 +8,6 @@ use scene_objects::{
     camera::Camera,
     geometric_object::SceneObject,
     light_source::{LightSource, LightType},
-    tri_geometry::TriGeometry,
 };
 use serde::{Deserialize, Serialize};
 
@@ -114,7 +113,7 @@ fn transform_to_scene(file: SceneFile) -> Scene {
         Vec3::new(pitch, yaw, 0.0),
     ));
 
-    scene.add_tri_geometry(TriGeometry::new(Vec::new()));
+    //scene.add_tri_geometry(TriGeometry::new(Vec::new()));
     scene.set_background_color([
         file.background_color.r,
         file.background_color.g,
@@ -127,7 +126,7 @@ pub fn serialize_scene(sc: &mut Scene) {
     //if let Some(p) = obj.as_any().downcast_ref::<Player>() ;
     //let scene_file = Scene_File{scene_name : sc.get_name().to_string(),objects : sc.get_objects().for_each().,camera: sc.get_camera(), lights: sc.get_light_sources(), background_color: sc.get_background_color()};
     let mut objectarr: Vec<ParsingObject> = Vec::new();
-    sc.get_tri_geometries().iter().for_each(|object| {
+    sc.get_meshes().iter().for_each(|object| {
         objectarr.push(ParsingObject {
             name: object.get_name().clone(),
             path: {
@@ -231,7 +230,7 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<Scene> {
         )));
     }
     let _json_content = fs::read_to_string(scene_path).unwrap();
-    let read = serde_json::from_str::<SceneFile>(&_json_content).unwrap();
+    let _read = serde_json::from_str::<SceneFile>(&_json_content).unwrap();
     // transform_to_scene(read)
     todo!("Fix serde_json");
 }

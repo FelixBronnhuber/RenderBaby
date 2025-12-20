@@ -9,11 +9,9 @@ use scene_objects::{
     material::Material,
     mesh::Mesh,
     sphere::Sphere,
-    tri_geometry::TriGeometry,
 };
 use scene_objects::tri_geometry::Triangle;
 use serde::Serialize;
-use scene_objects::geometric_object::GeometricObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
@@ -82,7 +80,7 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: Parsing mtl from {i} resulted in error: {error}" );
+                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
                             }
                         }
                     }
@@ -101,20 +99,29 @@ impl Scene {
                         tris.push(0u32);
                         tris.push(i as u32);
                         tris.push((i + 1) as u32);
-                        if let Some(m) = material_list.iter().position(|x| x.name == face.material_name.clone()) {
+                        if let Some(m) = material_list
+                            .iter()
+                            .position(|x| x.name == face.material_name.clone())
+                        {
                             material_index.push(m);
                         }
                     }
-
                 }
-                let mesh = Mesh::new(objs.vertices, tris, Some(material_list),Some(material_index), Some(objs.name), Some(path.to_string_lossy().to_string()))?;
+                let mesh = Mesh::new(
+                    objs.vertices,
+                    tris,
+                    Some(material_list),
+                    Some(material_index),
+                    Some(objs.name),
+                    Some(path.to_string_lossy().to_string()),
+                )?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
                 Result::Ok(mesh)
             }
 
-                Err(error) => {
-            error ! ("{self}: Parsing obj from {path_str} resulted in error: {error}");
-            Err(error.into())
+            Err(error) => {
+                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                Err(error.into())
             }
         }
     }
@@ -246,15 +253,6 @@ impl Scene {
             ))),
         }
     }
-
-    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
-        //! adds an object to the scene
-        //! ## Arguments
-        //! 'tri': TriGeometry that is to be added to the scene
-        //!
-        info!("{self}: adding TriGeometry {:?}", tri.get_name());
-        self.scene_graph.add_tri_geometry(tri);
-    }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
         //! ## Arguments
@@ -283,7 +281,7 @@ impl Scene {
     }
 
     pub fn clear_polygons(&mut self) {
-        self.scene_graph.clear_tri_geometries();
+        self.scene_graph.clear_meshes();
     }
 
     pub fn set_camera(&mut self, camera: Camera) {
@@ -294,12 +292,6 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
-        //! ##  Returns
-        //! a reference to a vector of all TriGeometries
-
-        self.scene_graph.get_tri_geometries()
-    }
     pub fn get_spheres(&self) -> &Vec<Sphere> {
         //! ##  Returns
         //! a reference to a vector of all spheres

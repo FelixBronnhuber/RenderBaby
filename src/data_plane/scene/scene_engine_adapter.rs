@@ -5,6 +5,7 @@ use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
     camera::{Camera, Resolution},
+    mesh::Mesh,
     sphere::Sphere,
     tri_geometry::TriGeometry,
 };
@@ -74,27 +75,12 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-
-fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
-    //! Converts the given TriGeometry to a touple of a Vector represention the triangle vertices and a vector referencing which points make up the triangles
-    //! Purpose of the conversion is to pass the result to the render engine
+fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
+    //! Extracts vertices and point references from the given mesh
     //! ## Parameter
-    //! 'tri_geom': Reference to the TriGeometry that is to be converted
-    let mut res_points = vec![];
-    let mut res_tri = vec![];
-    let mut count = 0u32;
-    for tri in tri_geom.get_triangles() {
-        for point in tri.get_points() {
-            res_points.push(point.x);
-            res_points.push(point.y);
-            res_points.push(point.z);
-        }
-        res_tri.push(count);
-        res_tri.push(count + 1);
-        res_tri.push(count + 2);
-        count += 3;
-    }
-    (res_points, res_tri)
+    //! 'mesh': Mesh from scene_objects crate that is to be converted
+    //! Returns: touple of: Vec<f32> where 3 entries define one point in 3d space, and Vec<u32> referencing which points make up a triangle
+    (mesh.get_vertices().clone(), mesh.get_tri_indices().clone())
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
@@ -128,8 +114,8 @@ impl Scene {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         let mut res = vec![];
-        for tri in self.get_tri_geometries() {
-            res.push(tri_geometry_to_render_tri(tri))
+        for mesh in self.get_meshes() {
+            res.push(mesh_to_render_data(mesh))
         }
         res
     }
