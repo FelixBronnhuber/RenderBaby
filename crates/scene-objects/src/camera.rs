@@ -2,16 +2,16 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 /// Camera that is used to render scenes
 #[allow(dead_code)]
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Camera {
-    position: Vec3,
+    pub position: Vec3,
     pub pane_distance: f32,
     pub pane_width: f32,
     pub pane_height: f32,
     pub look_at: Vec3,
     pub up: Vec3,
-    resolution: Resolution,
-    ray_samples: u32, // todo move to scene
+    pub resolution: Resolution,
+    pub ray_samples: u32, // todo move to scene
 }
 #[allow(dead_code)]
 impl Camera {

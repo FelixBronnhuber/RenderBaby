@@ -12,30 +12,23 @@ use scene_objects::{
     tri_geometry::TriGeometry,
 };
 use scene_objects::tri_geometry::Triangle;
-use serde::Serialize;
 
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png},
+        scene_io::{img_export::export_img_png, obj_parser::OBJParser, scene_parser::parse_scene},
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
 
 /// The scene holds all relevant objects, lightsources, camera
-#[derive(Serialize)]
 pub struct Scene {
-    //#[serde(rename(serialize = "items"))]
-    #[serde(flatten)]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
-    #[serde(skip_serializing)]
     render_engine: Option<Engine>,
-    #[serde(skip_serializing)]
     pub(crate) first_render: bool,
-    #[serde(skip_serializing)]
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }
@@ -221,47 +214,6 @@ impl Scene {
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-        } // todo: allow name and color as param
-    }
-
-    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
-        //! ## Paramter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of new Scene from deserialized scene
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized =serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {Ok(scene)},
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn update_from_json(&mut self, json_data: &str) -> Result<(), Error> {
-        //! ## Parameter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of () or Error
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized = serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {
-                *self = scene;
-                Ok(())
-            },
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn as_json(&self) -> Result<String, Error> {
-        //! ## Returns:
-        //! JSON serialization
-        let s = serde_json::to_string(&self);
-        match s {
-            Ok(data) => Ok(data),
-            Err(error) => Err(Error::msg(format!(
-                "Error: Failed to serialize {self}: {error}"
-            ))),
         }
     }
 
@@ -303,7 +255,6 @@ impl Scene {
     pub fn clear_polygons(&mut self) {
         self.scene_graph.clear_tri_geometries();
     }
-
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
         //! ## Arguments
