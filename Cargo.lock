@@ -3226,6 +3226,7 @@ dependencies = [
  "engine-config",
  "engine-pathtracer",
  "engine-raytracer",
+ "engine-wgpu-wrapper",
  "glam",
  "image",
  "include_dir",

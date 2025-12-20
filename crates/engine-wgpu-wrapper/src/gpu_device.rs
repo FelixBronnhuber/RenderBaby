@@ -1,3 +1,4 @@
+use std::sync::OnceLock;
 use anyhow::{Result, anyhow};
 
 pub struct GpuDevice {
@@ -7,6 +8,15 @@ pub struct GpuDevice {
 
 impl GpuDevice {
     pub fn new() -> Result<Self> {
+        static DEVICE_ONCE: OnceLock<(wgpu::Device, wgpu::Queue)> = OnceLock::new();
+
+        if let Some((device, queue)) = DEVICE_ONCE.get() {
+            return Ok(Self {
+                device: device.clone(),
+                queue: queue.clone(),
+            });
+        }
+
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             ..Default::default()
@@ -31,6 +41,8 @@ impl GpuDevice {
             ..Default::default()
         }))
         .map_err(|e| anyhow!("WGPU: failed to create device/queue: {}", e))?;
+
+        let _ = DEVICE_ONCE.set((device.clone(), queue.clone()));
 
         Ok(Self { device, queue })
     }
