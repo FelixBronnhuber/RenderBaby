@@ -2,7 +2,7 @@
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use glam::Vec3;
-use log::{info, error};
+use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
     mesh::Mesh,
@@ -127,6 +127,8 @@ impl Scene {
 
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
+        debug!("Scene mesh data: {:?}", self.get_meshes());
+        debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
