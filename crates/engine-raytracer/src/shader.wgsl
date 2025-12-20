@@ -1,6 +1,9 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
 const MAX_DEPTH: i32 = 5;
+const SHADOW_SAMPLES: u32 = 8u;
+const LIGHT_RADIUS: f32 = 0.2;
+const POINT_LIGHT_COUNT: u32 = 3u;
 
 struct Camera {
     pane_distance: f32,
@@ -60,7 +63,7 @@ struct PointLight {
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
 @group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<uniform> point_light: PointLight;
+@group(0) @binding(7) var<uniform> point_lights: array<PointLight, POINT_LIGHT_COUNT>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -241,6 +244,32 @@ fn is_shadow(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
     return false;
 }
 
+fn soft_shadow(origin: vec3<f32>,light_pos: vec3<f32>,light_radius: f32,seed: u32) -> f32 {
+    let to_light = light_pos - origin;
+    let dist = length(to_light);
+    let base_dir = to_light / dist;
+
+    var visible: f32 = 0.0;
+    var s = seed;
+
+    for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
+        let jitter = random_unit_vector(s) * light_radius;
+        let jittered_pos = light_pos + jitter;
+
+        let dir = jittered_pos - origin;
+        let d = length(dir);
+        let ldir = dir / d;
+
+        if (!is_shadow(origin, ldir, d)) {
+            visible += 1.0;
+        }
+
+        s = hash(s + i);
+    }
+
+    return visible / f32(SHADOW_SAMPLES);
+}
+
 fn trace_ray(
     origin0: vec3<f32>,
     direction0: vec3<f32>,
@@ -327,14 +356,17 @@ fn trace_ray(
             break;
         }
 
-        let to_light = point_light.position - closest_hit.pos;
-        let light_distance = length(to_light);
-        let light_dir = to_light / light_distance;
-
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
 
-        if (is_shadow(shadow_origin, light_dir, light_distance)) {
-             attenuation *= 0.5;
+        for (var i = 0u; i < POINT_LIGHT_COUNT; i = i + 1u) {
+            let shadow = soft_shadow(
+                shadow_origin,
+                point_lights[i].position,
+                LIGHT_RADIUS,
+                seed + i
+            );
+
+            attenuation *= mix(0.2, 1.0, shadow);
         }
 
         // Hit + scatter ray

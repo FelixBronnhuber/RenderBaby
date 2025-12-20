@@ -54,12 +54,26 @@ impl GpuBuffers {
             mapped_at_creation: false,
         });
 
-        let light = PointLight {
-            position: [2.0, 4.0, 1.0],
-            intensity: 20.0,
-            color: [1.0, 1.0, 1.0],
-            _pad: 0.0,
-        };
+        let lights = [
+            PointLight {
+                position: [2.0, 4.0, 1.0],
+                intensity: 20.0,
+                color: [1.0, 1.0, 1.0],
+                _pad: 0.0,
+            },
+            PointLight {
+                position: [-3.0, 3.0, 2.0],
+                intensity: 15.0,
+                color: [1.0, 0.8, 0.7],
+                _pad: 0.0,
+            },
+            PointLight {
+                position: [0.0, 6.0, -3.0],
+                intensity: 25.0,
+                color: [0.7, 0.8, 1.0],
+                _pad: 0.0,
+            },
+        ];
 
         Self {
             spheres: Self::create_storage_buffer(device, "Spheres Buffer", spheres),
@@ -74,7 +88,7 @@ impl GpuBuffers {
                 "Progressive Render Buffer",
                 &[*prh],
             ),
-            light: Self::create_uniform_buffer(device, "Light Buffer", &light),
+            light: Self::create_uniform_buffer(device, "Light Buffer", &lights),
         }
     }
 
