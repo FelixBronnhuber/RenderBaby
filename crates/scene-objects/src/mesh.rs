@@ -30,7 +30,7 @@ pub struct Mesh {
     centroid: Vec3,
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 impl Mesh {
     pub fn new(
         vertices: Vec<f32>,
@@ -102,6 +102,17 @@ impl Mesh {
 
     pub fn get_name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn get_vertices(&self) -> &Vec<f32> {
+        //! ## Returns
+        //! Reference to Vec<f32>, where three entries define one point in 3d space
+        &self.vertices
+    }
+    pub fn get_tri_indices(&self) -> &Vec<u32> {
+        //! Returns
+        //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
+        &self.tris
     }
 }
 
