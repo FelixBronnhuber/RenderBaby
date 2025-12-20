@@ -31,7 +31,7 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         Self {
-            ambient: [0.2, 0.2, 0.2],
+            ambient: [0.0, 0.0, 0.0], //has to be fixed
             _pad0: 0.0,
             diffuse: Vec3::new(0.8, 0.8, 0.8),
             _pad1: 0.0,

@@ -64,6 +64,7 @@ struct HitRecord {
     pos: vec3<f32>,
     normal: vec3<f32>,
     color: vec3<f32>,
+    ambient: vec3<f32>,
 }
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
@@ -222,17 +223,25 @@ fn trace_ray(
     var color       = vec3<f32>(0.0);
 
     for (var depth = 0; depth < MAX_DEPTH; depth = depth + 1) {
-        var closest_hit = HitRecord(false, 1e20, vec3<f32>(0.0), vec3<f32>(0.0), vec3<f32>(0.0));
+        var closest_hit = HitRecord(
+            false, 
+            1e20, 
+            vec3<f32>(0.0), 
+            vec3<f32>(0.0), 
+            vec3<f32>(0.0),
+            vec3<f32>(0.0)  // ambient
+        );
 
         // Ground
         if (GROUND_ENABLED) {
             let t = intersect_ground(origin, direction);
             if (t > 0.001 && t < closest_hit.t) {
-                closest_hit.hit   = true;
-                closest_hit.t     = t;
-                closest_hit.pos = origin + t * direction;
+                closest_hit.hit    = true;
+                closest_hit.t      = t;
+                closest_hit.pos    = origin + t * direction;
                 closest_hit.normal = vec3<f32>(0.0, 1.0, 0.0);
                 closest_hit.color  = vec3<f32>(0.7);
+                closest_hit.ambient = vec3<f32>(0.1); // Default ground ambient
             }
         }
 
@@ -268,8 +277,10 @@ fn trace_ray(
                     
                     if (uniforms.color_hash_enabled != 0u) {
                         closest_hit.color = hash_to_color(k + 1u);
+                        closest_hit.ambient = vec3<f32>(0.1);
                     } else {
                         closest_hit.color = mesh.material.diffuse;
+                        closest_hit.ambient = mesh.material.ambient;
                     }
                 }
             }
@@ -283,9 +294,10 @@ fn trace_ray(
             if (t > 0.001 && t < closest_hit.t) {
                 closest_hit.hit    = true;
                 closest_hit.t      = t;
-                closest_hit.pos  = origin + t * direction;
+                closest_hit.pos    = origin + t * direction;
                 closest_hit.normal = normalize(closest_hit.pos - sphere.center);
                 closest_hit.color  = sphere.material.diffuse;
+                closest_hit.ambient = sphere.material.ambient;
             }
         }
 
@@ -298,6 +310,9 @@ fn trace_ray(
             color += attenuation * sky;
             break;
         }
+
+        // Add ambient contribution (independent of light direction)
+        color += attenuation * closest_hit.ambient;
 
         // Hit + scatter ray
         seed = hash(seed + u32(depth));
