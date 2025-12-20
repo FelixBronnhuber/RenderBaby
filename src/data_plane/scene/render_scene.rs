@@ -50,7 +50,7 @@ impl Scene {
         info!("Scene: Loading new scene from {path_str}");
         parse_scene(path)
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<Mesh, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -116,7 +116,8 @@ impl Scene {
                     Some(path.to_string_lossy().to_string()),
                 )?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
-                Result::Ok(mesh)
+                self.add_mesh(mesh);
+                Ok(())
             }
 
             Err(error) => {
