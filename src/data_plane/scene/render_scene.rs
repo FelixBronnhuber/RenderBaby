@@ -12,6 +12,7 @@ use scene_objects::{
 };
 use scene_objects::tri_geometry::Triangle;
 use serde::Serialize;
+use scene_objects::geometric_object::SceneObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
@@ -89,16 +90,16 @@ impl Scene {
                         .iter()
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
-                let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
 
                 let mut tris = Vec::with_capacity(100);
                 let mut material_index = Vec::with_capacity(10);
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        tris.push(0u32);
-                        tris.push(i as u32);
-                        tris.push((i + 1) as u32);
+                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
+                            tris.push(vs.0 as u32);
+                            tris.push(vs.1 as u32);
+                            tris.push(vs.2 as u32);
                         if let Some(m) = material_list
                             .iter()
                             .position(|x| x.name == face.material_name.clone())
