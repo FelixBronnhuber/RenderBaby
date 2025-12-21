@@ -88,7 +88,7 @@ impl Scene {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
         self.get_spheres()
-            .into_iter()
+            .iter()
             .map(sphere_to_render_sphere)
             .collect()
     }
@@ -111,10 +111,7 @@ impl Scene {
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        self.get_meshes()
-            .into_iter()
-            .map(mesh_to_render_data)
-            .collect()
+        self.get_meshes().iter().map(mesh_to_render_data).collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
