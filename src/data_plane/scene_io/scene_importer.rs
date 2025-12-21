@@ -128,8 +128,12 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
             file.camera.resolution.x,
             file.camera.resolution.y,
         ));
-    scene.get_camera_mut().pane_width = file.camera.pane_width;
-    scene.get_camera_mut().pane_distance = file.camera.pane_distance;
+    scene
+        .get_camera_mut()
+        .set_pane_width(file.camera.pane_width);
+    scene
+        .get_camera_mut()
+        .set_pane_distance(file.camera.pane_distance);
     //Background
     scene.set_background_color([
         file.background_color.r,
