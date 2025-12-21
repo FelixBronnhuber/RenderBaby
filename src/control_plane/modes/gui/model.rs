@@ -1,17 +1,19 @@
 use std::path::PathBuf;
 use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
+use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 
 #[allow(dead_code)]
 pub struct Model {
-    scene: Scene,
+    pub scene: Scene,
+    pub proxy: ProxyScene,
 }
 
 #[allow(dead_code)]
 impl Model {
     pub fn new_from_path(path: PathBuf) -> anyhow::Result<Self> {
         match Scene::load_scene_from_file(path) {
-            Ok(scene) => Ok(Self { scene }),
+            Ok(scene) => Ok(Self::new(scene)),
             Err(e) => Err(e),
         }
     }
@@ -20,10 +22,13 @@ impl Model {
         todo!()
     }
 
-    pub fn new() -> Self {
-        Self {
-            scene: Scene::new(),
-        }
+    pub fn new_empty() -> Self {
+        Self::new(Scene::new())
+    }
+
+    pub fn new(scene: Scene) -> Self {
+        let proxy = scene.get_proxy_scene();
+        Self { scene, proxy }
     }
 
     pub fn set_output_path(_path: PathBuf) -> anyhow::Result<()> {
@@ -37,14 +42,6 @@ impl Model {
     }
 
     pub fn render(&self) -> anyhow::Result<()> {
-        todo!()
-    }
-
-    pub fn scene_config_guard(&self) -> &mut String {
-        todo!()
-    }
-
-    pub fn render_config_guard(&self) -> &mut String {
         todo!()
     }
 

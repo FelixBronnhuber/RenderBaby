@@ -6,6 +6,16 @@ pub struct Image {
     pixels: Vec<u8>,
 }
 
+impl Image {
+    pub fn new(width: usize, height: usize, pixels: Vec<u8>) -> Self {
+        Self {
+            width,
+            height,
+            pixels,
+        }
+    }
+}
+
 pub struct ImageArea {
     texture: Option<egui::TextureHandle>,
     no_texture_effect: Option<Box<dyn Effect>>,

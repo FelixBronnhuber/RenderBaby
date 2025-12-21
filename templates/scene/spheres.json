@@ -77,7 +77,7 @@
       "path": null
     }
   ],
-  "light_sources": [
+  "lights": [
     {
       "position": [
         0.0,

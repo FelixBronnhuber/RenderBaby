@@ -140,7 +140,7 @@ impl Screen for StartScreen {
                         .add_sized(button_size, egui::Button::new("Empty Scene"))
                         .clicked()
                     {
-                        next_screen = Some(Box::new(SceneScreen::new(Model::new())));
+                        next_screen = Some(Box::new(SceneScreen::new(Model::new_empty())));
                     }
 
                     if ui

@@ -28,3 +28,27 @@ impl ProxyMesh {
         }
     }
 }
+
+impl Default for ProxyMesh {
+    fn default() -> Self {
+        Self {
+            name: "Mesh".to_string(),
+            path: "".to_string(),
+            scale: Vec3d {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            rotation: Vec3d {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            translation: Vec3d {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        }
+    }
+}

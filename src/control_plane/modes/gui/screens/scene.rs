@@ -1,11 +1,14 @@
 use eframe::emath::Align;
+use egui::CollapsingHeader;
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
-use eframe_elements::image_area::ImageArea;
-use eframe_elements::message_popup::MessagePopupPipe;
+use eframe_elements::image_area::{Image, ImageArea};
+use eframe_elements::message_popup::{Message, MessagePopupPipe};
 use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
+use crate::control_plane::modes::gui::screens::viewable::Viewable;
+use crate::data_plane::scene_proxy::proxy_light::ProxyLight;
 
 #[allow(dead_code)]
 pub struct SceneScreen {
@@ -91,7 +94,7 @@ impl Screen for SceneScreen {
                 self.file_dialog_obj.update_effect(ctx);
 
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.pick_file(|res| {
+                    self.file_dialog_export.save_file(|res| {
                         if let Ok(path) = res {
                             println!("Selected file: {:?}", path);
                         }
@@ -106,24 +109,85 @@ impl Screen for SceneScreen {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    // TODO: probably call render function in view model
+                    match self.model.scene.render() {
+                        Ok(output) => {
+                            self.image_area.set_image(
+                                ctx,
+                                Image::new(output.width, output.height, output.pixels),
+                            );
+                        }
+                        Err(e) => {
+                            self.message_popup_pipe.push_message(Message::from_error(e));
+                        }
+                    }
                 }
 
-                // fov.ui(ui)
+                ui.separator();
 
-                // resolution.ui(ui)
+                self.model
+                    .proxy
+                    .camera
+                    .ui(ui, self.model.scene.get_camera_mut());
 
                 ui.separator();
 
-                // camera.ui(ui)
+                self.model.proxy.misc.ui(ui, &mut self.model.scene);
 
                 ui.separator();
 
-                // color_hash.ui(ui)
+                {
+                    let real_meshes = self.model.scene.get_meshes_mut();
+                    ui.label("Objects");
+                    let enum_meshes = self.model.proxy.objects.iter_mut();
+                    if enum_meshes.len() == 0 {
+                        ui.label("No objects in scene.");
+                    } else {
+                        for (i, proxy_mesh) in enum_meshes.enumerate() {
+                            CollapsingHeader::new(format!("Object {}", i))
+                                .default_open(false)
+                                .show(ui, |ui| {
+                                    proxy_mesh.ui(ui, &mut real_meshes[i]);
+                                });
+
+                            if ui.small_button("remove").clicked() {
+                                real_meshes.remove(i);
+                                self.model.proxy.objects.remove(i);
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 ui.separator();
 
-                // samples.ui(ui)
+                {
+                    let real_lights = self.model.scene.get_light_sources_mut();
+                    ui.label("Lights");
+                    let enum_light = self.model.proxy.lights.iter_mut();
+                    if enum_light.len() == 0 {
+                        ui.label("No lights in scene.");
+                    } else {
+                        for (i, proxy_light) in enum_light.enumerate() {
+                            CollapsingHeader::new(format!("Light {}", i))
+                                .default_open(false)
+                                .show(ui, |ui| {
+                                    proxy_light.ui(ui, &mut real_lights[i]);
+                                });
+
+                            if ui.small_button("remove").clicked() {
+                                real_lights.remove(i);
+                                self.model.proxy.lights.remove(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    if ui.small_button("+").clicked() {
+                        let new_light = ProxyLight::default();
+                        self.model.scene.add_lightsource(new_light.clone().into());
+                        self.model.proxy.lights.push(new_light);
+                    }
+                }
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {

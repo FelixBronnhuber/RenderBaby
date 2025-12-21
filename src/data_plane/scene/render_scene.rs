@@ -301,6 +301,14 @@ impl Scene {
 
         self.scene_graph.get_spheres()
     }
+
+    pub fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
+        //! ##  Returns
+        //! a reference to a vector of all spheres
+
+        self.scene_graph.get_spheres_mut()
+    }
+
     pub fn get_meshes(&self) -> &Vec<Mesh> {
         //! ##  Returns
         //! a reference to a vector of all Meshes
@@ -308,10 +316,23 @@ impl Scene {
         self.scene_graph.get_meshes()
     }
 
+    pub fn get_meshes_mut(&mut self) -> &mut Vec<Mesh> {
+        //! ##  Returns
+        //! a reference to a vector of all Meshes
+
+        self.scene_graph.get_meshes_mut()
+    }
+
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         //! ## Returns
         //! Reference to a vector that holds all LightSources of the scene
         self.scene_graph.get_light_sources()
+    }
+
+    pub fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
+        //! ## Returns
+        //! Reference to a vector that holds all LightSources of the scene
+        self.scene_graph.get_light_sources_mut()
     }
 
     pub fn get_render_engine(&self) -> &Engine {

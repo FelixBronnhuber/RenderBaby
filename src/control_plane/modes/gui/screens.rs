@@ -1,5 +1,6 @@
 pub mod scene;
 pub(crate) mod start;
+mod viewable;
 
 pub trait Screen {
     fn default_size(&self) -> egui::Vec2;

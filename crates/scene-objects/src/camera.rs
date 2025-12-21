@@ -129,10 +129,10 @@ impl Default for Camera {
         let ratio = resolution.height as f32 / resolution.width as f32;
         let pane_height = pane_width * ratio;
         Self {
-            position: Vec3::default(),
+            position: Vec3::new(5.0, 5.0, 5.0),
             resolution,
             ray_samples: 20,
-            look_at: Vec3::default(),
+            look_at: Vec3::new(1.0, 1.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             pane_distance: 35.0,
             pane_width,
