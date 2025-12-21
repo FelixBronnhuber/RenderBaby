@@ -43,7 +43,7 @@ impl Model {
         }
     }
     pub fn set_fov(&mut self, fov: f32) {
-        self.scene.get_camera_mut().set_fov(fov);
+        self.scene.get_camera_mut().set_pane_width(fov);
     }
 
     pub fn set_resolution(&mut self, width: u32, height: u32) {
