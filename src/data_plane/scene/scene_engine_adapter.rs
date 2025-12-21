@@ -87,11 +87,10 @@ impl Scene {
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
-        let mut res = vec![];
-        for sphere in self.get_spheres() {
-            res.push(sphere_to_render_sphere(sphere));
-        }
-        res
+        self.get_spheres()
+            .into_iter()
+            .map(sphere_to_render_sphere)
+            .collect()
     }
     pub(crate) fn get_render_uniforms(
         &self,
@@ -112,11 +111,10 @@ impl Scene {
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        let mut res = vec![];
-        for mesh in self.get_meshes() {
-            res.push(mesh_to_render_data(mesh))
-        }
-        res
+        self.get_meshes()
+            .into_iter()
+            .map(mesh_to_render_data)
+            .collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
@@ -128,7 +126,7 @@ impl Scene {
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
         debug!("Scene mesh data: {:?}", self.get_meshes());
-        info!("Collected mesh data: {:?}", render_tris);
+        debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
@@ -159,6 +157,8 @@ impl Scene {
             }
             (all_verts, all_tris)
         };
+        info!("Collected vertices: {:?}", all_vertices);
+        info!("Collected tris: {:?}", all_triangles);
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
