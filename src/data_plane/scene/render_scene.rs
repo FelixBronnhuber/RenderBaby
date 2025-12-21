@@ -1,5 +1,5 @@
-use std::path::PathBuf;
-use anyhow::Error;
+use std::path::{PathBuf};
+use anyhow::{Error};
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, error};
@@ -12,12 +12,14 @@ use scene_objects::{
     tri_geometry::TriGeometry,
 };
 use scene_objects::tri_geometry::Triangle;
-
+use serde::Serialize;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{img_export::export_img_png, obj_parser::OBJParser, scene_parser::parse_scene},
+        scene_io::{
+            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+        },
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
@@ -41,10 +43,35 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        let mut directory_path = path.clone();
+        directory_path.pop();
         let path_str = path.to_str().unwrap();
         info!("Scene: Loading new scene from {path_str}");
-        parse_scene(path)
+        let scene_and_path = parse_scene(path.clone());
+        match scene_and_path {
+            Ok(scene_and_path) => {
+                let mut scene = scene_and_path.0;
+                let mut paths = scene_and_path.1;
+                let mut meshes = Vec::with_capacity(1);
+                let mut pathbuf = Vec::with_capacity(1);
+                paths
+                    .iter()
+                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
+                for i in pathbuf {
+                    meshes.push(scene.load_object_from_file(i)?);
+                }
+                for i in meshes {
+                    scene.add_tri_geometry(i);
+                }
+                Ok(scene)
+            }
+            Err(error) => {
+                error!("Scene: Importing Scene resulted in error: {error}");
+                Err(error)
+            }
+        }
     }
+    //will be removed once Mesh Structure can be used to render
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter

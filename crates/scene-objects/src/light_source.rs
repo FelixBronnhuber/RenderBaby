@@ -1,7 +1,7 @@
 use glam::Vec3;
 /// Defines light sources for the scene
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LightSource {
     pub position: Vec3,
     pub luminosity: f32,
