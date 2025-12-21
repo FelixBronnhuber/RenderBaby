@@ -3,14 +3,14 @@ use glam::Vec3;
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct Camera {
-    pub position: Vec3,
-    pub pane_distance: f32,
-    pub pane_width: f32,
-    pub pane_height: f32,
-    pub look_at: Vec3,
-    pub up: Vec3,
-    pub resolution: Resolution,
-    pub ray_samples: u32, // todo move to scene
+    position: Vec3,
+    pane_distance: f32,
+    pane_width: f32,
+    pane_height: f32,
+    look_at: Vec3,
+    up: Vec3,
+    resolution: Resolution,
+    ray_samples: u32, // todo move to scene
 }
 #[allow(dead_code)]
 impl Camera {
@@ -35,6 +35,17 @@ impl Camera {
         //! ## Returns
         //! Camera look at point as glam::Vec3
         self.look_at
+    }
+    pub fn get_up(&self) -> Vec3 {
+        //! ## Returns
+        //! up vector of the camera
+        self.up
+    }
+    pub fn set_up(&mut self, up: Vec3) {
+        //! Sets the up vector of the camera to the given value
+        //! ## Parameter
+        //! 'up': glam::Vec3 for the new vector
+        self.up = up;
     }
     pub fn get_fov(&self) -> f32 {
         //! ## Returns
