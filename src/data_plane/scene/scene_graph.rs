@@ -1,10 +1,7 @@
 use scene_objects::{camera::Camera, light_source::LightSource, mesh::Mesh, sphere::Sphere};
-use serde::Serialize;
 /// The scene graphs holds all elements of the scene
-#[derive(Serialize)]
 pub(crate) struct SceneGraph {
     spheres: Vec<Sphere>,
-    #[serde(skip_serializing)]
     meshes: Vec<Mesh>,
     light_sources: Vec<LightSource>,
     camera: Camera,

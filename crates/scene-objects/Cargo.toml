@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.100"
 glam = {version = "0.30.9", features = ["serde"]}
-serde = "1.0.228"
-serde_json = "1.0.145"
+
