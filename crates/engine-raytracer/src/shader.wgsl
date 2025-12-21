@@ -2,7 +2,7 @@ const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
 const MAX_DEPTH: i32 = 5;
 const SHADOW_SAMPLES: u32 = 8u;
-const LIGHT_RADIUS: f32 = 0.2;
+const SHADOW_EDGE: f32 = 0.2;
 const POINT_LIGHT_COUNT: u32 = 3u;
 
 struct Camera {
@@ -198,7 +198,7 @@ fn random_unit_vector(seed: u32) -> vec3<f32> {
     return normalize(fallback);
 }
 
-fn is_shadow(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
+fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
     if (GROUND_ENABLED) {
         let t = intersect_ground(origin, light_dir);
         if (t > 0.001 && t < max_dist) {
@@ -244,30 +244,26 @@ fn is_shadow(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
     return false;
 }
 
-fn soft_shadow(origin: vec3<f32>,light_pos: vec3<f32>,light_radius: f32,seed: u32) -> f32 {
-    let to_light = light_pos - origin;
-    let dist = length(to_light);
-    let base_dir = to_light / dist;
-
-    var visible: f32 = 0.0;
-    var s = seed;
+fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
+    var visible_light: f32 = 0.0;
+    var next_seed = seed;
 
     for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
-        let jitter = random_unit_vector(s) * light_radius;
-        let jittered_pos = light_pos + jitter;
+        let rand_jitter = random_unit_vector(next_seed) * SHADOW_EDGE;
+        let jittered_pos = light_pos + rand_jitter;
 
-        let dir = jittered_pos - origin;
-        let d = length(dir);
-        let ldir = dir / d;
+        let light_dir = jittered_pos - origin;
+        let distance = length(light_dir);
+        let dir_normalized = light_dir / distance;
 
-        if (!is_shadow(origin, ldir, d)) {
-            visible += 1.0;
+        if (!collision(origin, dir_normalized, distance)) {
+            visible_light += 1.0;
         }
 
-        s = hash(s + i);
+        next_seed = hash(next_seed + i);
     }
 
-    return visible / f32(SHADOW_SAMPLES);
+    return visible_light / f32(SHADOW_SAMPLES);
 }
 
 fn trace_ray(
@@ -357,17 +353,31 @@ fn trace_ray(
         }
 
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
+        var light_total = vec3<f32>(0.0);
 
         for (var i = 0u; i < POINT_LIGHT_COUNT; i = i + 1u) {
-            let shadow = soft_shadow(
+            let light = point_lights[i];
+
+            let light_dir = light.position - shadow_origin;
+            let dist_pow2 = max(dot(light_dir, light_dir), 0.05);
+            let dir_normalized = normalize(light_dir);
+
+            //Lambert cosine term
+            let dot = max(dot(closest_hit.normal, dir_normalized), 0.0);
+            if (dot <= 0.0) {
+                continue;
+            }
+
+            let visibility = shadow(
                 shadow_origin,
-                point_lights[i].position,
-                LIGHT_RADIUS,
+                light.position,
                 seed + i
             );
 
-            attenuation *= mix(0.2, 1.0, shadow);
+            light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
+
+        color += attenuation * light_total * closest_hit.color;
 
         // Hit + scatter ray
         seed = hash(seed + u32(depth));
@@ -378,7 +388,7 @@ fn trace_ray(
         direction = scatter_dir;
 
         // Apply diffuse attenuation
-        attenuation *= closest_hit.color;
+        attenuation *= closest_hit.color * 0.5;
     }
 
     return color;
@@ -432,7 +442,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Store accumulated result
     accumulation[pixel_index] = vec4<f32>(accumulated_color, f32(total_samples));
 
-    // Write final color (averaged)
+    // Write final color (averaged + reinhard tone mapping)
     let final_color = accumulated_color / f32(total_samples);
-    output[pixel_index] = color_map(final_color);
+    let mapped = final_color / (final_color + vec3<f32>(1.0));
+    output[pixel_index] = color_map(mapped);
 }
