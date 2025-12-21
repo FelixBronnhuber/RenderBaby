@@ -1,5 +1,4 @@
 use glam::Vec3;
-use serde::{Deserialize, Serialize};
 /// Camera that is used to render scenes
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -43,6 +42,7 @@ impl Camera {
         //self.fov
         2.0 * (self.pane_width / (2.0 * self.pane_distance)).atan()
     }
+    #[deprecated = "Use pane distance instead"]
     pub fn set_fov(&mut self, fov: f32) {
         //! Sets the camera field of view. Value should be between ...
         //! ## Parameter
@@ -52,6 +52,32 @@ impl Camera {
         self.pane_height =
             fov * (self.get_resolution().height as f32 / self.get_resolution().width as f32); */
         self.pane_distance = fov;
+    }
+    pub fn set_pane_distance(&mut self, distance: f32) {
+        //! Set the camera pane distance
+        //! ## Parameter
+        //! distance: New value for pane_distance
+        if distance >= 0.0 {
+            self.pane_distance = distance;
+        }
+    }
+    pub fn get_pane_distance(&self) -> f32 {
+        //! ## Returns
+        //! Camera pane distance
+        self.pane_distance
+    }
+    pub fn set_pane_width(&mut self, width: f32) {
+        //! Set the camera pane width
+        //! ## Parameter
+        //! width: New value for pane_distance
+        if width > 0.0 {
+            self.pane_width = width;
+        }
+    }
+    pub fn get_pane_width(&self) -> f32 {
+        //! ## Returns
+        //! Camera pane width
+        self.pane_width
     }
     pub fn get_resolution(&self) -> &Resolution {
         //! ## Returns
@@ -109,7 +135,7 @@ impl std::fmt::Display for Camera {
         write!(f, "Camera at {}", self.get_position())
     }
 }
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Resolution {
     pub width: u32,
     pub height: u32,

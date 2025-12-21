@@ -28,7 +28,7 @@ pub struct Scene {
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
-    pub(crate) first_render: bool,
+    first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }
@@ -356,7 +356,19 @@ impl Scene {
         info!("{self}: Last render saved to buffer");
     }
 
-    #[allow(dead_code)]
+    pub fn set_first_render(&mut self, first_render: bool) {
+        //! Sets first_render to the passed value
+        //! ## Parameter
+        //! 'first_render': boolean value
+        self.first_render = first_render
+    }
+
+    pub fn get_first_render(&self) -> bool {
+        //! ## Returns
+        //! first_render: if the last render was the first render of this scene?
+        self.first_render
+    }
+
     pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(

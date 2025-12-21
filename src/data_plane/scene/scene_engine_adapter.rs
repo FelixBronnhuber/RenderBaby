@@ -179,8 +179,8 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        let rc = if self.first_render {
-            self.first_render = false;
+        let rc = if self.get_first_render() {
+            self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
                 .uniforms_create(uniforms)

@@ -1,5 +1,4 @@
 use glam::Vec3;
-use serde::{Deserialize, Serialize};
 /// Defines light sources for the scene
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -114,7 +113,7 @@ impl std::fmt::Display for LightSource {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Debug)]
 /// Light can be either Ambient, Point or Directional
 pub enum LightType {
     Ambient,
