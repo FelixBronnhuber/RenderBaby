@@ -1,27 +1,21 @@
 use glam::Vec3;
-use serde::Serialize;
 use crate::{
     geometric_object::{GeometricObject, SceneObject},
     material::Material,
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 /// Simple Sphere defined by a 3d center and a radius
 pub struct Sphere {
     center: Vec3,
     radius: f32, // maybe use radius only internally?
-    #[serde(skip_serializing)]
     material: Material,
-    //#[serde(serialize_with = "path::to::function")]
     color: [f32; 3],
     name: String,
     path: Option<String>,
-    #[serde(skip_serializing)]
     scale: Vec3,
-    #[serde(skip_serializing)]
     translation: Vec3,
-    #[serde(skip_serializing)]
     rotation: Vec3,
 }
 #[allow(dead_code)]

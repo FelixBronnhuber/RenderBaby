@@ -1,5 +1,4 @@
 use glam::Vec3;
-use serde::Serialize;
 
 use crate::{
     geometric_object::{GeometricObject, SceneObject},
@@ -7,19 +6,15 @@ use crate::{
 };
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct TriGeometry {
-    #[serde(skip_serializing)]
     triangles: Vec<Triangle>,
     name: String,
-    #[serde(skip_serializing)]
     material: Material,
     path: Option<String>,
     scale: Vec3,
-    #[serde(skip_serializing)]
     translation: Vec3,
     rotation: Vec3,
-    #[serde(rename(serialize = "position"))]
     a_position: Option<Vec3>,
 }
 impl GeometricObject for TriGeometry {
