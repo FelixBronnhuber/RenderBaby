@@ -148,8 +148,7 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
 
     let t = f * dot(edge2, q);
 
-    // if t > 0.001 {
-    if t > 0.0 {
+    if t > 0.001 {
         return t;
     }
 
@@ -171,8 +170,7 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
     
     let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
     
-    //if t > 0.001 {
-    if (t > 0.0) {
+    if (t > 0.001) {
         return t;
     }
     
@@ -212,16 +210,14 @@ fn random_unit_vector(seed: ptr<function, u32>) -> vec3<f32> {
 }
 
 // Cosine-weighted hemisphere sampling
-fn random_cosine_direction(seed: ptr<function, u32>) -> vec3<f32> {
-    let r1 = random_float(seed);
-    let r2 = random_float(seed);
+fn random_in_hemisphere(normal: vec3<f32>, seed: ptr<function, u32>) -> vec3<f32> {
+    let in_unit_sphere = random_unit_vector(seed);
     
-    let phi = 2.0 * 3.14159265359 * r1;
-    let x = cos(phi) * sqrt(r2);
-    let y = sin(phi) * sqrt(r2);
-    let z = sqrt(1.0 - r2);
-    
-    return vec3<f32>(x, y, z);
+    if (dot(in_unit_sphere, normal) > 0.0) {
+        return in_unit_sphere;
+    } else {
+        return -in_unit_sphere;
+    }
 }
 
 fn reflect_vector(v: vec3<f32>, n: vec3<f32>) -> vec3<f32> {
@@ -233,29 +229,17 @@ fn near_zero(v: vec3<f32>) -> bool {
     return (abs(v.x) < s) && (abs(v.y) < s) && (abs(v.z) < s);
 }
 
-// Get orthonormal basis from normal
-fn get_onb(normal: vec3<f32>) -> mat3x3<f32> {
-    let up = select(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), abs(normal.y) > 0.999);
-    let tangent = normalize(cross(up, normal));
-    let bitangent = cross(normal, tangent);
-    return mat3x3<f32>(tangent, bitangent, normal);
-}
-
 fn scatter_lambertian(
-    ray_dir: vec3<f32>,
-    hit: HitRecord,
+    normal: vec3<f32>,
     seed: ptr<function, u32>
 ) -> vec3<f32> {
-    // Cosine-weighted random direction
-    let local_dir = random_cosine_direction(seed);
-    let onb = get_onb(hit.normal);
-    let scatter_direction = onb * local_dir;
+    let scatter_direction = normal + random_unit_vector(seed);
     
     if near_zero(scatter_direction) {
-        return hit.normal;
+        return normal;
     }
     
-    return scatter_direction;
+    return normalize(scatter_direction);
 }
 
 fn scatter_metal(
@@ -365,7 +349,6 @@ fn trace_ray(
             }
         }
         
-        // Miss - hit sky
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
@@ -374,12 +357,10 @@ fn trace_ray(
             break;
         }
         
-        // Add ambient on first hit
         if (depth == 0) {
             color += closest_hit.material.ambient;
         }
         
-        // Determine material type and scatter
         let specular_strength = (closest_hit.material.specular.x + 
                                 closest_hit.material.specular.y + 
                                 closest_hit.material.specular.z) / 3.0;
@@ -388,20 +369,20 @@ fn trace_ray(
         var albedo: vec3<f32>;
         
         if (specular_strength > 0.01) {
-            // Metal material
-            // Use shininess as inverse fuzz (higher shininess = less fuzz)
-            let fuzz = clamp(1.0 - closest_hit.material.shininess / 100.0, 0.0, 1.0);
+            // Metal material with glossy reflections
+            // Map Ns (0-1000) to fuzz (1.0-0.0)
+            // Higher Ns = sharper reflections (less fuzz)
+            // Lower Ns = blurrier reflections (more fuzz)
+            let fuzz = clamp(1.0 - (closest_hit.material.shininess / 1000.0), 0.0, 1.0);
             scattered = scatter_metal(direction, closest_hit, fuzz, &seed);
             
-            // Check if scattered below surface
             if (dot(scattered, closest_hit.normal) <= 0.0) {
                 break;
             }
             
             albedo = closest_hit.material.specular;
         } else {
-            // Lambertian material
-            scattered = scatter_lambertian(direction, closest_hit, &seed);
+            scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
         }
         
@@ -417,7 +398,6 @@ fn trace_ray(
             albedo = albedo / continue_prob;
         }
         
-        // Update for next bounce
         origin = closest_hit.pos + scattered * 0.001;
         direction = normalize(scattered);
         attenuation *= albedo;
