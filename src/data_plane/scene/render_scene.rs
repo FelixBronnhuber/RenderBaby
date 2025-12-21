@@ -119,9 +119,9 @@ impl Scene {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
                         let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                            tris.push(vs.0 as u32);
-                            tris.push(vs.1 as u32);
-                            tris.push(vs.2 as u32);
+                        tris.push(vs.0 as u32);
+                        tris.push(vs.1 as u32);
+                        tris.push(vs.2 as u32);
                         if let Some(m) = material_list
                             .iter()
                             .position(|x| x.name == face.material_name.clone())
