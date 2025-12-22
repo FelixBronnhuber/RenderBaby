@@ -3,7 +3,6 @@ const GROUND_ENABLED: bool = true;
 const MAX_DEPTH: i32 = 5;
 const SHADOW_SAMPLES: u32 = 8u;
 const SHADOW_EDGE: f32 = 0.2;
-const POINT_LIGHT_COUNT: u32 = 3u;
 
 struct Camera {
     pane_distance: f32,
@@ -63,7 +62,7 @@ struct PointLight {
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
 @group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight, POINT_LIGHT_COUNT>;
+@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -355,7 +354,7 @@ fn trace_ray(
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
         var light_total = vec3<f32>(0.0);
 
-        for (var i = 0u; i < POINT_LIGHT_COUNT; i = i + 1u) {
+        for (var i = 0u; i < arrayLength(&point_lights); i = i + 1u) {
             let light = point_lights[i];
 
             let light_dir = light.position - shadow_origin;

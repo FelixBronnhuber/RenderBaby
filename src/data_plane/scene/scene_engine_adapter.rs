@@ -188,7 +188,7 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
-                //.lights_create()
+                .lights_create([RenderLights::default()].to_vec())
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -198,7 +198,7 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
-                //.lights_create()
+                .lights([RenderLights::default()].to_vec())
                 .build()
         };
 

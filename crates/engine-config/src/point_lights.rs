@@ -1,5 +1,4 @@
 use bytemuck::{Pod, Zeroable};
-use crate::Camera;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
