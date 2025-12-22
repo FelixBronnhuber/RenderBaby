@@ -13,6 +13,7 @@ use crate::data_plane::scene::{render_scene::Scene};
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 pub type RenderCamera = engine_config::Camera;
+pub type RenderLights = engine_config::PointLight;
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -187,6 +188,7 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
+                //.lights_create()
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -196,6 +198,7 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
+                //.lights_create()
                 .build()
         };
 

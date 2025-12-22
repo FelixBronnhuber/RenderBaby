@@ -63,7 +63,7 @@ struct PointLight {
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
 @group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<uniform> point_lights: array<PointLight, POINT_LIGHT_COUNT>;
+@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight, POINT_LIGHT_COUNT>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {

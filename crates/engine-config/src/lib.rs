@@ -5,11 +5,13 @@ pub mod renderer;
 pub mod sphere;
 pub mod uniforms;
 pub mod vec3;
+mod point_lights;
 
 pub use render_config::{RenderConfig, RenderConfigBuilder, RenderConfigBuilderError};
 pub use sphere::{Sphere, SphereError};
 pub use uniforms::Uniforms;
 pub use vec3::Vec3;
 pub use camera::Camera;
+pub use point_lights::PointLight;
 pub use render_output::RenderOutput;
 pub use renderer::Renderer;

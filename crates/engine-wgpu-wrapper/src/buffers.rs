@@ -1,4 +1,4 @@
-use engine_config::{RenderConfig, Uniforms, Sphere};
+use engine_config::{RenderConfig, Uniforms, Sphere, PointLight};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
@@ -13,16 +13,7 @@ pub struct GpuBuffers {
     pub triangles: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
-    pub light: Buffer,
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct PointLight {
-    pub position: [f32; 3],
-    pub intensity: f32,
-    pub color: [f32; 3],
-    pub _pad: f32,
+    pub lights: Buffer,
 }
 
 impl GpuBuffers {
@@ -43,6 +34,10 @@ impl GpuBuffers {
             Change::Create(t) => t.as_slice(),
             _ => panic!("Triangles must be Create during initialization"),
         };
+        let lights = match &rc.lights {
+            Change::Create(l) => l.as_slice(),
+            _ => panic!("Lights must be Create during initialization"),
+        };
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
 
@@ -53,27 +48,6 @@ impl GpuBuffers {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-
-        let lights = [
-            PointLight {
-                position: [2.0, 4.0, 1.0],
-                intensity: 20.0,
-                color: [1.0, 1.0, 1.0],
-                _pad: 0.0,
-            },
-            PointLight {
-                position: [-3.0, 3.0, 2.0],
-                intensity: 15.0,
-                color: [1.0, 0.8, 0.7],
-                _pad: 0.0,
-            },
-            PointLight {
-                position: [0.0, 6.0, -3.0],
-                intensity: 25.0,
-                color: [0.7, 0.8, 1.0],
-                _pad: 0.0,
-            },
-        ];
 
         Self {
             spheres: Self::create_storage_buffer(device, "Spheres Buffer", spheres),
@@ -88,7 +62,7 @@ impl GpuBuffers {
                 "Progressive Render Buffer",
                 &[*prh],
             ),
-            light: Self::create_uniform_buffer(device, "Light Buffer", &lights),
+            lights: Self::create_storage_buffer(device, "Light Buffer", lights),
         }
     }
 
@@ -113,6 +87,10 @@ impl GpuBuffers {
 
     pub fn grow_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
@@ -176,6 +154,10 @@ impl GpuBuffers {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
     }
 
+    pub fn init_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
     // Update methods for existing buffers
     pub fn update_uniforms(&mut self, device: &Device, uniforms: &Uniforms) {
         self.uniforms = Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms);
@@ -191,6 +173,10 @@ impl GpuBuffers {
 
     pub fn update_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     // Delete methods (create minimal empty buffers)
@@ -213,5 +199,10 @@ impl GpuBuffers {
     pub fn delete_triangles(&mut self, device: &Device) {
         self.triangles =
             Self::create_storage_buffer(device, "Triangles Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_lights(&mut self, device: &Device) {
+        self.lights =
+            Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
     }
 }
