@@ -7,17 +7,20 @@ use crate::aabb::AABB;
 const MAX_LEAF_SIZE: usize = 128; //Maximum Triangles per Leaf, apparently lower is more common
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct BVHNode {
     //Bounding Box of this Node
     pub aabb_min: Vec3,
+    pub _pad0: u32,
     pub aabb_max: Vec3,
+    pub _pad1: u32,
     //Index in Nodes Vector of BVH struct
     pub left: u32,
     pub right: u32,
     //Index of First Primitive in this Node and how many primitives there are in this node
     pub first_primitive: u32,
     pub primitive_count: u32,
+    pub _pad2: [u32; 2],
 }
 
 pub struct BVH {
@@ -25,13 +28,24 @@ pub struct BVH {
     pub indices: Vec<u32>, // Only Triangles
 }
 
-pub fn build_bvh(triangles: &[GPUTriangle]) -> BVH {
-    let mut indices: Vec<u32> = (0..triangles.len() as u32).collect();
-    let mut nodes = Vec::new();
+impl BVH {
+    pub fn new(triangles: &[GPUTriangle]) -> Self {
+        let mut indices: Vec<u32> = (0..triangles.len() as u32).collect();
+        let mut nodes = Vec::new();
 
-    build_node(triangles, &mut indices, &mut nodes, 0, triangles.len());
+        build_node(triangles, &mut indices, &mut nodes, 0, triangles.len());
 
-    BVH { nodes, indices }
+        Self { nodes, indices }
+    }
+}
+
+impl Default for BVH {
+    fn default() -> Self {
+        Self {
+            nodes: Vec::new(),
+            indices: Vec::new(),
+        }
+    }
 }
 
 fn build_node(
@@ -42,7 +56,7 @@ fn build_node(
     count: usize,
 ) -> u32 {
     let node_index = nodes.len() as u32;
-    nodes.push(BVHNode::zeroed());
+    nodes.push(BVHNode::default());
 
     let mut aabb = AABB::empty();
     for i in first..first + count {
@@ -56,11 +70,14 @@ fn build_node(
         //checks if the current Node is a Leaf
         nodes[node_index as usize] = BVHNode {
             aabb_min: aabb.min,
+            _pad0: 0,
             aabb_max: aabb.max,
+            _pad1: 0,
             left: 0, //both are 0 as they do not have any nodes underneath them, therefore referencing the root as default
             right: 0,
             first_primitive: first as u32,
             primitive_count: count as u32,
+            _pad2: [0, 0],
         };
         return node_index;
     }
@@ -89,11 +106,14 @@ fn build_node(
 
     nodes[node_index as usize] = BVHNode {
         aabb_min: aabb.min,
+        _pad0: 0,
         aabb_max: aabb.max,
+        _pad1: 0,
         left,
         right,
         first_primitive: 0,
         primitive_count: 0,
+        _pad2: [0, 0],
     };
 
     node_index
