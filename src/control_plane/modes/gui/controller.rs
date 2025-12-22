@@ -23,7 +23,7 @@ impl Controller {
         pipeline.set_width(*res_x);
         pipeline.set_height(*res_y);
         pipeline.set_camera_pos(scene.get_camera().get_position().to_array());
-        pipeline.set_camera_dir(scene.get_camera().get_rotation().to_array());
+        pipeline.set_camera_dir(scene.get_camera().get_look_at().to_array());
         pipeline.set_samples(scene.get_camera().get_ray_samples());
     }
 

@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use glam::Vec3;
 use anyhow::Error;
-use serde::Serialize;
 
 use crate::{
     geometric_object::{GeometricObject, SceneObject},
@@ -11,21 +10,17 @@ use crate::{
 
 /// This is where the mesh as an alternative to trigeometry will be implemented
 #[allow(dead_code)]
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 pub struct Mesh {
-    #[serde(skip_serializing)]
     vertices: Vec<f32>,
-    #[serde(skip_serializing)]
     tris: Vec<u32>,
-    #[serde(skip_serializing)]
-    materials: Vec<Material>,
+    materials: Option<Vec<Material>>,
+    material_index: Option<Vec<usize>>,
     path: Option<String>,
     name: String,
     scale: Vec3,
-    #[serde(skip_serializing)]
     translation: Vec3,
     rotation: Vec3,
-    #[serde(rename(serialize = "position"))]
     centroid: Vec3,
 }
 
@@ -34,7 +29,10 @@ impl Mesh {
     pub fn new(
         vertices: Vec<f32>,
         tris: Vec<u32>,
-        materials: Vec<Material>,
+        materials: Option<Vec<Material>>,
+        material_index: Option<Vec<usize>>,
+        name: Option<String>,
+        _path: Option<String>,
     ) -> Result<Self, Error> {
         //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
@@ -42,8 +40,9 @@ impl Mesh {
                 vertices,
                 tris,
                 materials,
+                material_index,
                 path: None,
-                name: "new mash".to_owned(),
+                name: name.unwrap_or("unnamed mesh".to_owned()),
                 scale: Vec3::new(1.0, 1.0, 1.0),
                 rotation: Vec3::default(),
                 translation: Vec3::default(),

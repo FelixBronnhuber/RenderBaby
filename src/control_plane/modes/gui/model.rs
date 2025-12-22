@@ -43,7 +43,7 @@ impl Model {
         }
     }
     pub fn set_fov(&mut self, fov: f32) {
-        self.scene.get_camera_mut().set_fov(fov);
+        self.scene.get_camera_mut().set_pane_width(fov);
     }
 
     pub fn set_resolution(&mut self, width: u32, height: u32) {
@@ -61,7 +61,7 @@ impl Model {
     pub fn set_camera_dir(&mut self, dir: [f32; 3]) {
         self.scene
             .get_camera_mut()
-            .set_rotation(Vec3::from_array(dir));
+            .set_look_at(Vec3::from_array(dir));
     }
 
     pub fn set_color_hash_enabled(&mut self, enabled: bool) {
