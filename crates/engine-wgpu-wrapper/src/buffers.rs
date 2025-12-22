@@ -202,7 +202,6 @@ impl GpuBuffers {
     }
 
     pub fn delete_lights(&mut self, device: &Device) {
-        self.lights =
-            Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
     }
 }

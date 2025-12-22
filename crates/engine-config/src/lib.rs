@@ -1,11 +1,11 @@
 pub mod camera;
+mod point_lights;
 pub mod render_config;
 pub mod render_output;
 pub mod renderer;
 pub mod sphere;
 pub mod uniforms;
 pub mod vec3;
-mod point_lights;
 
 pub use render_config::{RenderConfig, RenderConfigBuilder, RenderConfigBuilderError};
 pub use sphere::{Sphere, SphereError};

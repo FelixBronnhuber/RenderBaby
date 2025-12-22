@@ -397,11 +397,8 @@ impl GpuWrapper {
         }
 
         if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {
-            self.queue.write_buffer(
-                &self.buffer_wrapper.lights,
-                0,
-                bytemuck::cast_slice(lights),
-            );
+            self.queue
+                .write_buffer(&self.buffer_wrapper.lights, 0, bytemuck::cast_slice(lights));
         }
     }
 }

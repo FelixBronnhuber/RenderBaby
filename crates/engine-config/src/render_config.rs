@@ -6,7 +6,7 @@ pub struct RenderConfig {
     pub spheres: Change<Vec<Sphere>>,
     pub vertices: Change<Vec<f32>>,
     pub triangles: Change<Vec<u32>>,
-    pub lights: Change<Vec<PointLight>>
+    pub lights: Change<Vec<PointLight>>,
 }
 
 #[derive(Clone, Copy, Debug)]
