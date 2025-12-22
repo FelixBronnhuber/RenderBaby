@@ -23,6 +23,33 @@ pub struct BVHNode {
     pub _pad2: [u32; 2],
 }
 
+impl BVHNode {
+    pub fn leaf(
+        aabb_min: Vec3,
+        aabb_max: Vec3,
+        first_primitive: u32,
+        primitive_count: u32,
+    ) -> Self {
+        Self {
+            aabb_min,
+            aabb_max,
+            first_primitive,
+            primitive_count,
+            ..Default::default()
+        }
+    }
+
+    pub fn internal(aabb_min: Vec3, aabb_max: Vec3, left: u32, right: u32) -> Self {
+        Self {
+            aabb_min,
+            aabb_max,
+            left,
+            right,
+            ..Default::default()
+        }
+    }
+}
+
 pub struct BVH {
     pub nodes: Vec<BVHNode>,
     pub indices: Vec<u32>, // Only Triangles
@@ -68,17 +95,8 @@ fn build_node(
 
     if count <= MAX_LEAF_SIZE {
         //checks if the current Node is a Leaf
-        nodes[node_index as usize] = BVHNode {
-            aabb_min: aabb.min,
-            _pad0: 0,
-            aabb_max: aabb.max,
-            _pad1: 0,
-            left: 0, //both are 0 as they do not have any nodes underneath them, therefore referencing the root as default
-            right: 0,
-            first_primitive: first as u32,
-            primitive_count: count as u32,
-            _pad2: [0, 0],
-        };
+        //both left and right are 0 as they do not have any nodes underneath them, therefore referencing the root as default
+        nodes[node_index as usize] = BVHNode::leaf(aabb.min, aabb.max, first as u32, count as u32);
         return node_index;
     }
 
@@ -104,17 +122,7 @@ fn build_node(
     let left = build_node(triangles, indices, nodes, first, mid - first);
     let right = build_node(triangles, indices, nodes, mid, first + count - mid);
 
-    nodes[node_index as usize] = BVHNode {
-        aabb_min: aabb.min,
-        _pad0: 0,
-        aabb_max: aabb.max,
-        _pad1: 0,
-        left,
-        right,
-        first_primitive: 0,
-        primitive_count: 0,
-        _pad2: [0, 0],
-    };
+    nodes[node_index as usize] = BVHNode::internal(aabb.min, aabb.max, left, right);
 
     node_index
 }

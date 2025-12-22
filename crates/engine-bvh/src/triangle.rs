@@ -10,5 +10,4 @@ pub struct GPUTriangle {
     pub _pad1: u32,
     pub v2: Vec3,
     pub _pad2: u32,
-    pub material_id: u32,
 }

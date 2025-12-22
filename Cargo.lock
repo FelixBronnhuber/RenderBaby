@@ -3336,9 +3336,7 @@ name = "scene-objects"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "serde",
- "serde_json",
- "glam",
+ "glam 0.30.9",
 ]
 
 [[package]]
