@@ -2,7 +2,7 @@ use std::path::{PathBuf};
 use anyhow::{Error};
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
-use log::{info, error};
+use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
     light_source::{LightSource, LightType},
@@ -13,13 +13,22 @@ use scene_objects::{
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::scene_graph::SceneGraph,
+        scene::{
+            scene_engine_adapter::{
+                camera_to_render_uniforms, mesh_to_render_data, sphere_to_render_sphere,
+            },
+            scene_graph::SceneGraph,
+        },
         scene_io::{
-            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+            img_export::export_img_png, obj_parser::OBJParser, scene_importer::parse_scene,
         },
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
+
+type RenderSphere = engine_config::Sphere;
+type RenderUniforms = engine_config::Uniforms;
+type RenderCamera = engine_config::Camera;
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -27,6 +36,7 @@ pub struct Scene {
     background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
+    render_config_builder: RenderConfigBuilder,
     first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
@@ -192,40 +202,43 @@ impl Scene {
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
-        let rotation = crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().dir; //Engine uses currently a direction vector
-        let pane_width =
-            crate::data_plane::scene::scene_engine_adapter::RenderCamera::default().pane_width;
-        let render_camera = crate::data_plane::scene::scene_engine_adapter::RenderCamera::new(
+        let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
+        let pane_width = RenderCamera::default().pane_width;
+        let render_camera = RenderCamera::new(
             cam.get_fov(),
             pane_width,
             [position.x, position.y, position.z],
             rotation,
         );
-        Self {
+        let mut res = Self {
             scene_graph: SceneGraph::new(),
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
-            render_engine: Option::from(Engine::new(
-                RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(
-                        *width,
-                        *height,
-                        render_camera,
-                        cam.get_ray_samples(),
-                        0,
-                        0,
-                    ))
-                    .spheres_create(vec![])
-                    .vertices_create(vec![])
-                    .triangles_create(vec![])
-                    .build(),
-                RenderEngine::Raytracer,
-            )),
+            render_engine: None,
+            render_config_builder: RenderConfigBuilder::new(),
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-        }
+        };
+        res.render_config_builder = RenderConfigBuilder::new()
+            .uniforms_create(Uniforms::new(
+                *width,
+                *height,
+                render_camera,
+                cam.get_ray_samples(),
+                0,
+                0,
+            ))
+            .spheres_create(vec![])
+            .vertices_create(vec![])
+            .triangles_create(vec![]);
+
+        res.set_render_engine(Engine::new(
+            res.render_config_builder.clone().build(),
+            RenderEngine::Raytracer,
+        ));
+        res
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
@@ -374,6 +387,127 @@ impl Scene {
 
         info!("{self}: Saved image to {:?}", path);
         export_img_png(path, render)
+    }
+
+    fn get_render_spheres(&self) -> Vec<RenderSphere> {
+        //! ## Returns
+        //! a Vec that contains all Scene spheres as engine_config::Sphere
+        self.get_spheres()
+            .iter()
+            .map(sphere_to_render_sphere)
+            .collect()
+    }
+    pub(crate) fn get_render_uniforms(
+        &self,
+        spheres_count: u32,
+        triangles_count: u32,
+    ) -> RenderUniforms {
+        //! ## Returns
+        //! RenderUnfiform for the camera of the scene
+        camera_to_render_uniforms(
+            self.get_camera(),
+            spheres_count,
+            triangles_count,
+            self.get_color_hash_enabled(),
+        )
+        .unwrap()
+    }
+
+    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
+        //! ## Returns
+        //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
+        self.get_meshes().iter().map(mesh_to_render_data).collect()
+    }
+
+    pub fn render(&mut self) -> Result<RenderOutput, Error> {
+        //! calls the render engine for the scene self.
+        //! ## Returns
+        //! Result of either the RenderOutput or a error
+        info!("{self}: Render has been called. Collecting render parameters");
+
+        let render_spheres = self.get_render_spheres();
+        let render_tris = self.get_render_tris();
+        debug!("Scene mesh data: {:?}", self.get_meshes());
+        debug!("Collected mesh data: {:?}", render_tris);
+
+        let spheres_count = render_spheres.len() as u32;
+        let triangles_count = render_tris
+            .iter()
+            .map(|(_, tri)| tri.len() as u32 / 3)
+            .sum();
+
+        let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
+
+        // Collect all vertices and triangles into flat vectors
+        let (all_vertices, all_triangles) = if render_tris.is_empty() {
+            (vec![], vec![])
+        } else {
+            let mut all_verts = vec![];
+            let mut all_tris = vec![];
+            let mut vertex_offset = 0u32;
+
+            for (verts, tris) in render_tris {
+                let vertex_count = (verts.len() / 3) as u32;
+
+                for tri_idx in tris {
+                    all_tris.push(tri_idx + vertex_offset);
+                }
+
+                all_verts.extend(verts);
+
+                vertex_offset += vertex_count;
+            }
+            (all_verts, all_tris)
+        };
+        info!("Collected vertices: {:?}", all_vertices);
+        info!("Collected tris: {:?}", all_triangles);
+        info!(
+            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
+            render_spheres.len(),
+            triangles_count,
+            all_vertices.len() / 3
+        );
+
+        let rc = if self.get_first_render() {
+            self.set_first_render(false);
+            // NOTE: *_create is for the first initial render which initializes all the buffers etc.
+            RenderConfigBuilder::new()
+                .uniforms_create(uniforms)
+                .spheres_create(render_spheres)
+                .vertices_create(all_vertices)
+                .triangles_create(all_triangles)
+                .build()
+        } else {
+            // NOTE: * otherwise the values are updated with the new value an the unchanged fields
+            // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
+            RenderConfigBuilder::new()
+                .uniforms(uniforms)
+                .spheres(render_spheres)
+                .vertices(all_vertices)
+                .triangles(all_triangles)
+                .build()
+        };
+
+        let engine = self.get_render_engine_mut();
+
+        let output = engine.render(rc);
+        match output {
+            Ok(res) => match res.validate() {
+                Ok(_) => {
+                    info!("{self}: Successfully got valid render output");
+                    self.set_last_render(res.clone());
+                    Ok(res)
+                }
+                Err(error) => {
+                    error!("{self}: Received invalid render output");
+                    Err(error)
+                }
+            },
+            Err(error) => {
+                error!("{self}: The following error occurred when rendering: {error}");
+                Err(error)
+            }
+        }
     }
 }
 
