@@ -611,7 +611,7 @@ impl Scene {
     pub fn get_camera_resolution(&self) -> &Resolution {
         //! ## Returns
         //! Camera resolution as Array of u32
-        &self.get_camera().get_resolution()
+        self.get_camera().get_resolution()
     }
     pub fn set_camera_resolution(&mut self, resolution: Resolution) {
         //! Sets the camera resolution
