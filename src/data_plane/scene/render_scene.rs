@@ -175,14 +175,16 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
+        self.set_camera(cam);
+        self.add_lightsource(light);
+
         self.add_sphere(sphere0);
         self.add_sphere(sphere1);
         self.add_sphere(sphere2);
         self.add_sphere(sphere3);
         self.add_sphere(sphere4);
 
-        self.set_camera(cam);
-        self.add_lightsource(light);
+        self.update_render_config();
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
@@ -265,6 +267,7 @@ impl Scene {
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
+        self.render_config_builder = self.render_config_builder.clone().spheres_delete()
     }
 
     pub fn clear_polygons(&mut self) {
@@ -425,7 +428,7 @@ impl Scene {
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
-        self.update_render_config();
+        //self.update_render_config();
         let rc = self.build_render_config();
 
         let engine = self.get_render_engine_mut();
