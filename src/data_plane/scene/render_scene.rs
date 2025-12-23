@@ -509,25 +509,12 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        self.render_config_builder = if self.get_first_render() {
-            self.set_first_render(false);
-            // NOTE: *_create is for the first initial render which initializes all the buffers etc.
-            RenderConfigBuilder::new()
-                .uniforms_create(uniforms)
-                .spheres_create(render_spheres)
-                .vertices_create(all_vertices)
-                .triangles_create(all_triangles)
-                .lights_create([RenderLights::default()].to_vec())
-        } else {
-            // NOTE: * otherwise the values are updated with the new value an the unchanged fields
-            // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
-            RenderConfigBuilder::new()
-                .uniforms(uniforms)
-                .spheres(render_spheres)
-                .vertices(all_vertices)
-                .triangles(all_triangles)
-                .lights([RenderLights::default()].to_vec())
-        };
+        self.render_config_builder = RenderConfigBuilder::new()
+            .uniforms(uniforms)
+            .spheres(render_spheres)
+            .vertices(all_vertices)
+            .triangles(all_triangles)
+            .lights([RenderLights::default()].to_vec())
     }
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
     //todo: add fns for mesh and spheres and lights, instead of offering get_spheres, get_meshes
