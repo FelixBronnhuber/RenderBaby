@@ -24,7 +24,7 @@ pub struct ProxyScene {
 impl ProxyScene {
     pub fn new_from_real_scene(scene: &Scene) -> Self {
         let mut objects = vec![];
-        for obj in scene.get_tri_geometries() {
+        for obj in scene.get_meshes() {
             objects.push(ProxyMesh::new_from_real_mesh(obj));
         }
         let mut lights = vec![];

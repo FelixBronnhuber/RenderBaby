@@ -9,9 +9,7 @@ use scene_objects::{
     material::Material,
     mesh::Mesh,
     sphere::Sphere,
-    tri_geometry::TriGeometry,
 };
-use scene_objects::tri_geometry::Triangle;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
@@ -51,16 +49,12 @@ impl Scene {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
                 let mut paths = scene_and_path.1;
-                let mut meshes = Vec::with_capacity(1);
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
                     .for_each(|mut path| pathbuf.push(directory_path.join(path)));
                 for i in pathbuf {
-                    meshes.push(scene.load_object_from_file(i)?);
-                }
-                for i in meshes {
-                    scene.add_tri_geometry(i);
+                    scene.load_object_from_file(i)?;
                 }
                 Ok(scene)
             }
@@ -70,8 +64,7 @@ impl Scene {
             }
         }
     }
-    //will be removed once Mesh Structure can be used to render
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -101,7 +94,7 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: mtl file at {i} could not be parsed");
+                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
                             }
                         }
                     }
@@ -110,45 +103,37 @@ impl Scene {
                         .iter()
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
-                let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
-                objs.faces.len();
+
+                let mut tris = Vec::with_capacity(100);
+                let mut material_index = Vec::with_capacity(10);
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
                         let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        let triangle = vec![
-                            Vec3::new(
-                                objs.vertices[((vs.0 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.1 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.2 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                        ];
-
-                        let material_name = face.material_name.clone();
-                        if let Some(material) =
-                            material_list.iter().find(|a| a.name == material_name)
+                        tris.push(vs.0 as u32 - 1);
+                        tris.push(vs.1 as u32 - 1);
+                        tris.push(vs.2 as u32 - 1);
+                        if let Some(m) = material_list
+                            .iter()
+                            .position(|x| x.name == face.material_name.clone())
                         {
-                            trianglevector.push(Triangle::new(triangle, Some(material.clone())));
-                        } else {
-                            trianglevector.push(Triangle::new(triangle, None));
-                        };
+                            material_index.push(m);
+                        }
                     }
                 }
-                let mut tri = TriGeometry::new(trianglevector);
-                tri.set_name(objs.name);
-                self.add_tri_geometry(tri.clone());
-                Result::Ok(tri)
+                let mesh = Mesh::new(
+                    objs.vertices,
+                    tris,
+                    Some(material_list),
+                    Some(material_index),
+                    Some(objs.name),
+                    Some(path.to_string_lossy().to_string()),
+                )?;
+                info!("Scene {self}: Successfully loaded object from {path_str}");
+                self.add_mesh(mesh);
+                Ok(())
             }
+
             Err(error) => {
                 error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
                 Err(error.into())
@@ -234,6 +219,7 @@ impl Scene {
                     .spheres_create(vec![])
                     .vertices_create(vec![])
                     .triangles_create(vec![])
+                    .lights_create(vec![])
                     .build(),
                 RenderEngine::Raytracer,
             )),
@@ -241,15 +227,6 @@ impl Scene {
             last_render: None,
             color_hash_enabled: true,
         }
-    }
-
-    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
-        //! adds an object to the scene
-        //! ## Arguments
-        //! 'tri': TriGeometry that is to be added to the scene
-        //!
-        info!("{self}: adding TriGeometry {:?}", tri.get_name());
-        self.scene_graph.add_tri_geometry(tri);
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
@@ -279,7 +256,7 @@ impl Scene {
     }
 
     pub fn clear_polygons(&mut self) {
-        self.scene_graph.clear_tri_geometries();
+        self.scene_graph.clear_meshes();
     }
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
@@ -289,12 +266,6 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
-        //! ##  Returns
-        //! a reference to a vector of all TriGeometries
-
-        self.scene_graph.get_tri_geometries()
-    }
     pub fn get_spheres(&self) -> &Vec<Sphere> {
         //! ##  Returns
         //! a reference to a vector of all spheres
