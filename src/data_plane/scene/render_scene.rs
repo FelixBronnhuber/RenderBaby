@@ -236,7 +236,7 @@ impl Scene {
             .spheres_create(vec![])
             .vertices_create(vec![])
             .triangles_create(vec![])
-            .lights_create([RenderLights::default()].to_vec());
+            .lights_create(vec![]);
 
         res.set_render_engine(Engine::new(
             res.build_render_config(),
@@ -627,7 +627,7 @@ impl Scene {
         self.render_config_builder = self
             .render_config_builder
             .clone()
-            .lights_create([RenderLights::default()].to_vec());
+            .lights([RenderLights::default()].to_vec());
         todo!("Update with lights from scene is not implemented yet (using default values)")
     }
 
