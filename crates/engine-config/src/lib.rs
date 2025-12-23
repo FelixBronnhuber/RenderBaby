@@ -1,6 +1,7 @@
 pub mod camera;
 pub mod material;
 pub mod mesh;
+pub mod point_lights;
 pub mod render_config;
 pub mod render_output;
 pub mod renderer;
@@ -13,6 +14,7 @@ pub use sphere::{Sphere, SphereError};
 pub use uniforms::Uniforms;
 pub use vec3::Vec3;
 pub use camera::Camera;
+pub use point_lights::PointLight;
 pub use render_output::RenderOutput;
 pub use renderer::Renderer;
 pub use material::Material;

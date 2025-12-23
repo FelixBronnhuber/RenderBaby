@@ -7,6 +7,7 @@ pub struct RenderConfig {
     pub vertices: Change<Vec<f32>>,
     pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
+    pub lights: Change<Vec<PointLight>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -72,6 +73,8 @@ impl ValidateInit for RenderConfig {
         }
         if !matches!(self.meshes, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidMeshes);
+        if !matches!(self.lights, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidLights);
         }
         Ok(self)
     }
@@ -145,6 +148,18 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
+        match &self.lights {
+            Change::Update(lights) | Change::Create(lights) => {
+                if lights.iter().any(|l| l.luminosity <= 0.0) {
+                    return Err(RenderConfigBuilderError::InvalidLights);
+                }
+            }
+            Change::Delete => {
+                todo!("Implement lights Deletion")
+            }
+            Change::Keep => {}
+        }
+
         Ok(self)
     }
 }
@@ -156,6 +171,7 @@ pub struct RenderConfigBuilder {
     pub vertices: Option<Change<Vec<f32>>>,
     pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
+    pub lights: Option<Change<Vec<PointLight>>>,
 }
 
 impl RenderConfigBuilder {
@@ -166,6 +182,7 @@ impl RenderConfigBuilder {
             vertices: None,
             triangles: None,
             meshes: None,
+            lights: None,
         }
     }
 
@@ -266,6 +283,23 @@ impl RenderConfigBuilder {
 
     pub fn meshes_delete(mut self) -> Self {
         self.meshes = Some(Change::Delete);
+    pub fn lights(mut self, lights: Vec<PointLight>) -> Self {
+        self.lights = Some(Change::Update(lights));
+        self
+    }
+
+    pub fn lights_create(mut self, lights: Vec<PointLight>) -> Self {
+        self.lights = Some(Change::Create(lights));
+        self
+    }
+
+    pub fn lights_no_change(mut self) -> Self {
+        self.lights = Some(Change::Keep);
+        self
+    }
+
+    pub fn lights_delete(mut self) -> Self {
+        self.lights = Some(Change::Delete);
         self
     }
 
@@ -284,6 +318,8 @@ impl RenderConfigBuilder {
         }
         if self.meshes.is_none() {
             log::info!("RenderConfigBuilder: meshes not set, defaulting to NoChange.");
+        if self.lights.is_none() {
+            log::info!("RenderConfigBuilder: lights not set, defaulting to NoChange.");
         }
 
         RenderConfig {
@@ -292,6 +328,7 @@ impl RenderConfigBuilder {
             vertices: self.vertices.unwrap_or(Change::Keep),
             triangles: self.triangles.unwrap_or(Change::Keep),
             meshes: self.meshes.unwrap_or(Change::Keep),
+            lights: self.lights.unwrap_or(Change::Keep),
         }
     }
 }
@@ -306,6 +343,7 @@ pub enum RenderConfigBuilderError {
     InvalidVertices,
     InvalidTriangles,
     InvalidMeshes,
+    InvalidLights,
     CannotDeleteNonexistent,
 }
 
@@ -326,6 +364,7 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
             RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
             RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
+            RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),
             RenderConfigBuilderError::CannotDeleteNonexistent => {
                 write!(f, "Cannot delete none existent")
             }

@@ -1,5 +1,5 @@
-use std::path::PathBuf;
-use anyhow::Error;
+use std::path::{PathBuf};
+use anyhow::{Error};
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, error};
@@ -9,33 +9,25 @@ use scene_objects::{
     material::Material,
     mesh::Mesh,
     sphere::Sphere,
-    tri_geometry::TriGeometry,
 };
-use scene_objects::tri_geometry::Triangle;
-use serde::Serialize;
-
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{obj_parser::OBJParser, scene_parser::parse_scene, img_export::export_img_png},
+        scene_io::{
+            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+        },
     },
 };
 use crate::data_plane::scene_io::mtl_parser;
 
 /// The scene holds all relevant objects, lightsources, camera
-#[derive(Serialize)]
 pub struct Scene {
-    //#[serde(rename(serialize = "items"))]
-    #[serde(flatten)]
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
-    #[serde(skip_serializing)]
     render_engine: Option<Engine>,
-    #[serde(skip_serializing)]
-    pub(crate) first_render: bool,
-    #[serde(skip_serializing)]
+    first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
 }
@@ -48,11 +40,31 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        let mut directory_path = path.clone();
+        directory_path.pop();
         let path_str = path.to_str().unwrap();
         info!("Scene: Loading new scene from {path_str}");
-        parse_scene(path)
+        let scene_and_path = parse_scene(path.clone());
+        match scene_and_path {
+            Ok(scene_and_path) => {
+                let mut scene = scene_and_path.0;
+                let mut paths = scene_and_path.1;
+                let mut pathbuf = Vec::with_capacity(1);
+                paths
+                    .iter()
+                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
+                for i in pathbuf {
+                    scene.load_object_from_file(i)?;
+                }
+                Ok(scene)
+            }
+            Err(error) => {
+                error!("Scene: Importing Scene resulted in error: {error}");
+                Err(error)
+            }
+        }
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<TriGeometry, Error> {
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -82,7 +94,7 @@ impl Scene {
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: mtl file at {i} could not be parsed");
+                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
                             }
                         }
                     }
@@ -91,45 +103,37 @@ impl Scene {
                         .iter()
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
-                let mut trianglevector: Vec<Triangle> = Vec::with_capacity(100);
-                objs.faces.len();
+
+                let mut tris = Vec::with_capacity(100);
+                let mut material_index = Vec::with_capacity(10);
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
                         let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        let triangle = vec![
-                            Vec3::new(
-                                objs.vertices[((vs.0 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.0 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.1 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.1 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                            Vec3::new(
-                                objs.vertices[((vs.2 - 1.0) * 3.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 1.0) as usize],
-                                objs.vertices[(((vs.2 - 1.0) * 3.0) + 2.0) as usize],
-                            ),
-                        ];
-
-                        let material_name = face.material_name.clone();
-                        if let Some(material) =
-                            material_list.iter().find(|a| a.name == material_name)
+                        tris.push(vs.0 as u32 - 1);
+                        tris.push(vs.1 as u32 - 1);
+                        tris.push(vs.2 as u32 - 1);
+                        if let Some(m) = material_list
+                            .iter()
+                            .position(|x| x.name == face.material_name.clone())
                         {
-                            trianglevector.push(Triangle::new(triangle, Some(material.clone())));
-                        } else {
-                            trianglevector.push(Triangle::new(triangle, None));
-                        };
+                            material_index.push(m);
+                        }
                     }
                 }
-                let mut tri = TriGeometry::new(trianglevector);
-                tri.set_name(objs.name);
-                self.add_tri_geometry(tri.clone());
-                Result::Ok(tri)
+                let mesh = Mesh::new(
+                    objs.vertices,
+                    tris,
+                    Some(material_list),
+                    Some(material_index),
+                    Some(objs.name),
+                    Some(path.to_string_lossy().to_string()),
+                )?;
+                info!("Scene {self}: Successfully loaded object from {path_str}");
+                self.add_mesh(mesh);
+                Ok(())
             }
+
             Err(error) => {
                 error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
                 Err(error.into())
@@ -216,63 +220,14 @@ impl Scene {
                     .vertices_create(vec![])
                     .triangles_create(vec![])
                     .meshes_create(vec![])
+                    .lights_create(vec![])
                     .build(),
                 RenderEngine::Raytracer,
             )),
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
-        } // todo: allow name and color as param
-    }
-
-    pub fn new_from_json(json_data: &str) -> Result<Scene, Error> {
-        //! ## Paramter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of new Scene from deserialized scene
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized =serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {Ok(scene)},
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn update_from_json(&mut self, json_data: &str) -> Result<(), Error> {
-        //! ## Parameter
-        //! 'json_data': &str of a serialized scene
-        //! ## Returns
-        //! Result of () or Error
-        todo!("Deserialization of scene is not implemented")
-        /* let deserialized = serde_json::from_str(json_data);
-        match deserialized {
-            Ok(scene) => {
-                *self = scene;
-                Ok(())
-            },
-            Err(_) => {Err(Error::msg("Failed to deserialize scene"))}
-        } */
-    }
-
-    pub fn as_json(&self) -> Result<String, Error> {
-        //! ## Returns:
-        //! JSON serialization
-        let s = serde_json::to_string(&self);
-        match s {
-            Ok(data) => Ok(data),
-            Err(error) => Err(Error::msg(format!(
-                "Error: Failed to serialize {self}: {error}"
-            ))),
         }
-    }
-
-    pub fn add_tri_geometry(&mut self, tri: TriGeometry) {
-        //! adds an object to the scene
-        //! ## Arguments
-        //! 'tri': TriGeometry that is to be added to the scene
-        //!
-        info!("{self}: adding TriGeometry {:?}", tri.get_name());
-        self.scene_graph.add_tri_geometry(tri);
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
@@ -302,9 +257,8 @@ impl Scene {
     }
 
     pub fn clear_polygons(&mut self) {
-        self.scene_graph.clear_tri_geometries();
+        self.scene_graph.clear_meshes();
     }
-
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera
         //! ## Arguments
@@ -313,12 +267,6 @@ impl Scene {
         self.scene_graph.set_camera(camera);
     }
 
-    pub fn get_tri_geometries(&self) -> &Vec<TriGeometry> {
-        //! ##  Returns
-        //! a reference to a vector of all TriGeometries
-
-        self.scene_graph.get_tri_geometries()
-    }
     pub fn get_spheres(&self) -> &Vec<Sphere> {
         //! ##  Returns
         //! a reference to a vector of all spheres
@@ -406,7 +354,19 @@ impl Scene {
         info!("{self}: Last render saved to buffer");
     }
 
-    #[allow(dead_code)]
+    pub fn set_first_render(&mut self, first_render: bool) {
+        //! Sets first_render to the passed value
+        //! ## Parameter
+        //! 'first_render': boolean value
+        self.first_render = first_render
+    }
+
+    pub fn get_first_render(&self) -> bool {
+        //! ## Returns
+        //! first_render: if the last render was the first render of this scene?
+        self.first_render
+    }
+
     pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(

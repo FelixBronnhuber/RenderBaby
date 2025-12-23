@@ -1,4 +1,4 @@
-use engine_config::{Mesh, RenderConfig, Sphere, Uniforms};
+use engine_config::{Mesh, RenderConfig, Sphere, Uniforms, PointLight};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
@@ -14,6 +14,7 @@ pub struct GpuBuffers {
     pub meshes: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
+    pub lights: Buffer,
 }
 
 impl GpuBuffers {
@@ -37,6 +38,9 @@ impl GpuBuffers {
         let meshes = match &rc.meshes {
             Change::Create(t) => t.as_slice(),
             _ => panic!("Meshes must be Create during initialization"),
+        let lights = match &rc.lights {
+            Change::Create(l) => l.as_slice(),
+            _ => panic!("Lights must be Create during initialization"),
         };
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
@@ -63,6 +67,7 @@ impl GpuBuffers {
                 "Progressive Render Buffer",
                 &[*prh],
             ),
+            lights: Self::create_storage_buffer(device, "Light Buffer", lights),
         }
     }
 
@@ -91,6 +96,8 @@ impl GpuBuffers {
 
     pub fn grow_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
@@ -156,6 +163,8 @@ impl GpuBuffers {
 
     pub fn init_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    pub fn init_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     // Update methods for existing buffers
@@ -177,6 +186,8 @@ impl GpuBuffers {
 
     pub fn update_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     // Delete methods (create minimal empty buffers)
@@ -204,5 +215,7 @@ impl GpuBuffers {
     pub fn delete_meshes(&mut self, device: &Device) {
         self.meshes =
             Self::create_storage_buffer(device, "Meshes Buffer (deleted)", &[] as &[Mesh]);
+    pub fn delete_lights(&mut self, device: &Device) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
     }
 }

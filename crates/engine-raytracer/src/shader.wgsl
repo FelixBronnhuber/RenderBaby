@@ -1,6 +1,8 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
-const MAX_DEPTH: i32 = 50;
+const MAX_DEPTH: i32 = 5;
+const SHADOW_SAMPLES: u32 = 8u;
+const SHADOW_EDGE: f32 = 0.2;
 
 struct Camera {
     pane_distance: f32,
@@ -65,6 +67,13 @@ struct HitRecord {
     material: Material,
 }
 
+struct PointLight {
+    position: vec3<f32>,
+    intensity: f32,
+    color: vec3<f32>,
+    _pad: f32,
+};
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -73,6 +82,7 @@ struct HitRecord {
 @group(0) @binding(5) var<storage, read> meshes: array<Mesh>;
 @group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
+@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -167,13 +177,13 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
     if (abs(ray_dir.y) < 1e-6) {
         return -1.0;
     }
-    
+
     let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
-    
-    if (t > 0.001) {
+
+    if (t > 0.0) {
         return t;
     }
-    
+
     return -1.0;
 }
 
@@ -251,6 +261,74 @@ fn scatter_metal(
     let reflected = reflect_vector(normalize(ray_dir), hit.normal);
     let fuzzed = reflected + fuzz * random_unit_vector(seed);
     return fuzzed;
+}
+
+fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
+    if (GROUND_ENABLED) {
+        let t = intersect_ground(origin, light_dir);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    for (var k = 0u; k < uniforms.triangles_count; k = k + 1u) {
+        let v0_idx = triangles[k * 3u + 0u];
+        let v1_idx = triangles[k * 3u + 1u];
+        let v2_idx = triangles[k * 3u + 2u];
+
+        let v0 = vec3<f32>(
+            vertices[v0_idx * 3u + 0u],
+            vertices[v0_idx * 3u + 1u],
+            vertices[v0_idx * 3u + 2u]
+        );
+        let v1 = vec3<f32>(
+            vertices[v1_idx * 3u + 0u],
+            vertices[v1_idx * 3u + 1u],
+            vertices[v1_idx * 3u + 2u]
+        );
+        let v2 = vec3<f32>(
+            vertices[v2_idx * 3u + 0u],
+            vertices[v2_idx * 3u + 1u],
+            vertices[v2_idx * 3u + 2u]
+        );
+
+        let tri = TriangleData(v0, v1, v2, 0u);
+        let t = intersect_triangle(origin, light_dir, tri);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
+        let t = intersect_sphere(origin, light_dir, spheres[k]);
+        if (t > 0.001 && t < max_dist) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
+    var visible_light: f32 = 0.0;
+    var next_seed = seed;
+
+    for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
+        let rand_jitter = random_unit_vector(next_seed) * SHADOW_EDGE;
+        let jittered_pos = light_pos + rand_jitter;
+
+        let light_dir = jittered_pos - origin;
+        let distance = length(light_dir);
+        let dir_normalized = light_dir / distance;
+
+        if (!collision(origin, dir_normalized, distance)) {
+            visible_light += 1.0;
+        }
+
+        next_seed = hash(next_seed + i);
+    }
+
+    return visible_light / f32(SHADOW_SAMPLES);
 }
 
 fn trace_ray(
@@ -357,6 +435,7 @@ fn trace_ray(
             break;
         }
         
+        //has to be reviewed
         if (depth == 0) {
             color += closest_hit.material.ambient;
         }
@@ -385,15 +464,6 @@ fn trace_ray(
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
         }
-        
-        // Russian Roulette path termination
-        if (depth > 3) {
-            let max_albedo = max(max(albedo.x, albedo.y), albedo.z);
-            let continue_prob = min(max_albedo, 0.95);
-            
-            if (random_float(&seed) > continue_prob) {
-                break;
-            }
             
             albedo = albedo / continue_prob;
         }
@@ -401,6 +471,44 @@ fn trace_ray(
         origin = closest_hit.pos + scattered * 0.001;
         direction = normalize(scattered);
         attenuation *= albedo;
+
+        let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
+        var light_total = vec3<f32>(0.0);
+
+        for (var i = 0u; i < arrayLength(&point_lights); i = i + 1u) {
+            let light = point_lights[i];
+
+            let light_dir = light.position - shadow_origin;
+            let dist_pow2 = max(dot(light_dir, light_dir), 0.05);
+            let dir_normalized = normalize(light_dir);
+
+            //Lambert cosine term
+            let dot = max(dot(closest_hit.normal, dir_normalized), 0.0);
+            if (dot <= 0.0) {
+                continue;
+            }
+
+            let visibility = shadow(
+                shadow_origin,
+                light.position,
+                seed + i
+            );
+
+            light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
+        }
+
+        color += attenuation * light_total * closest_hit.color;
+
+        // Hit + scatter ray
+        seed = hash(seed + u32(depth));
+        let scatter_dir = closest_hit.normal + random_unit_vector(seed);
+
+        // Update ray
+        origin = closest_hit.pos + 0.001 * closest_hit.normal;
+        direction = scatter_dir;
+
+        // Apply diffuse attenuation
+        attenuation *= closest_hit.color * 0.5;
     }
     
     return color;
@@ -416,7 +524,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let pixel_index = y * uniforms.width + x;
-    
+
+    // Load previous accumulation
     var accumulated_color = accumulation[pixel_index].xyz;
     var total_samples = u32(accumulation[pixel_index].w);
     
@@ -447,7 +556,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     accumulation[pixel_index] = vec4<f32>(accumulated_color, f32(total_samples));
-    
+
+    // Write final color (averaged + reinhard tone mapping)
     let final_color = accumulated_color / f32(total_samples);
-    output[pixel_index] = color_map(final_color);
+    let mapped = final_color / (final_color + vec3<f32>(1.0));
+    output[pixel_index] = color_map(mapped);
 }
