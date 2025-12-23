@@ -267,7 +267,7 @@ impl Scene {
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
-        self.render_config_builder = self.render_config_builder.clone().spheres_delete()
+        self.update_render_config_spheres();
     }
 
     pub fn clear_polygons(&mut self) {
@@ -517,6 +517,28 @@ impl Scene {
                 .vertices(all_vertices)
                 .triangles(all_triangles)
         };
+    }
+    //todo: build these functions just like update_render_config
+    //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
+    //todo: Scene::set_camera_position instead of Scene::get_camera_mut().set_position etc. so uniforms can be updated
+    fn update_render_config_uniform(&mut self) {
+        let sphere_count = self.get_spheres().len();
+        let triangle_count: usize = self
+            .get_meshes()
+            .iter()
+            .map(|mesh| mesh.get_tri_indices().len() / 3)
+            .sum();
+        let uniforms = self.get_render_uniforms(sphere_count as u32, triangle_count as u32);
+    }
+    fn update_render_config_spheres(&mut self) {
+        let render_spheres = self.get_render_spheres();
+        self.render_config_builder = self.render_config_builder.clone().spheres(render_spheres);
+    }
+    fn update_render_config_vertices(&mut self) {
+        todo!()
+    }
+    fn update_render_config_triangles(&mut self) {
+        todo!()
     }
 }
 
