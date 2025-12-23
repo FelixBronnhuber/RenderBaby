@@ -38,6 +38,7 @@ impl GpuBuffers {
         let meshes = match &rc.meshes {
             Change::Create(t) => t.as_slice(),
             _ => panic!("Meshes must be Create during initialization"),
+        };
         let lights = match &rc.lights {
             Change::Create(l) => l.as_slice(),
             _ => panic!("Lights must be Create during initialization"),
@@ -96,6 +97,8 @@ impl GpuBuffers {
 
     pub fn grow_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    }
+
     pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
@@ -163,6 +166,8 @@ impl GpuBuffers {
 
     pub fn init_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    }
+
     pub fn init_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
@@ -186,6 +191,8 @@ impl GpuBuffers {
 
     pub fn update_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
+    }
+
     pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
@@ -215,6 +222,8 @@ impl GpuBuffers {
     pub fn delete_meshes(&mut self, device: &Device) {
         self.meshes =
             Self::create_storage_buffer(device, "Meshes Buffer (deleted)", &[] as &[Mesh]);
+    }
+
     pub fn delete_lights(&mut self, device: &Device) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
     }

@@ -82,7 +82,7 @@ struct PointLight {
 @group(0) @binding(5) var<storage, read> meshes: array<Mesh>;
 @group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight>;
+@group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -309,12 +309,11 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
     return false;
 }
 
-fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
+fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: ptr<function, u32>) -> f32 {
     var visible_light: f32 = 0.0;
-    var next_seed = seed;
 
     for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
-        let rand_jitter = random_unit_vector(next_seed) * SHADOW_EDGE;
+        let rand_jitter = random_unit_vector(seed) * SHADOW_EDGE;
         let jittered_pos = light_pos + rand_jitter;
 
         let light_dir = jittered_pos - origin;
@@ -324,8 +323,6 @@ fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
         if (!collision(origin, dir_normalized, distance)) {
             visible_light += 1.0;
         }
-
-        next_seed = hash(next_seed + i);
     }
 
     return visible_light / f32(SHADOW_SAMPLES);
@@ -464,9 +461,6 @@ fn trace_ray(
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
         }
-            
-            albedo = albedo / continue_prob;
-        }
         
         origin = closest_hit.pos + scattered * 0.001;
         direction = normalize(scattered);
@@ -491,26 +485,28 @@ fn trace_ray(
             let visibility = shadow(
                 shadow_origin,
                 light.position,
-                seed + i
+                &seed
             );
 
             light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        color += attenuation * light_total * closest_hit.color;
+        let material_color = select(closest_hit.material.diffuse, 
+                            closest_hit.material.specular, 
+                            specular_strength > 0.01);
+        color += attenuation * light_total * material_color;
 
         // Hit + scatter ray
         seed = hash(seed + u32(depth));
-        let scatter_dir = closest_hit.normal + random_unit_vector(seed);
+        let scatter_dir = closest_hit.normal + random_unit_vector(&seed);
 
         // Update ray
         origin = closest_hit.pos + 0.001 * closest_hit.normal;
         direction = scatter_dir;
 
         // Apply diffuse attenuation
-        attenuation *= closest_hit.color * 0.5;
+        attenuation *= material_color * 0.5;
     }
-    
     return color;
 }
 

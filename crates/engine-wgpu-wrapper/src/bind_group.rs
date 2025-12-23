@@ -99,7 +99,7 @@ impl BindGroupLayout {
                 },
                 //Pointlight Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 7,
+                    binding: 8,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -164,7 +164,7 @@ impl BindGroup {
                     resource: buffers.progressive_render.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 7,
+                    binding: 8,
                     resource: buffers.lights.as_entire_binding(),
                 },
             ],

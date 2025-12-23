@@ -73,6 +73,7 @@ impl ValidateInit for RenderConfig {
         }
         if !matches!(self.meshes, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidMeshes);
+        }
         if !matches!(self.lights, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidLights);
         }
@@ -283,6 +284,9 @@ impl RenderConfigBuilder {
 
     pub fn meshes_delete(mut self) -> Self {
         self.meshes = Some(Change::Delete);
+        self
+    }
+
     pub fn lights(mut self, lights: Vec<PointLight>) -> Self {
         self.lights = Some(Change::Update(lights));
         self
@@ -318,6 +322,7 @@ impl RenderConfigBuilder {
         }
         if self.meshes.is_none() {
             log::info!("RenderConfigBuilder: meshes not set, defaulting to NoChange.");
+        }
         if self.lights.is_none() {
             log::info!("RenderConfigBuilder: lights not set, defaulting to NoChange.");
         }
