@@ -364,6 +364,9 @@ impl Scene {
     }
 
     fn set_last_render(&mut self, render: RenderOutput) {
+        //! Sets the last render field to the given Renderoutput
+        //! ## Parameter
+        //! 'render': RenderOutput
         self.last_render = Some(render.clone());
         info!("{self}: Last render saved to buffer");
     }
@@ -382,6 +385,9 @@ impl Scene {
     }
 
     pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
+        //! Saves the last render result to the given path
+        //! ## Parameter
+        //! 'path': std::path::Pathbuf for the target path
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
@@ -425,6 +431,7 @@ impl Scene {
         info!("{self}: Render has been called. Collecting render parameters");
 
         //self.update_render_config();
+        // maybe always update uniforms, in case the sphere count, vertices count or tri count has changed
         let rc = self.build_render_config();
 
         let engine = self.get_render_engine_mut();
@@ -450,9 +457,13 @@ impl Scene {
     }
 
     fn build_render_config(&self) -> RenderConfig {
+        //! ## Returns
+        //! RenderConfig build from self.render_config_builder
         self.render_config_builder.clone().build()
     }
     fn update_render_config(&mut self) {
+        //! updates the field render_context_builder
+        info!("{self}: Updating render config builder");
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
         debug!("Scene mesh data: {:?}", self.get_meshes());
@@ -517,7 +528,11 @@ impl Scene {
     //todo: build these functions just like update_render_config
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
     //todo: Scene::set_camera_position instead of Scene::get_camera_mut().set_position etc. so uniforms can be updated
+    //todo: same for spheres and meshes
+    //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
     fn update_render_config_uniform(&mut self) {
+        //! updates the uniforms on field render_config_builder
+        info!("{self}: Updating uniforms on render config builder");
         let sphere_count = self.get_spheres().len();
         let triangle_count: usize = self
             .get_meshes()
@@ -525,16 +540,85 @@ impl Scene {
             .map(|mesh| mesh.get_tri_indices().len() / 3)
             .sum();
         let uniforms = self.get_render_uniforms(sphere_count as u32, triangle_count as u32);
+        self.render_config_builder = self.render_config_builder.clone().uniforms(uniforms);
     }
     fn update_render_config_spheres(&mut self) {
+        //! updates the spheres on field render_config_builder
+        info!("{self}: Updating spheres on render config builder");
         let render_spheres = self.get_render_spheres();
         self.render_config_builder = self.render_config_builder.clone().spheres(render_spheres);
     }
     fn update_render_config_vertices(&mut self) {
-        todo!()
+        //! updates the vertices on field render_config_builder
+        info!("{self}: Updating vertices on render config builder");
+        let render_tris = self.get_render_tris();
+        debug!("Collected mesh data: {:?}", render_tris);
+
+        // Collect all vertices and triangles into flat vectors
+        let all_vertices = if render_tris.is_empty() {
+            vec![]
+        } else {
+            let mut all_verts = vec![];
+
+            for (verts, tris) in render_tris {
+                let vertex_count = (verts.len() / 3) as u32;
+                all_verts.extend(verts);
+            }
+            all_verts
+        };
+        debug!("Collected vertices: {:?}", all_vertices);
+        info!(
+            "{self}: Collected render parameter: {} vertices. Updating render config vertices",
+            all_vertices.len() / 3
+        );
+        self.render_config_builder = self.render_config_builder.clone().vertices(all_vertices);
     }
     fn update_render_config_triangles(&mut self) {
-        todo!()
+        //! updates the triangles on field render_config_builder (also updates the vertices?)
+        info!("{self}: Updating triangles on render config builder");
+        let render_tris = self.get_render_tris();
+        debug!("Collected mesh data: {:?}", render_tris);
+
+        let triangles_count = render_tris
+            .iter()
+            .map(|(_, tri)| tri.len() as u32 / 3)
+            .sum();
+
+        let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
+
+        // Collect all vertices and triangles into flat vectors
+        let (all_vertices, all_triangles) = if render_tris.is_empty() {
+            (vec![], vec![])
+        } else {
+            let mut all_verts = vec![];
+            let mut all_tris = vec![];
+            let mut vertex_offset = 0u32;
+
+            for (verts, tris) in render_tris {
+                let vertex_count = (verts.len() / 3) as u32;
+
+                for tri_idx in tris {
+                    all_tris.push(tri_idx + vertex_offset);
+                }
+
+                all_verts.extend(verts);
+
+                vertex_offset += vertex_count;
+            }
+            (all_verts, all_tris)
+        };
+        debug!("Collected vertices: {:?}", all_vertices);
+        debug!("Collected tris: {:?}", all_triangles);
+        info!(
+            "{self}: Collected render parameter: {} triangles consisting of {} vertices. Updating render config vertices and triangles",
+            triangles_count,
+            all_vertices.len() / 3
+        );
+        self.render_config_builder = self
+            .render_config_builder
+            .clone()
+            .vertices(all_vertices)
+            .triangles(all_triangles);
     }
 
     // camera stuff
