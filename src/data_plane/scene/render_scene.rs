@@ -579,13 +579,10 @@ impl Scene {
         let render_tris = self.get_render_tris();
         debug!("Collected mesh data: {:?}", render_tris);
 
-        let triangles_count = render_tris
+        let triangles_count: u32 = render_tris
             .iter()
             .map(|(_, tri)| tri.len() as u32 / 3)
             .sum();
-
-        let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
-
         // Collect all vertices and triangles into flat vectors
         let (all_vertices, all_triangles) = if render_tris.is_empty() {
             (vec![], vec![])
