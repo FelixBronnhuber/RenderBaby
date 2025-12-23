@@ -487,20 +487,16 @@ fn trace_ray(
             light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        origin = closest_hit.pos + scattered * 0.001;
-        direction = normalize(scattered);
-
-        //color += attenuation * light_total * albedo;
-
         if (specular_strength <= 0.01) {
             color += attenuation * light_total * albedo;
-        }
-        // Apply diffuse attenuation
-        if (specular_strength <= 0.01) {
-            attenuation *= albedo * 0.5;  // Diffuse loses energy
+            attenuation *= albedo * 0.5;
         } else {
-            attenuation *= albedo;  // Metal just tints the reflection
+            attenuation *= albedo;
         }
+
+        // Move ray update HERE (after all lighting/attenuation)
+        origin = closest_hit.pos + 0.001 * normalize(scattered);
+        direction = normalize(scattered);
     }
     return color;
 }
