@@ -461,10 +461,6 @@ fn trace_ray(
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
         }
-        
-        origin = closest_hit.pos + scattered * 0.001;
-        direction = normalize(scattered);
-        attenuation *= albedo;
 
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
         var light_total = vec3<f32>(0.0);
@@ -491,21 +487,20 @@ fn trace_ray(
             light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        let material_color = select(closest_hit.material.diffuse, 
-                            closest_hit.material.specular, 
-                            specular_strength > 0.01);
-        color += attenuation * light_total * material_color;
+        origin = closest_hit.pos + scattered * 0.001;
+        direction = normalize(scattered);
 
-        // Hit + scatter ray
-        seed = hash(seed + u32(depth));
-        let scatter_dir = closest_hit.normal + random_unit_vector(&seed);
+        //color += attenuation * light_total * albedo;
 
-        // Update ray
-        origin = closest_hit.pos + 0.001 * closest_hit.normal;
-        direction = scatter_dir;
-
+        if (specular_strength <= 0.01) {
+            color += attenuation * light_total * albedo;
+        }
         // Apply diffuse attenuation
-        attenuation *= material_color * 0.5;
+        if (specular_strength <= 0.01) {
+            attenuation *= albedo * 0.5;  // Diffuse loses energy
+        } else {
+            attenuation *= albedo;  // Metal just tints the reflection
+        }
     }
     return color;
 }
