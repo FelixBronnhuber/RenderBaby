@@ -235,7 +235,7 @@ impl Scene {
             .triangles_create(vec![]);
 
         res.set_render_engine(Engine::new(
-            res.render_config_builder.clone().build(),
+            res.build_render_config(),
             RenderEngine::Raytracer,
         ));
         res
@@ -425,6 +425,35 @@ impl Scene {
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
+        self.update_render_config();
+        let rc = self.build_render_config();
+
+        let engine = self.get_render_engine_mut();
+
+        let output = engine.render(rc);
+        match output {
+            Ok(res) => match res.validate() {
+                Ok(_) => {
+                    info!("{self}: Successfully got valid render output");
+                    self.set_last_render(res.clone());
+                    Ok(res)
+                }
+                Err(error) => {
+                    error!("{self}: Received invalid render output");
+                    Err(error)
+                }
+            },
+            Err(error) => {
+                error!("{self}: The following error occurred when rendering: {error}");
+                Err(error)
+            }
+        }
+    }
+
+    fn build_render_config(&self) -> RenderConfig {
+        self.render_config_builder.clone().build()
+    }
+    fn update_render_config(&mut self) {
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
         debug!("Scene mesh data: {:?}", self.get_meshes());
@@ -459,8 +488,8 @@ impl Scene {
             }
             (all_verts, all_tris)
         };
-        info!("Collected vertices: {:?}", all_vertices);
-        info!("Collected tris: {:?}", all_triangles);
+        debug!("Collected vertices: {:?}", all_vertices);
+        debug!("Collected tris: {:?}", all_triangles);
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
@@ -485,32 +514,6 @@ impl Scene {
                 .vertices(all_vertices)
                 .triangles(all_triangles)
         };
-        let rc = self.build_render_config();
-
-        let engine = self.get_render_engine_mut();
-
-        let output = engine.render(rc);
-        match output {
-            Ok(res) => match res.validate() {
-                Ok(_) => {
-                    info!("{self}: Successfully got valid render output");
-                    self.set_last_render(res.clone());
-                    Ok(res)
-                }
-                Err(error) => {
-                    error!("{self}: Received invalid render output");
-                    Err(error)
-                }
-            },
-            Err(error) => {
-                error!("{self}: The following error occurred when rendering: {error}");
-                Err(error)
-            }
-        }
-    }
-
-    fn build_render_config(&self) -> RenderConfig {
-        self.render_config_builder.clone().build()
     }
 }
 
