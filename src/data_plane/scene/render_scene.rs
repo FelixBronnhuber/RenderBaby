@@ -29,6 +29,7 @@ use crate::data_plane::scene_io::mtl_parser;
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 type RenderCamera = engine_config::Camera;
+type RenderLights = engine_config::PointLight;
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -234,7 +235,8 @@ impl Scene {
             ))
             .spheres_create(vec![])
             .vertices_create(vec![])
-            .triangles_create(vec![]);
+            .triangles_create(vec![])
+            .lights_create([RenderLights::default()].to_vec());
 
         res.set_render_engine(Engine::new(
             res.build_render_config(),
@@ -515,6 +517,7 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
+                .lights_create([RenderLights::default()].to_vec())
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
@@ -523,11 +526,13 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
+                .lights([RenderLights::default()].to_vec())
         };
     }
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
     //todo: add fns for mesh and spheres and lights, instead of offering get_spheres, get_meshes
     //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
+    //todo: pass lights from scene
     fn update_render_config_uniform(&mut self) {
         //! updates the uniforms on field render_config_builder
         info!("{self}: Updating uniforms on render config builder");
@@ -615,10 +620,15 @@ impl Scene {
             .vertices(all_vertices)
             .triangles(all_triangles);
     }
+
     fn update_render_config_lights(&mut self) {
         //! updates the lights on field render_config_builder
         info!("{self}: Updating lights on render config builder");
-        todo!()
+        self.render_config_builder = self
+            .render_config_builder
+            .clone()
+            .lights_create([RenderLights::default()].to_vec());
+        todo!("Update with lights from scene is not implemented yet (using default values)")
     }
 
     // camera stuff
