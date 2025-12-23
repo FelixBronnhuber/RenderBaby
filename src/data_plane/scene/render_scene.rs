@@ -525,10 +525,8 @@ impl Scene {
                 .triangles(all_triangles)
         };
     }
-    //todo: build these functions just like update_render_config
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
-    //todo: Scene::set_camera_position instead of Scene::get_camera_mut().set_position etc. so uniforms can be updated
-    //todo: same for spheres and meshes
+    //todo: add fns for mesh and spheres and lights, instead of offering get_spheres, get_meshes
     //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
     fn update_render_config_uniform(&mut self) {
         //! updates the uniforms on field render_config_builder
@@ -616,6 +614,11 @@ impl Scene {
             .clone()
             .vertices(all_vertices)
             .triangles(all_triangles);
+    }
+    fn update_render_config_lights(&mut self) {
+        //! updates the lights on field render_config_builder
+        info!("{self}: Updating lights on render config builder");
+        todo!()
     }
 
     // camera stuff
