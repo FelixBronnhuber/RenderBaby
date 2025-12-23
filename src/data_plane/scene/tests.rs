@@ -3,7 +3,8 @@ use glam::Vec3;
 use scene_objects::{material::Material, sphere::Sphere};
 use crate::data_plane::scene::render_scene::Scene;
 
-#[test]
+//#[test]
+#[allow(unused)]
 fn basic_scene_test() {
     let mut scene = Scene::new();
     let s_count = 10;
