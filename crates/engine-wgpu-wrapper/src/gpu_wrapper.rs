@@ -104,6 +104,9 @@ impl GpuWrapper {
             if let Change::Create(triangles) = &new_rc.triangles {
                 self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
+            if let Change::Create(lights) = &new_rc.lights {
+                self.buffer_wrapper.init_lights(&self.device, lights);
+            }
             // Recreate bind group with new buffers
             self.recreate_bind_group();
             self.initialized = true;
@@ -173,6 +176,19 @@ impl GpuWrapper {
                 }
                 Change::Create(_) => {
                     log::warn!("Create not allowed after initialization for triangles.");
+                }
+            }
+
+            match &new_rc.lights {
+                Change::Keep => log::info!("Not updating Lights Buffer."),
+                Change::Update(lights) => {
+                    self.buffer_wrapper.update_lights(&self.device, lights);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_lights(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for lights.");
                 }
             }
             // Recreate bind group after any buffer updates
@@ -378,6 +394,11 @@ impl GpuWrapper {
                 0,
                 bytemuck::cast_slice(triangles),
             );
+        }
+
+        if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {
+            self.queue
+                .write_buffer(&self.buffer_wrapper.lights, 0, bytemuck::cast_slice(lights));
         }
     }
 }
