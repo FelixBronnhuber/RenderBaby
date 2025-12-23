@@ -468,7 +468,7 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        let rc = if self.get_first_render() {
+        self.render_config_builder = if self.get_first_render() {
             self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
@@ -476,7 +476,6 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
-                .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
@@ -485,8 +484,8 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
-                .build()
         };
+        let rc = self.render_config_builder.clone().build();
 
         let engine = self.get_render_engine_mut();
 
