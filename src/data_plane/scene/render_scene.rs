@@ -1,6 +1,6 @@
 use std::path::{PathBuf};
 use anyhow::{Error};
-use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
+use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, Uniforms};
 use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
@@ -485,7 +485,7 @@ impl Scene {
                 .vertices(all_vertices)
                 .triangles(all_triangles)
         };
-        let rc = self.render_config_builder.clone().build();
+        let rc = self.build_render_config();
 
         let engine = self.get_render_engine_mut();
 
@@ -507,6 +507,10 @@ impl Scene {
                 Err(error)
             }
         }
+    }
+
+    fn build_render_config(&self) -> RenderConfig {
+        self.render_config_builder.clone().build()
     }
 }
 
