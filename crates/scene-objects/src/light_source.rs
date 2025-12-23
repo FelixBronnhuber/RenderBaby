@@ -1,6 +1,5 @@
 use glam::Vec3;
 /// Defines light sources for the scene
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct LightSource {
     position: Vec3,
@@ -10,7 +9,6 @@ pub struct LightSource {
     rotation: Vec3,
     light_type: LightType,
 }
-#[allow(dead_code)]
 impl LightSource {
     pub fn get_position(&self) -> Vec3 {
         //! ## Returns
