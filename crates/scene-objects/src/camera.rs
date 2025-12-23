@@ -132,7 +132,7 @@ impl Default for Camera {
             position: Vec3::default(),
             resolution,
             ray_samples: 20,
-            look_at: Vec3::default(),
+            look_at: Vec3::new(0.0, 0.0, 1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             pane_distance: 35.0,
             pane_width,
