@@ -49,7 +49,7 @@ impl Default for Scene {
 #[allow(unused)]
 impl Scene {
     /// loads and return a new scene from a json / rscn file
-    pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+    pub(crate) fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
         let path_str = path.to_str().unwrap();
@@ -363,19 +363,19 @@ impl Scene {
         );
     }
 
-    pub fn set_last_render(&mut self, render: RenderOutput) {
+    fn set_last_render(&mut self, render: RenderOutput) {
         self.last_render = Some(render.clone());
         info!("{self}: Last render saved to buffer");
     }
 
-    pub fn set_first_render(&mut self, first_render: bool) {
+    fn set_first_render(&mut self, first_render: bool) {
         //! Sets first_render to the passed value
         //! ## Parameter
         //! 'first_render': boolean value
         self.first_render = first_render
     }
 
-    pub fn get_first_render(&self) -> bool {
+    fn get_first_render(&self) -> bool {
         //! ## Returns
         //! first_render: if the last render was the first render of this scene?
         self.first_render
@@ -400,11 +400,7 @@ impl Scene {
             .map(sphere_to_render_sphere)
             .collect()
     }
-    pub(crate) fn get_render_uniforms(
-        &self,
-        spheres_count: u32,
-        triangles_count: u32,
-    ) -> RenderUniforms {
+    fn get_render_uniforms(&self, spheres_count: u32, triangles_count: u32) -> RenderUniforms {
         //! ## Returns
         //! RenderUnfiform for the camera of the scene
         camera_to_render_uniforms(
