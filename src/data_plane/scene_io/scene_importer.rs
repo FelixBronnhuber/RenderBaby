@@ -83,7 +83,6 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
             scene_path.display()
         )));
     }
-
     let _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
 
     let schema = json!({

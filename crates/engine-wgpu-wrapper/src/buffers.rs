@@ -1,4 +1,4 @@
-use engine_config::{RenderConfig, Uniforms, Sphere};
+use engine_config::{RenderConfig, Uniforms, Sphere, PointLight};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
@@ -13,6 +13,7 @@ pub struct GpuBuffers {
     pub triangles: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
+    pub lights: Buffer,
 }
 
 impl GpuBuffers {
@@ -32,6 +33,10 @@ impl GpuBuffers {
         let triangles = match &rc.triangles {
             Change::Create(t) => t.as_slice(),
             _ => panic!("Triangles must be Create during initialization"),
+        };
+        let lights = match &rc.lights {
+            Change::Create(l) => l.as_slice(),
+            _ => panic!("Lights must be Create during initialization"),
         };
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
@@ -57,6 +62,7 @@ impl GpuBuffers {
                 "Progressive Render Buffer",
                 &[*prh],
             ),
+            lights: Self::create_storage_buffer(device, "Light Buffer", lights),
         }
     }
 
@@ -81,6 +87,10 @@ impl GpuBuffers {
 
     pub fn grow_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
@@ -144,6 +154,10 @@ impl GpuBuffers {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
     }
 
+    pub fn init_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
     // Update methods for existing buffers
     pub fn update_uniforms(&mut self, device: &Device, uniforms: &Uniforms) {
         self.uniforms = Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms);
@@ -159,6 +173,10 @@ impl GpuBuffers {
 
     pub fn update_triangles(&mut self, device: &Device, triangles: &[u32]) {
         self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
+    }
+
+    pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
     // Delete methods (create minimal empty buffers)
@@ -181,5 +199,9 @@ impl GpuBuffers {
     pub fn delete_triangles(&mut self, device: &Device) {
         self.triangles =
             Self::create_storage_buffer(device, "Triangles Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_lights(&mut self, device: &Device) {
+        self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
     }
 }
