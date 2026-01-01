@@ -11,12 +11,9 @@ pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()>{
     let mut objects: Vec<ParsingObject> = Vec::with_capacity(2);
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();
-    //println!("{:?}",sc.get_tri_geometries());
-    //objects
-    sc.get_tri_geometries().iter().for_each(|object| {
-        objects.push(ParsingObject{name: object.get_name(),path: object.get_path().unwrap_or_default().to_owned(),scale: object.get_scale().into(),translation: object.get_translation().into(),rotation: object.get_rotation().into()});
-    });
     println!("{:?}",sc.get_meshes());
+
+    //objects
     sc.get_meshes().iter().for_each(|object| {
         objects.push(ParsingObject{name: object.get_name(),path: object.get_path().unwrap_or_default().to_owned(),scale: object.get_scale().into(),translation: object.get_translation().into(),rotation: object.get_rotation().into()});
     });
@@ -40,7 +37,7 @@ pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()>{
 
     //camera
     let camera = sc.get_camera();
-    let file_camera = FileCamera {position: camera.get_position().into(),look_at: camera.look_at.into(),up: camera.up.into(), pane_distance: camera.pane_distance, pane_width: camera.pane_width, resolution: Resolution{x: camera.get_resolution().width,y: camera.get_resolution().height} };
+    let file_camera = FileCamera {position: camera.get_position().into(),look_at: camera.get_look_at().into(),up: camera.get_up().into(), pane_distance: camera.get_pane_distance(), pane_width: camera.get_pane_width(), resolution: Resolution{x: camera.get_resolution().width,y: camera.get_resolution().height} };
 
     //background
     let bg = sc.get_background_color();

@@ -64,7 +64,6 @@ impl Scene {
             }
         }
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
     pub fn export_scene(&mut self, path: PathBuf) {
         info!("Scene {self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(),self);
