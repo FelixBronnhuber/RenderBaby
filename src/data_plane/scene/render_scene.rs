@@ -18,11 +18,11 @@ use crate::{
     data_plane::{
         scene::scene_graph::SceneGraph,
         scene_io::{
-            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png, scene_exporter::serialize_scene,
         },
     },
 };
-use crate::data_plane::scene_io::mtl_parser;
+use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 
 /// The scene holds all relevant objects, lightsources, camera
 #[derive(Serialize)]
@@ -75,6 +75,16 @@ impl Scene {
                 error!("Scene: Importing Scene resulted in error: {error}");
                 Err(error)
             }
+        }
+    }
+    pub fn export_scene(&mut self, path: PathBuf) {
+        info!("Scene {self}: Exporting scene");
+        let result = scene_exporter::serialize_scene(path.clone(),self);
+        match result {
+            Err(error) => {
+
+                error!("{self}: exporting scene to {:?} resulted in error: {error}", path);}
+            _ => ()
         }
     }
     //will be removed once Mesh Structure can be used to render

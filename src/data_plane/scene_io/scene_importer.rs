@@ -10,74 +10,7 @@ use scene_objects::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
-#[allow(dead_code)]
-#[derive(Serialize, Deserialize, Debug)]
-struct SceneFile {
-    scene_name: String,
-    objects: Vec<ParsingObject>,
-    lights: Vec<FileLightSource>,
-    camera: FileCamera,
-    background_color: FileColor,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ParsingObject {
-    name: String,
-    pub path: String,
-    scale: Vec3d,
-    translation: Vec3d,
-    rotation: Vec3d, //x = roll, y = pitch, z = yaw
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileLightSource {
-    name: String,
-    r#type: String,
-    position: Vec3d,
-    luminosity: f32,
-    color: FileColor,
-    rotation: Option<Vec3d>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileCamera {
-    position: Vec3d,
-    look_at: Vec3d,
-    up: Vec3d, //roll
-    pane_distance: f32,
-    pane_width: f32,
-    resolution: Resolution,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileColor {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: Option<f32>, //ungenutzt
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Vec3d {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Resolution {
-    x: u32,
-    y: u32,
-}
-
-impl From<Vec3> for Vec3d {
-    fn from(v: Vec3) -> Vec3d {
-        Vec3d {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
+use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
 fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
     let mut scene = Scene::new();

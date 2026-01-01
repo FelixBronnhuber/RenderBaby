@@ -1,0 +1,61 @@
+use std::fs::File;
+use std::path::PathBuf;
+use serde::Serialize;
+use scene_objects::geometric_object::SceneObject;
+use scene_objects::light_source::*;
+//use scene_objects::camera::*;
+use crate::data_plane::scene::render_scene::Scene;
+use crate::data_plane::scene_io::scene_io_objects::*;
+
+pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()>{
+    let mut objects: Vec<ParsingObject> = Vec::with_capacity(2);
+    let mut lightarr: Vec<FileLightSource> = Vec::new();
+    let scene_name = sc.get_name().clone();
+    //println!("{:?}",sc.get_tri_geometries());
+    //objects
+    sc.get_tri_geometries().iter().for_each(|object| {
+        objects.push(ParsingObject{name: object.get_name(),path: object.get_path().unwrap_or_default().to_owned(),scale: object.get_scale().into(),translation: object.get_translation().into(),rotation: object.get_rotation().into()});
+    });
+    println!("{:?}",sc.get_meshes());
+    sc.get_meshes().iter().for_each(|object| {
+        objects.push(ParsingObject{name: object.get_name(),path: object.get_path().unwrap_or_default().to_owned(),scale: object.get_scale().into(),translation: object.get_translation().into(),rotation: object.get_rotation().into()});
+    });
+
+    //lights
+    sc.get_light_sources().iter().for_each(|light_source| {
+        let colors = light_source.get_color();
+        lightarr.push(FileLightSource {
+            name: light_source.get_name().clone(),
+            r#type: match light_source.get_light_type() {
+                LightType::Ambient => "ambient".to_owned(),
+                LightType::Point => "point".to_owned(),
+                LightType::Directional => "directional".to_owned(),
+            },
+            position: light_source.get_position().into(),
+            luminosity: light_source.get_luminositoy(),
+            color: FileColor{r: colors[0],g: colors[1],b: colors[2], a: None},
+            rotation: Some(light_source.get_rotation().into()),
+        })
+    });
+
+    //camera
+    let camera = sc.get_camera();
+    let file_camera = FileCamera {position: camera.get_position().into(),look_at: camera.look_at.into(),up: camera.up.into(), pane_distance: camera.pane_distance, pane_width: camera.pane_width, resolution: Resolution{x: camera.get_resolution().width,y: camera.get_resolution().height} };
+
+    //background
+    let bg = sc.get_background_color();
+
+    let final_scene = SceneFile{
+        scene_name: scene_name,
+        objects: objects,
+        lights: lightarr,
+        camera: file_camera,
+        background_color: FileColor{r: bg[0],g: bg[1],b: bg[2],a: None},
+    };
+
+    let output = File::create(path.join("out.json")).expect("Could not create file");
+    serde_json::to_writer_pretty(output, &final_scene).expect("Could not write scene into file");
+    Ok(())
+}
+
+
