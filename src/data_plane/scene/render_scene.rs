@@ -10,12 +10,13 @@ use scene_objects::{
     mesh::Mesh,
     sphere::Sphere,
 };
+use scene_objects::geometric_object::SceneObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
         scene_io::{
-            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png, scene_exporter::serialize_scene,
+            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
         },
     },
 };
@@ -52,9 +53,12 @@ impl Scene {
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
-                for i in pathbuf {
-                    scene.load_object_from_file(i)?;
+                    .for_each(|path| pathbuf.push(directory_path.join(path)));
+                for (i, v) in pathbuf.iter().enumerate() {
+                    scene.load_object_from_file_relative(
+                        v.clone(),
+                        PathBuf::from(paths[i].clone()),
+                    )?;
                 }
                 Ok(scene)
             }
@@ -64,24 +68,45 @@ impl Scene {
             }
         }
     }
-    pub fn export_scene(&mut self, path: PathBuf) {
+    pub fn export_scene(&mut self, path: PathBuf) -> Result<(), Error> {
+        let path_str = path.to_str().unwrap_or_default();
         info!("Scene {self}: Exporting scene");
-        let result = scene_exporter::serialize_scene(path.clone(),self);
+        let result = scene_exporter::serialize_scene(path.clone(), self);
         match result {
             Err(error) => {
-
-                error!("{self}: exporting scene to {:?} resulted in error: {error}", path);}
-            _ => ()
+                error!(
+                    "{self}: exporting scene to {:?} resulted in error: {error}",
+                    path
+                );
+                Err(error)
+            }
+            _ => {
+                info!("Scene {self}: Successfully exported scene to {path_str}");
+                Ok(())
+            }
         }
     }
-    //will be removed once Mesh Structure can be used to render
+    fn load_object_from_file_relative(
+        &mut self,
+        path: PathBuf,
+        relative_path: PathBuf,
+    ) -> Result<(), Error> {
+        self.load_object_from_file_inner(path, Some(relative_path))
+    }
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+        self.load_object_from_file_inner(path, None)
+    }
+    pub fn load_object_from_file_inner(
+        &mut self,
+        path: PathBuf,
+        rela: Option<PathBuf>,
+    ) -> Result<(), Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let path_str = path.to_str().unwrap();
+        let path_str = path.to_str().unwrap_or_default();
         info!("Scene {self}: Loading object from {path_str}");
         let result = OBJParser::parse(path.clone());
 
@@ -132,13 +157,19 @@ impl Scene {
                         }
                     }
                 }
+                let mut used_path: PathBuf = PathBuf::new();
+                if let Some(path_buf) = rela {
+                    used_path = path_buf;
+                } else {
+                    used_path = path.clone();
+                }
                 let mesh = Mesh::new(
                     objs.vertices,
                     tris,
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(path.to_string_lossy().to_string()),
+                    Some(used_path.to_string_lossy().to_string()),
                 )?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
                 self.add_mesh(mesh);

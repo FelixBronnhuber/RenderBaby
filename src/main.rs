@@ -5,7 +5,6 @@ mod data_plane;
 use std::env;
 
 use control_plane::modes;
-use crate::data_plane::scene::render_scene;
 
 fn main() {
     /* for testing without setting env vars yourself: */

@@ -104,4 +104,13 @@ impl Model {
             }
         }
     }
+    pub fn export_scene(&mut self, file_path: PathBuf) -> anyhow::Result<()> {
+        match self.scene.export_scene(file_path) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                eprintln!("Error exporting scene: {:?}", e);
+                Err(Error::from(e))
+            }
+        }
+    }
 }

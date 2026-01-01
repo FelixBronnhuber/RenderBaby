@@ -127,6 +127,25 @@ impl Controller {
                     ))
                 }
             }
+            view::Event::ExportScene => {
+                if let Some(path) = self.pipeline.take_export_file_path() {
+                    match self.model.export_scene(path.clone()) {
+                        Ok(_) => Ok(Box::new(())),
+                        Err(_) => {
+                            log::error!("Error exporting scene to path: {}", path.display());
+                            Err(anyhow::anyhow!(
+                                "Failed to export scene to {}",
+                                path.display()
+                            ))
+                        }
+                    }
+                } else {
+                    log::error!("ExportScene event received but no path was set");
+                    Err(anyhow::anyhow!(
+                        "No export file path provided in ExportScene event"
+                    ))
+                }
+            }
         }
     }
 }

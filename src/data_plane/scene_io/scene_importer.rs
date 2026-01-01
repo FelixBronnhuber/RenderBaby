@@ -1,6 +1,5 @@
-use std::any::Any;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{PathBuf};
 use anyhow::Context;
 use glam::Vec3;
 use scene_objects::{
@@ -8,7 +7,6 @@ use scene_objects::{
     camera::Camera,
     light_source::{LightSource, LightType},
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
@@ -62,8 +60,12 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
             file.camera.resolution.x,
             file.camera.resolution.y,
         ));
-    scene.get_camera_mut().set_pane_width(file.camera.pane_width);
-    scene.get_camera_mut().set_pane_distance(file.camera.pane_distance);
+    scene
+        .get_camera_mut()
+        .set_pane_width(file.camera.pane_width);
+    scene
+        .get_camera_mut()
+        .set_pane_distance(file.camera.pane_distance);
     //Background
     scene.set_background_color([
         file.background_color.r,
@@ -236,11 +238,14 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
         }
     });
     let json_value = serde_json::from_str(_json_content.clone().as_str()).context("value error")?;
-    if jsonschema::is_valid(&schema,&json_value) {
+    if jsonschema::is_valid(&schema, &json_value) {
         let read = serde_json::from_str::<SceneFile>(&_json_content).context("invalid JSON")?;
-    let res = transform_to_scene(read)
+        let res = transform_to_scene(read)
             .context("JSON content could not be properly transformed into scene")?;
         Result::Ok(res)
-    }else {
-        return Err(anyhow::Error::msg(format!("JSON does not comply with Schema")));}
+    } else {
+        Err(anyhow::Error::msg(
+            "JSON does not comply with Schema".to_string(),
+        ))
+    }
 }

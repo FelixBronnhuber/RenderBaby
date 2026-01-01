@@ -1,5 +1,5 @@
 use std::fmt::Display;
-
+use std::path::PathBuf;
 use glam::Vec3;
 use anyhow::Error;
 
@@ -41,7 +41,7 @@ impl Mesh {
                 tris,
                 materials,
                 material_index,
-                path: None,
+                path: _path,
                 name: name.unwrap_or("unnamed mesh".to_owned()),
                 scale: Vec3::new(1.0, 1.0, 1.0),
                 rotation: Vec3::default(),
@@ -107,6 +107,9 @@ impl Mesh {
         //! Returns
         //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
         &self.tris
+    }
+    pub fn set_path(&mut self, path: PathBuf) {
+        self.path = Some(path.to_string_lossy().into_owned());
     }
 }
 
