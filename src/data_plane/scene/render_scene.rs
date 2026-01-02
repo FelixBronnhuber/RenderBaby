@@ -60,11 +60,11 @@ impl Scene {
         match scene_and_path {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
-                let mut paths = scene_and_path.1;
+                let paths = scene_and_path.1;
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
+                    .for_each(|path| pathbuf.push(directory_path.join(path)));
                 for i in pathbuf {
                     scene.load_object_from_file(i)?;
                 }
@@ -156,17 +156,17 @@ impl Scene {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
         info!("{self}: Initialising with 'proto' settings");
-        let green = [0.0, 1.0, 0.0];
-        let magenta = [1.0, 0.0, 1.0];
+        /* let green = [0.0, 1.0, 0.0];
         let red = [1.0, 0.0, 0.0];
         let blue = [0.0, 0.0, 1.0];
-        let cyan = [0.0, 1.0, 1.0];
+        let cyan = [0.0, 1.0, 1.0]; */
+        let magenta = [1.0, 0.0, 1.0];
 
         let sphere0 = Sphere::new(Vec3::new(0.0, 0.6, 2.0), 0.5, Material::default(), magenta);
-        let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 2.0), 0.5, Material::default(), green);
+        /* let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 2.0), 0.5, Material::default(), green);
         let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 2.0), 0.5, Material::default(), red);
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
-        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
+        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan); */
 
         let cam = Camera::default();
         let light = LightSource::new(
@@ -569,8 +569,7 @@ impl Scene {
         } else {
             let mut all_verts = vec![];
 
-            for (verts, tris) in render_tris {
-                let vertex_count = (verts.len() / 3) as u32;
+            for (verts, _) in render_tris {
                 all_verts.extend(verts);
             }
             all_verts
