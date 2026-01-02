@@ -47,6 +47,11 @@ impl SceneGraph {
         //! all Spheres objects as a reference to a vector of Sphere
         &self.spheres
     }
+    pub(crate) fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
+        //! ## Returns
+        //! all Spheres objects as a reference to a vector of Sphere
+        &mut self.spheres
+    }
     pub(crate) fn get_meshes(&self) -> &Vec<Mesh> {
         //! ## Returns
         //! all Meshes objects as a reference to a vector of Mesh
