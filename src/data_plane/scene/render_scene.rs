@@ -216,12 +216,11 @@ impl Scene {
         );
         let mut res = Self {
             scene_graph: SceneGraph::new(),
-            // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
             render_engine: None,
             render_config_builder: RenderConfigBuilder::new(),
-            first_render: false,
+            first_render: true,
             last_render: None,
             color_hash_enabled: true,
         };
