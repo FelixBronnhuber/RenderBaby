@@ -1,10 +1,11 @@
 use std::path::{PathBuf};
-use anyhow::{Error};
+use anyhow::{anyhow, Error};
 use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, Uniforms};
 use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
+    geometric_object::{GeometricObject, SceneObject},
     light_source::{LightSource, LightType},
     material::Material,
     mesh::Mesh,
@@ -288,6 +289,12 @@ impl Scene {
         //! a reference to a vector of all spheres
 
         self.scene_graph.get_spheres()
+    }
+    pub fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
+        //! ##  Returns
+        //! a reference to a vector of all spheres
+
+        self.scene_graph.get_spheres_mut()
     }
     pub fn get_meshes(&self) -> &Vec<Mesh> {
         //! ##  Returns
@@ -708,6 +715,114 @@ impl Scene {
         self.get_camera_mut().set_ray_samples(samples);
         // here could be a check for values [1, 100] or so
         self.update_render_config_uniform();
+    }
+
+    // sphere stuff
+    fn get_sphere_at(&self, index: usize) -> Result<&Sphere, Error> {
+        //! private helper fn to get the sphere stored at the given index
+        //! ## Parameter
+        //! 'index': Index at which the sphere is stored
+        //! ## Returns
+        //! Result of either the spere or an error if the index is out of bound
+        match self.get_spheres().get(index) {
+            Some(sphere) => Ok(sphere),
+            None => Err(anyhow!("Index out of bound")),
+        }
+    }
+    fn get_sphere_mut_at(&mut self, index: usize) -> Result<&mut Sphere, Error> {
+        //! private helper fn to get the mutable sphere stored at the given index
+        //! ## Parameter
+        //! 'index': Index at which the sphere is stored
+        //! ## Returns
+        //! Result of either the spere or an error if the index is out of bound
+        match self.get_spheres_mut().get_mut(index) {
+            Some(sphere) => Ok(sphere),
+            None => Err(anyhow!("Index out of bound")),
+        }
+    }
+    pub fn set_sphere_color(&mut self, index: usize, color: [f32; 3]) -> Result<(), Error> {
+        //! Sets the LightSource color
+        //! ## Parameter
+        //! 'color': New LightSource color as array of f32, values in \[0, 1]
+        Ok(self.get_sphere_mut_at(index)?.set_color(color))
+    }
+    pub fn get_sphere_color(&self, index: usize) -> Result<[f32; 3], Error> {
+        //! ## Returns
+        //! LightSource color as rgb array of f32, values in \[0, 1]
+        Ok(self.get_sphere_at(index)?.get_color())
+    }
+    pub fn set_sphere_radius(&mut self, radius: f32, index: usize) -> Result<(), Box<Error>> {
+        //! Sets the radius
+        //! ## Parameter
+        //! 'radius': new radius
+        Ok(self.get_sphere_mut_at(index)?.set_radius(radius))
+    }
+
+    pub fn get_sphere_radius(&self, index: usize) -> Result<f32, Error> {
+        //! ## Returns
+        //! Sphere radius
+        Ok(self.get_sphere_at(index)?.get_radius())
+    }
+
+    pub fn get_sphere_center(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Sphere center as glam::Vec3
+        Ok(self.get_sphere_at(index)?.get_center())
+    }
+
+    pub fn set_sphere_senter(&mut self, center: Vec3, index: usize) -> Result<(), Box<Error>> {
+        //! sets the Sphere center
+        //! ## Parameter
+        //! 'center'
+        Ok(self.get_sphere_mut_at(index)?.set_center(center))
+    }
+
+    pub fn get_sphere_material(&self, index: usize) -> Result<&Material, Error> {
+        //! ## Returns
+        //! Reference to Sphere material
+        Ok(self.get_sphere_at(index)?.get_material())
+    }
+    pub fn set_sphere_material(&mut self, material: Material, index: usize) -> Result<(), Error> {
+        //! Sets the Sphere Material
+        //! ## Parameter
+        //! 'material': New material
+        Ok(self.get_sphere_mut_at(index)?.set_material(material))
+    }
+    fn get_sphere_path(&self, index: usize) -> Result<Option<&str>, Error> {
+        // todo: maybe remove the option?
+        //! ## Returns
+        //! Path of the reference file. Does a sphere need one?
+        Ok(self.get_sphere_at(index)?.get_path())
+    }
+
+    fn get_sphere_scale(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Scale in relation to the reference
+        Ok(self.get_sphere_at(index)?.get_scale())
+    }
+
+    fn get_sphere_translation(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Translation in relation to the reference as glam::Vec3
+        Ok(self.get_sphere_at(index)?.get_translation())
+    }
+
+    fn get_sphere_rotation(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Rotation in relation
+        Ok(self.get_sphere_at(index)?.get_rotation())
+    }
+    fn scale_sphere(&mut self, factor: f32, index: usize) -> Result<(), Error> {
+        //! scales the radius of the sphere
+        //! ## Parameter
+        //! 'factor': scale factor
+        Ok(self.get_sphere_mut_at(index)?.scale(factor))
+    }
+    fn translate_sphere(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
+        //! Moves the center of the sphere
+        //! ## Parameter
+        //! 'vec': Translation vector as glam::Vec3
+        Ok(self.get_sphere_mut_at(index)?.translate(vec))
     }
 }
 
