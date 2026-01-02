@@ -756,7 +756,8 @@ impl Scene {
         //! Sets the radius
         //! ## Parameter
         //! 'radius': new radius
-        Ok(self.get_sphere_mut_at(index)?.set_radius(radius))
+        self.get_sphere_mut_at(index)?.set_radius(radius);
+        Ok(())
     }
 
     pub fn get_sphere_radius(&self, index: usize) -> Result<f32, Error> {
@@ -775,7 +776,8 @@ impl Scene {
         //! sets the Sphere center
         //! ## Parameter
         //! 'center'
-        Ok(self.get_sphere_mut_at(index)?.set_center(center))
+        self.get_sphere_mut_at(index)?.set_center(center);
+        Ok(())
     }
 
     pub fn get_sphere_material(&self, index: usize) -> Result<&Material, Error> {
@@ -787,7 +789,8 @@ impl Scene {
         //! Sets the Sphere Material
         //! ## Parameter
         //! 'material': New material
-        Ok(self.get_sphere_mut_at(index)?.set_material(material))
+        self.get_sphere_mut_at(index)?.set_material(material);
+        Ok(())
     }
     fn get_sphere_path(&self, index: usize) -> Result<Option<&str>, Error> {
         // todo: maybe remove the option?
@@ -817,13 +820,15 @@ impl Scene {
         //! scales the radius of the sphere
         //! ## Parameter
         //! 'factor': scale factor
-        Ok(self.get_sphere_mut_at(index)?.scale(factor))
+        self.get_sphere_mut_at(index)?.scale(factor);
+        Ok(())
     }
     fn translate_sphere(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
         //! Moves the center of the sphere
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
-        Ok(self.get_sphere_mut_at(index)?.translate(vec))
+        self.get_sphere_mut_at(index)?.translate(vec);
+        Ok(())
     }
 }
 
