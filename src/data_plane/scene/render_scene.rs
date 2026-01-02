@@ -186,7 +186,7 @@ impl Scene {
         self.add_sphere(sphere3);
         self.add_sphere(sphere4);
 
-        self.update_render_config();
+        //self.update_render_config();
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
@@ -209,7 +209,7 @@ impl Scene {
         let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
         let pane_width = RenderCamera::default().pane_width;
         let render_camera = RenderCamera::new(
-            cam.get_fov(),
+            cam.get_pane_distance(),
             pane_width,
             [position.x, position.y, position.z],
             rotation,
@@ -221,7 +221,7 @@ impl Scene {
             background_color: [1.0, 1.0, 1.0],
             render_engine: None,
             render_config_builder: RenderConfigBuilder::new(),
-            first_render: true,
+            first_render: false,
             last_render: None,
             color_hash_enabled: true,
         };
@@ -439,13 +439,13 @@ impl Scene {
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
-        //self.update_render_config();
+        self.update_render_config();
+        //self.update_render_config_uniform();
+        //self.update_render_config_spheres();
         // maybe always update uniforms, in case the sphere count, vertices count or tri count has changed
+
         let rc = self.build_render_config();
-
-        let engine = self.get_render_engine_mut();
-
-        let output = engine.render(rc);
+        let output = self.get_render_engine_mut().render(rc);
         match output {
             Ok(res) => match res.validate() {
                 Ok(_) => {
@@ -516,12 +516,25 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        self.render_config_builder = RenderConfigBuilder::new()
-            .uniforms(uniforms)
-            .spheres(render_spheres)
-            .vertices(all_vertices)
-            .triangles(all_triangles)
-            .lights([RenderLights::default()].to_vec())
+        self.render_config_builder = if self.get_first_render() {
+            self.set_first_render(false);
+            // NOTE: *_create is for the first initial render which initializes all the buffers etc.
+            RenderConfigBuilder::new()
+                .uniforms_create(uniforms)
+                .spheres_create(render_spheres)
+                .vertices_create(all_vertices)
+                .triangles_create(all_triangles)
+                .lights_create([RenderLights::default()].to_vec())
+        } else {
+            // NOTE: * otherwise the values are updated with the new value an the unchanged fields
+            // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
+            RenderConfigBuilder::new()
+                .uniforms(uniforms)
+                .spheres(render_spheres)
+                .vertices(all_vertices)
+                .triangles(all_triangles)
+                .lights([RenderLights::default()].to_vec())
+        };
     }
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
     //todo: add fns for mesh and spheres and lights, instead of offering get_spheres, get_meshes
