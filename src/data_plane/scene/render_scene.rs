@@ -744,7 +744,8 @@ impl Scene {
         //! Sets the LightSource color
         //! ## Parameter
         //! 'color': New LightSource color as array of f32, values in \[0, 1]
-        Ok(self.get_sphere_mut_at(index)?.set_color(color))
+        self.get_sphere_mut_at(index)?.set_color(color);
+        Ok(())
     }
     pub fn get_sphere_color(&self, index: usize) -> Result<[f32; 3], Error> {
         //! ## Returns
