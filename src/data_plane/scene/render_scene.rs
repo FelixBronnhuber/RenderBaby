@@ -687,6 +687,7 @@ impl Scene {
             self.get_camera_mut().set_pane_distance(distance);
             self.update_render_config_uniform();
         }
+        info!("{self}: Setting pane distance to {distance}");
     }
     pub fn get_camera_pane_distance(&self) -> f32 {
         //! ## Returns
