@@ -48,7 +48,7 @@ impl Default for Scene {
         Self::new()
     }
 }
-#[allow(unused)]
+#[allow(dead_code)]
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub(crate) fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
@@ -181,12 +181,12 @@ impl Scene {
         self.add_lightsource(light);
 
         self.add_sphere(sphere0);
-        self.add_sphere(sphere1);
+        /* self.add_sphere(sphere1);
         self.add_sphere(sphere2);
         self.add_sphere(sphere3);
-        self.add_sphere(sphere4);
+        self.add_sphere(sphere4); */
 
-        //self.update_render_config();
+        self.update_render_config();
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
@@ -438,7 +438,7 @@ impl Scene {
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
-        self.update_render_config();
+        //self.update_render_config();
         //self.update_render_config_uniform();
         //self.update_render_config_spheres();
         // maybe always update uniforms, in case the sphere count, vertices count or tri count has changed
