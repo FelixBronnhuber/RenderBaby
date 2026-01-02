@@ -21,14 +21,14 @@ pub struct Sphere {
 #[allow(dead_code)]
 impl Sphere {
     pub fn set_color(&mut self, color: [f32; 3]) {
-        //! Sets the LightSource color
+        //! Sets the Sphere color
         //! ## Parameter
         //! 'color': New LightSource color as array of f32, values in \[0, 1]
         self.color = color;
     }
     pub fn get_color(&self) -> [f32; 3] {
         //! ## Returns
-        //! LightSource color as rgb array of f32, values in \[0, 1]
+        //! Sphere color as rgb array of f32, values in \[0, 1]
         self.color
     }
     pub fn set_radius(&mut self, radius: f32) {
