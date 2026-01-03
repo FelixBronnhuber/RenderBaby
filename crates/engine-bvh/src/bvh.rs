@@ -50,6 +50,7 @@ impl BVHNode {
     }
 }
 
+#[derive(Default)]
 pub struct BVH {
     pub nodes: Vec<BVHNode>,
     pub indices: Vec<u32>, // Only Triangles
@@ -63,15 +64,6 @@ impl BVH {
         build_node(triangles, &mut indices, &mut nodes, 0, triangles.len());
 
         Self { nodes, indices }
-    }
-}
-
-impl Default for BVH {
-    fn default() -> Self {
-        Self {
-            nodes: Vec::new(),
-            indices: Vec::new(),
-        }
     }
 }
 
