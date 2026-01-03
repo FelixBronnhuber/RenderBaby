@@ -569,13 +569,13 @@ impl Scene {
             self.render_config_builder = self.render_config_builder.clone().uniforms(uniforms);
         }
     }
-    fn update_render_config_spheres(&mut self) {
+    pub(super) fn update_render_config_spheres(&mut self) {
         //! updates the spheres on field render_config_builder
         info!("{self}: Updating spheres on render config builder");
         let render_spheres = self.get_render_spheres();
         self.render_config_builder = self.render_config_builder.clone().spheres(render_spheres);
     }
-    fn update_render_config_vertices(&mut self) {
+    pub(super) fn update_render_config_vertices(&mut self) {
         //! updates the vertices on field render_config_builder
         info!("{self}: Updating vertices on render config builder");
         let render_tris = self.get_render_tris();
@@ -599,7 +599,7 @@ impl Scene {
         );
         self.render_config_builder = self.render_config_builder.clone().vertices(all_vertices);
     }
-    fn update_render_config_triangles(&mut self) {
+    pub(super) fn update_render_config_triangles(&mut self) {
         //! updates the triangles on field render_config_builder (also updates the vertices?)
         info!("{self}: Updating triangles on render config builder");
         let render_tris = self.get_render_tris();
@@ -644,7 +644,7 @@ impl Scene {
             .triangles(all_triangles);
     }
 
-    fn update_render_config_lights(&mut self) {
+    pub(super) fn update_render_config_lights(&mut self) {
         //! updates the lights on field render_config_builder
         info!("{self}: Updating lights on render config builder");
         self.render_config_builder = self
@@ -655,49 +655,49 @@ impl Scene {
     }
 
     // camera stuff
-    pub fn set_camera_position(&mut self, position: Vec3) {
+    pub(crate) fn set_camera_position(&mut self, position: Vec3) {
         //! sets the position of the camera
         //! ## Parameter
         //! 'position': glam::Vec3 of the new position
         self.get_camera_mut().set_position(position);
         self.update_render_config_uniform();
     }
-    pub fn set_camera_look_at(&mut self, look_at: Vec3) {
+    pub(crate) fn set_camera_look_at(&mut self, look_at: Vec3) {
         //! sets the direction of the camera
         //! ## Parameter
         //! 'look_at': glam::Vec3 of the new direction
         self.get_camera_mut().set_look_at(look_at);
         self.update_render_config_uniform();
     }
-    pub fn get_camera_position(&self) -> Vec3 {
+    pub(crate) fn get_camera_position(&self) -> Vec3 {
         //! ## Returns
         //! Camera position as glam::Vec3
         self.get_camera().get_position()
     }
-    pub fn get_camera_look_at(&self) -> Vec3 {
+    pub(crate) fn get_camera_look_at(&self) -> Vec3 {
         //! ## Returns
         //! Camera look at point as glam::Vec3
         self.get_camera().get_look_at()
     }
-    pub fn get_camera_up(&self) -> Vec3 {
+    pub(crate) fn get_camera_up(&self) -> Vec3 {
         //! ## Returns
         //! up vector of the camera
         self.get_camera().get_up()
     }
-    pub fn set_camera_up(&mut self, up: Vec3) {
+    pub(crate) fn set_camera_up(&mut self, up: Vec3) {
         //! Sets the up vector of the camera to the given value
         //! ## Parameter
         //! 'up': glam::Vec3 for the new vector
         self.get_camera_mut().set_up(up);
         self.update_render_config_uniform();
     }
-    pub fn get_camera_fov(&self) -> f32 {
+    pub(crate) fn get_camera_fov(&self) -> f32 {
         //! ## Returns
         //! Camera field of view, calculated drom width and distance
         //self.fov
         self.get_camera().get_fov()
     }
-    pub fn set_camera_pane_distance(&mut self, distance: f32) {
+    pub(crate) fn set_camera_pane_distance(&mut self, distance: f32) {
         //! Set the camera pane distance
         //! ## Parameter
         //! distance: New value for pane_distance
@@ -707,12 +707,12 @@ impl Scene {
             self.update_render_config_uniform();
         }
     }
-    pub fn get_camera_pane_distance(&self) -> f32 {
+    pub(crate) fn get_camera_pane_distance(&self) -> f32 {
         //! ## Returns
         //! Camera pane distance
         self.get_camera().get_pane_distance()
     }
-    pub fn set_camera_pane_width(&mut self, width: f32) {
+    pub(crate) fn set_camera_pane_width(&mut self, width: f32) {
         //! Set the camera pane width
         //! ## Parameter
         //! width: New value for pane_distance
@@ -722,27 +722,27 @@ impl Scene {
             self.update_render_config_uniform();
         }
     }
-    pub fn get_camera_pane_width(&self) -> f32 {
+    pub(crate) fn get_camera_pane_width(&self) -> f32 {
         //! ## Returns
         //! Camera pane width
         self.get_camera().get_pane_width()
     }
-    pub fn get_camera_resolution(&self) -> &Resolution {
+    pub(crate) fn get_camera_resolution(&self) -> &Resolution {
         //! ## Returns
         //! Camera resolution as Array of u32
         self.get_camera().get_resolution()
     }
-    pub fn set_camera_resolution(&mut self, resolution: Resolution) {
+    pub(crate) fn set_camera_resolution(&mut self, resolution: Resolution) {
         //! Sets the camera resolution
         //! ## Parameter
         //! 'resolution': New resolution as array of u32
         self.get_camera_mut().set_resolution(resolution);
         self.update_render_config_uniform();
     }
-    pub fn get_camera_ray_samples(&self) -> u32 {
+    pub(crate) fn get_camera_ray_samples(&self) -> u32 {
         self.get_camera().get_ray_samples()
     }
-    pub fn set_camera_ray_samples(&mut self, samples: u32) {
+    pub(crate) fn set_camera_ray_samples(&mut self, samples: u32) {
         self.get_camera_mut().set_ray_samples(samples);
         // here could be a check for values [1, 100] or so
         self.update_render_config_uniform();
@@ -771,19 +771,23 @@ impl Scene {
             None => Err(anyhow!("Index out of bound")),
         }
     }
-    pub fn set_sphere_color(&mut self, index: usize, color: [f32; 3]) -> Result<(), Error> {
+    pub(crate) fn set_sphere_color(&mut self, index: usize, color: [f32; 3]) -> Result<(), Error> {
         //! Sets the LightSource color
         //! ## Parameter
         //! 'color': New LightSource color as array of f32, values in \[0, 1]
         self.get_sphere_mut_at(index)?.set_color(color);
         Ok(())
     }
-    pub fn get_sphere_color(&self, index: usize) -> Result<[f32; 3], Error> {
+    pub(crate) fn get_sphere_color(&self, index: usize) -> Result<[f32; 3], Error> {
         //! ## Returns
         //! LightSource color as rgb array of f32, values in \[0, 1]
         Ok(self.get_sphere_at(index)?.get_color())
     }
-    pub fn set_sphere_radius(&mut self, radius: f32, index: usize) -> Result<(), Box<Error>> {
+    pub(crate) fn set_sphere_radius(
+        &mut self,
+        radius: f32,
+        index: usize,
+    ) -> Result<(), Box<Error>> {
         //! Sets the radius
         //! ## Parameter
         //! 'radius': new radius
@@ -791,19 +795,23 @@ impl Scene {
         Ok(())
     }
 
-    pub fn get_sphere_radius(&self, index: usize) -> Result<f32, Error> {
+    pub(crate) fn get_sphere_radius(&self, index: usize) -> Result<f32, Error> {
         //! ## Returns
         //! Sphere radius
         Ok(self.get_sphere_at(index)?.get_radius())
     }
 
-    pub fn get_sphere_center(&self, index: usize) -> Result<Vec3, Error> {
+    pub(crate) fn get_sphere_center(&self, index: usize) -> Result<Vec3, Error> {
         //! ## Returns
         //! Sphere center as glam::Vec3
         Ok(self.get_sphere_at(index)?.get_center())
     }
 
-    pub fn set_sphere_senter(&mut self, center: Vec3, index: usize) -> Result<(), Box<Error>> {
+    pub(crate) fn set_sphere_senter(
+        &mut self,
+        center: Vec3,
+        index: usize,
+    ) -> Result<(), Box<Error>> {
         //! sets the Sphere center
         //! ## Parameter
         //! 'center'
@@ -811,50 +819,54 @@ impl Scene {
         Ok(())
     }
 
-    pub fn get_sphere_material(&self, index: usize) -> Result<&Material, Error> {
+    pub(crate) fn get_sphere_material(&self, index: usize) -> Result<&Material, Error> {
         //! ## Returns
         //! Reference to Sphere material
         Ok(self.get_sphere_at(index)?.get_material())
     }
-    pub fn set_sphere_material(&mut self, material: Material, index: usize) -> Result<(), Error> {
+    pub(crate) fn set_sphere_material(
+        &mut self,
+        material: Material,
+        index: usize,
+    ) -> Result<(), Error> {
         //! Sets the Sphere Material
         //! ## Parameter
         //! 'material': New material
         self.get_sphere_mut_at(index)?.set_material(material);
         Ok(())
     }
-    fn get_sphere_path(&self, index: usize) -> Result<Option<&str>, Error> {
+    pub(crate) fn get_sphere_path(&self, index: usize) -> Result<Option<&str>, Error> {
         // todo: maybe remove the option?
         //! ## Returns
         //! Path of the reference file. Does a sphere need one?
         Ok(self.get_sphere_at(index)?.get_path())
     }
 
-    fn get_sphere_scale(&self, index: usize) -> Result<Vec3, Error> {
+    pub(crate) fn get_sphere_scale(&self, index: usize) -> Result<Vec3, Error> {
         //! ## Returns
         //! Scale in relation to the reference
         Ok(self.get_sphere_at(index)?.get_scale())
     }
 
-    fn get_sphere_translation(&self, index: usize) -> Result<Vec3, Error> {
+    pub(crate) fn get_sphere_translation(&self, index: usize) -> Result<Vec3, Error> {
         //! ## Returns
         //! Translation in relation to the reference as glam::Vec3
         Ok(self.get_sphere_at(index)?.get_translation())
     }
 
-    fn get_sphere_rotation(&self, index: usize) -> Result<Vec3, Error> {
+    pub(crate) fn get_sphere_rotation(&self, index: usize) -> Result<Vec3, Error> {
         //! ## Returns
         //! Rotation in relation
         Ok(self.get_sphere_at(index)?.get_rotation())
     }
-    fn scale_sphere(&mut self, factor: f32, index: usize) -> Result<(), Error> {
+    pub(crate) fn scale_sphere(&mut self, factor: f32, index: usize) -> Result<(), Error> {
         //! scales the radius of the sphere
         //! ## Parameter
         //! 'factor': scale factor
         self.get_sphere_mut_at(index)?.scale(factor);
         Ok(())
     }
-    fn translate_sphere(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
+    pub(crate) fn translate_sphere(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
         //! Moves the center of the sphere
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
