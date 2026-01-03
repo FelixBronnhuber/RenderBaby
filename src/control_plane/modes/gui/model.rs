@@ -48,20 +48,15 @@ impl Model {
 
     pub fn set_resolution(&mut self, width: u32, height: u32) {
         self.scene
-            .get_camera_mut()
-            .set_resolution(Resolution::new(width, height));
+            .set_camera_resolution(Resolution::new(width, height));
     }
 
     pub fn set_camera_pos(&mut self, pos: [f32; 3]) {
-        self.scene
-            .get_camera_mut()
-            .set_position(Vec3::from_array(pos));
+        self.scene.set_camera_position(Vec3::from_array(pos));
     }
 
     pub fn set_camera_dir(&mut self, dir: [f32; 3]) {
-        self.scene
-            .get_camera_mut()
-            .set_look_at(Vec3::from_array(dir));
+        self.scene.set_camera_look_at(Vec3::from_array(dir));
     }
 
     pub fn set_color_hash_enabled(&mut self, enabled: bool) {
@@ -69,7 +64,7 @@ impl Model {
     }
 
     pub fn set_samples(&mut self, samples: u32) {
-        self.scene.get_camera_mut().set_ray_samples(samples);
+        self.scene.set_camera_ray_samples(samples);
     }
 
     pub fn delete_spheres(&mut self) {
