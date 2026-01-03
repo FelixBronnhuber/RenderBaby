@@ -10,7 +10,7 @@ pub(crate) struct SceneChangeHandler {
     pub(crate) scene: Scene,
 }
 
-impl Scene {
+impl SceneChangeHandler {
     /* pub (crate) fn new(scene: Scene) -> Self {
         Self { scene }
     } */
@@ -22,9 +22,21 @@ impl Scene {
         match change {
             SceneChange::CameraChange(camera_change) => {
                 self.handle_camera_change(camera_change)?;
-                self.update_render_config_uniform();
+                self.scene.update_render_config_uniform();
             }
-            _ => todo!(),
+            SceneChange::SphereChange => {
+                todo!()
+            }
+            SceneChange::TriangleChange => {
+                todo!()
+            }
+            SceneChange::VerticesChange => {
+                todo!()
+            }
+            SceneChange::LightChange => {
+                todo!()
+            }
+            _ => todo!("Unknown change type"),
         }
         Ok(())
     }
@@ -32,11 +44,33 @@ impl Scene {
     fn handle_camera_change(&mut self, camera_change: CameraChange) -> Result<(), Error> {
         match camera_change {
             CameraChange::LookAt(look_at) => {
-                info!("Change in {}: Setting lookAt to {}", self, look_at);
-                self.get_camera_mut().set_look_at(look_at);
-                Ok(())
+                info!(
+                    "Change in {}: Setting  camera lookAt to {}",
+                    self.scene, look_at
+                );
+                self.scene.get_camera_mut().set_look_at(look_at);
             }
+            CameraChange::Position(position) => {
+                todo!()
+            }
+            CameraChange::Up(up) => {
+                todo!()
+            }
+            CameraChange::PaneDistance(distance) => {
+                todo!()
+            }
+            CameraChange::PaneWidth(width) => {
+                todo!()
+            }
+            CameraChange::Resolution(res) => {
+                todo!()
+            }
+            CameraChange::RaySamples(samples) => {
+                todo!()
+            }
+
             _ => todo!(),
         }
+        Ok(())
     }
 }
