@@ -10,7 +10,10 @@ pub struct Uniforms {
     pub camera: Camera,
     pub spheres_count: u32,
     pub triangles_count: u32,
-    _pad1: [u32; 2],
+    pub bvh_node_count: u32,
+    pub bvh_triangle_count: u32,
+    pub bvh_root: u32,
+    _pad1: [u32; 3],
 }
 
 impl Default for Uniforms {
@@ -23,7 +26,10 @@ impl Default for Uniforms {
             camera: Camera::default(),
             spheres_count: 0,
             triangles_count: 0,
-            _pad1: [0; 2],
+            bvh_node_count: 0,
+            bvh_triangle_count: 0,
+            bvh_root: 0,
+            _pad1: [0; 3],
         }
     }
 }

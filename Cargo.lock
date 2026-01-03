@@ -1204,6 +1204,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "engine-bvh",
  "env_logger",
  "log",
  "serde",
@@ -1237,6 +1238,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bytemuck",
+ "engine-bvh",
  "engine-config",
  "log",
  "pollster",

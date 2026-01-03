@@ -1,5 +1,7 @@
 use crate::*;
 use core::fmt;
+use engine_bvh::bvh::BVHNode;
+use engine_bvh::triangle::GPUTriangle;
 
 pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
@@ -9,6 +11,9 @@ pub struct RenderConfig {
     pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
     pub lights: Change<Vec<PointLight>>,
+    pub bvh_nodes: Change<Vec<BVHNode>>,
+    pub bvh_indices: Change<Vec<u32>>,
+    pub bvh_triangles: Change<Vec<GPUTriangle>>,
     pub textures: Change<Vec<TextureData>>,
 }
 
@@ -204,6 +209,9 @@ pub struct RenderConfigBuilder {
     pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
     pub lights: Option<Change<Vec<PointLight>>>,
+    pub bvh_nodes: Option<Change<Vec<BVHNode>>>,
+    pub bvh_indices: Option<Change<Vec<u32>>>,
+    pub bvh_triangles: Option<Change<Vec<GPUTriangle>>>,
     pub textures: Option<Change<Vec<TextureData>>>,
 }
 
@@ -217,6 +225,9 @@ impl RenderConfigBuilder {
             triangles: None,
             meshes: None,
             lights: None,
+            bvh_nodes: None,
+            bvh_indices: None,
+            bvh_triangles: None,
             textures: None,
         }
     }
@@ -361,6 +372,66 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn bvh_nodes(mut self, nodes: Vec<BVHNode>) -> Self {
+        self.bvh_nodes = Some(Change::Update(nodes));
+        self
+    }
+
+    pub fn bvh_nodes_create(mut self, nodes: Vec<BVHNode>) -> Self {
+        self.bvh_nodes = Some(Change::Create(nodes));
+        self
+    }
+
+    pub fn bvh_nodes_no_change(mut self) -> Self {
+        self.bvh_nodes = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_nodes_delete(mut self) -> Self {
+        self.bvh_nodes = Some(Change::Delete);
+        self
+    }
+
+    pub fn bvh_indices(mut self, indices: Vec<u32>) -> Self {
+        self.bvh_indices = Some(Change::Update(indices));
+        self
+    }
+
+    pub fn bvh_indices_create(mut self, indices: Vec<u32>) -> Self {
+        self.bvh_indices = Some(Change::Create(indices));
+        self
+    }
+
+    pub fn bvh_indices_no_change(mut self) -> Self {
+        self.bvh_indices = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_indices_delete(mut self) -> Self {
+        self.bvh_indices = Some(Change::Delete);
+        self
+    }
+
+    pub fn bvh_triangles(mut self, triangles: Vec<GPUTriangle>) -> Self {
+        self.bvh_triangles = Some(Change::Update(triangles));
+        self
+    }
+
+    pub fn bvh_triangles_create(mut self, triangles: Vec<GPUTriangle>) -> Self {
+        self.bvh_triangles = Some(Change::Create(triangles));
+        self
+    }
+
+    pub fn bvh_triangles_no_change(mut self) -> Self {
+        self.bvh_triangles = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_triangles_delete(mut self) -> Self {
+        self.bvh_triangles = Some(Change::Delete);
+        self
+    }
+
     pub fn textures(mut self, textures: Vec<TextureData>) -> Self {
         self.textures = Some(Change::Update(textures));
         self
@@ -406,6 +477,15 @@ impl RenderConfigBuilder {
         if self.textures.is_none() {
             log::info!("RenderConfigBuilder: textures not set, defaulting to NoChange.");
         }
+        if self.bvh_nodes.is_none() {
+            log::info!("bvh_nodes not set, defaulting to Keep");
+        }
+        if self.bvh_indices.is_none() {
+            log::info!("bvh_indices not set, defaulting to Keep");
+        }
+        if self.bvh_triangles.is_none() {
+            log::info!("bvh_triangles not set, defaulting to Keep");
+        }
 
         RenderConfig {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
@@ -416,6 +496,9 @@ impl RenderConfigBuilder {
             meshes: self.meshes.unwrap_or(Change::Keep),
             lights: self.lights.unwrap_or(Change::Keep),
             textures: self.textures.unwrap_or(Change::Keep),
+            bvh_nodes: self.bvh_nodes.unwrap_or(Change::Keep),
+            bvh_indices: self.bvh_indices.unwrap_or(Change::Keep),
+            bvh_triangles: self.bvh_triangles.unwrap_or(Change::Keep),
         }
     }
 }

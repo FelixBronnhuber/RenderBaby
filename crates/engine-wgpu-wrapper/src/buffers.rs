@@ -3,6 +3,8 @@ use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
 use crate::ProgressiveRenderHelper;
+use engine_bvh::bvh::BVHNode;
+use engine_bvh::triangle::GPUTriangle;
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -26,6 +28,9 @@ pub struct GpuBuffers {
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
     pub lights: Buffer,
+    pub bvh_nodes: Buffer,
+    pub bvh_indices: Buffer,
+    pub bvh_triangles: Buffer,
     pub texture_data: Buffer,
     pub texture_info: Buffer,
 }
@@ -66,6 +71,18 @@ impl GpuBuffers {
         };
 
         let (tex_data, tex_info) = Self::process_textures(textures);
+        let bvh_nodes = match &rc.bvh_nodes {
+            Change::Create(n) => n.as_slice(),
+            _ => &[],
+        };
+        let bvh_indices = match &rc.bvh_indices {
+            Change::Create(i) => i.as_slice(),
+            _ => &[],
+        };
+        let bvh_triangles = match &rc.bvh_triangles {
+            Change::Create(t) => t.as_slice(),
+            _ => &[],
+        };
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
 
@@ -93,6 +110,13 @@ impl GpuBuffers {
                 &[*prh],
             ),
             lights: Self::create_storage_buffer(device, "Light Buffer", lights),
+            bvh_nodes: Self::create_storage_buffer(device, "BVH Nodes Buffer", bvh_nodes),
+            bvh_indices: Self::create_storage_buffer(device, "BVH Indices Buffer", bvh_indices),
+            bvh_triangles: Self::create_storage_buffer(
+                device,
+                "BVH Triangles Buffer",
+                bvh_triangles,
+            ),
             texture_data: Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data),
             texture_info: Self::create_storage_buffer(device, "Texture Info Buffer", &tex_info),
         }
@@ -150,6 +174,18 @@ impl GpuBuffers {
 
     pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
+    pub fn grow_bvh_nodes(&mut self, device: &Device, nodes: &[BVHNode]) {
+        self.bvh_nodes = Self::create_storage_buffer(device, "BVH Nodes Buffer", nodes);
+    }
+
+    pub fn grow_bvh_indices(&mut self, device: &Device, indices: &[u32]) {
+        self.bvh_indices = Self::create_storage_buffer(device, "BVH Indices Buffer", indices);
+    }
+
+    pub fn grow_bvh_triangles(&mut self, device: &Device, triangles: &[GPUTriangle]) {
+        self.bvh_triangles = Self::create_storage_buffer(device, "BVH Triangles Buffer", triangles);
     }
 
     pub fn grow_textures(&mut self, device: &Device, textures: &[TextureData]) {
@@ -231,6 +267,18 @@ impl GpuBuffers {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
+    pub fn init_bvh_nodes(&mut self, device: &Device, nodes: &[BVHNode]) {
+        self.bvh_nodes = Self::create_storage_buffer(device, "BVH Nodes Buffer", nodes);
+    }
+
+    pub fn init_bvh_indices(&mut self, device: &Device, indices: &[u32]) {
+        self.bvh_indices = Self::create_storage_buffer(device, "BVH Indices Buffer", indices);
+    }
+
+    pub fn init_bvh_triangles(&mut self, device: &Device, triangles: &[GPUTriangle]) {
+        self.bvh_triangles = Self::create_storage_buffer(device, "BVH Triangles Buffer", triangles);
+    }
+
     pub fn init_textures(&mut self, device: &Device, textures: &[TextureData]) {
         let (tex_data, tex_info) = Self::process_textures(textures);
         self.texture_data = Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data);
@@ -264,6 +312,18 @@ impl GpuBuffers {
 
     pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
+    pub fn update_bvh_nodes(&mut self, device: &Device, nodes: &[BVHNode]) {
+        self.bvh_nodes = Self::create_storage_buffer(device, "BVH Nodes Buffer", nodes);
+    }
+
+    pub fn update_bvh_indices(&mut self, device: &Device, indices: &[u32]) {
+        self.bvh_indices = Self::create_storage_buffer(device, "BVH Indices Buffer", indices);
+    }
+
+    pub fn update_bvh_triangles(&mut self, device: &Device, triangles: &[GPUTriangle]) {
+        self.bvh_triangles = Self::create_storage_buffer(device, "BVH Triangles Buffer", triangles);
     }
 
     pub fn update_textures(&mut self, device: &Device, textures: &[TextureData]) {
@@ -305,6 +365,24 @@ impl GpuBuffers {
 
     pub fn delete_lights(&mut self, device: &Device) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_bvh_nodes(&mut self, device: &Device) {
+        self.bvh_nodes =
+            Self::create_storage_buffer(device, "BVH Nodes Buffer (deleted)", &[] as &[BVHNode]);
+    }
+
+    pub fn delete_bvh_indices(&mut self, device: &Device) {
+        self.bvh_indices =
+            Self::create_storage_buffer(device, "BVH Indices Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_bvh_triangles(&mut self, device: &Device) {
+        self.bvh_triangles = Self::create_storage_buffer(
+            device,
+            "BVH Triangles Buffer (deleted)",
+            &[] as &[GPUTriangle],
+        );
     }
 
     pub fn delete_textures(&mut self, device: &Device) {

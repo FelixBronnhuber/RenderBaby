@@ -114,6 +114,17 @@ impl GpuWrapper {
             if let Change::Create(lights) = &new_rc.lights {
                 self.buffer_wrapper.init_lights(&self.device, lights);
             }
+            if let Change::Create(bvh_nodes) = &new_rc.bvh_nodes {
+                self.buffer_wrapper.init_bvh_nodes(&self.device, bvh_nodes);
+            }
+            if let Change::Create(bvh_indices) = &new_rc.bvh_indices {
+                self.buffer_wrapper
+                    .init_bvh_indices(&self.device, bvh_indices);
+            }
+            if let Change::Create(bvh_triangles) = &new_rc.bvh_triangles {
+                self.buffer_wrapper
+                    .init_bvh_triangles(&self.device, bvh_triangles);
+            }
             if let Change::Create(textures) = &new_rc.textures {
                 self.buffer_wrapper.init_textures(&self.device, textures);
             }
@@ -226,6 +237,44 @@ impl GpuWrapper {
                     log::warn!("Create not allowed after initialization for lights.");
                 }
             }
+            match &new_rc.bvh_nodes {
+                Change::Keep => log::info!("Not updating BVH Nodes."),
+                Change::Update(nodes) => {
+                    self.buffer_wrapper.update_bvh_nodes(&self.device, nodes);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_bvh_nodes(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for bvh_nodes.");
+                }
+            }
+            match &new_rc.bvh_indices {
+                Change::Keep => log::info!("Not updating BVH Indices."),
+                Change::Update(indices) => {
+                    self.buffer_wrapper
+                        .update_bvh_indices(&self.device, indices);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_bvh_indices(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for bvh_indices.");
+                }
+            }
+            match &new_rc.bvh_triangles {
+                Change::Keep => log::info!("Not updating BVH Triangles."),
+                Change::Update(tris) => {
+                    self.buffer_wrapper.update_bvh_triangles(&self.device, tris);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_bvh_triangles(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for bvh_triangles.");
+                }
+            }
+
 
             match &new_rc.textures {
                 Change::Keep => log::info!("Not updating Textures Buffer."),
@@ -452,6 +501,30 @@ impl GpuWrapper {
         if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {
             self.queue
                 .write_buffer(&self.buffer_wrapper.lights, 0, bytemuck::cast_slice(lights));
+        }
+
+        if let Change::Create(nodes) | Change::Update(nodes) = &self.rc.bvh_nodes {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.bvh_nodes,
+                0,
+                bytemuck::cast_slice(nodes),
+            );
+        }
+
+        if let Change::Create(indices) | Change::Update(indices) = &self.rc.bvh_indices {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.bvh_indices,
+                0,
+                bytemuck::cast_slice(indices),
+            );
+        }
+
+        if let Change::Create(tris) | Change::Update(tris) = &self.rc.bvh_triangles {
+            self.queue.write_buffer(
+                &self.buffer_wrapper.bvh_triangles,
+                0,
+                bytemuck::cast_slice(tris),
+            );
         }
 
         if let Change::Create(textures) | Change::Update(textures) = &self.rc.textures {
