@@ -158,7 +158,7 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
 
     let t = f * dot(edge2, q);
 
-    if t > 0.001 {
+    if t > 0.0 {
         return t;
     }
 
