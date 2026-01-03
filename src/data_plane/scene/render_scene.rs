@@ -340,6 +340,7 @@ impl Scene {
     pub fn set_color_hash_enabled(&mut self, enabled: bool) {
         self.color_hash_enabled = enabled;
         info!("{self}: set color hash enabled to {enabled}");
+        self.update_render_config_uniform();
     }
 
     pub fn get_color_hash_enabled(&self) -> bool {
@@ -659,14 +660,14 @@ impl Scene {
         //! ## Parameter
         //! 'position': glam::Vec3 of the new position
         self.get_camera_mut().set_position(position);
-        //self.update_render_config_uniform();
+        self.update_render_config_uniform();
     }
     pub fn set_camera_look_at(&mut self, look_at: Vec3) {
         //! sets the direction of the camera
         //! ## Parameter
         //! 'look_at': glam::Vec3 of the new direction
         self.get_camera_mut().set_look_at(look_at);
-        //self.update_render_config_uniform();
+        self.update_render_config_uniform();
     }
     pub fn get_camera_position(&self) -> Vec3 {
         //! ## Returns
@@ -688,7 +689,7 @@ impl Scene {
         //! ## Parameter
         //! 'up': glam::Vec3 for the new vector
         self.get_camera_mut().set_up(up);
-        //self.update_render_config_uniform();
+        self.update_render_config_uniform();
     }
     pub fn get_camera_fov(&self) -> f32 {
         //! ## Returns
@@ -718,7 +719,7 @@ impl Scene {
         if width > 0.0 {
             info!("{self}: Setting pane width to {width}");
             self.get_camera_mut().set_pane_width(width);
-            //self.update_render_config_uniform();
+            self.update_render_config_uniform();
         }
     }
     pub fn get_camera_pane_width(&self) -> f32 {
@@ -736,7 +737,7 @@ impl Scene {
         //! ## Parameter
         //! 'resolution': New resolution as array of u32
         self.get_camera_mut().set_resolution(resolution);
-        //self.update_render_config_uniform();
+        self.update_render_config_uniform();
     }
     pub fn get_camera_ray_samples(&self) -> u32 {
         self.get_camera().get_ray_samples()
@@ -744,7 +745,7 @@ impl Scene {
     pub fn set_camera_ray_samples(&mut self, samples: u32) {
         self.get_camera_mut().set_ray_samples(samples);
         // here could be a check for values [1, 100] or so
-        //self.update_render_config_uniform();
+        self.update_render_config_uniform();
     }
 
     // sphere stuff
