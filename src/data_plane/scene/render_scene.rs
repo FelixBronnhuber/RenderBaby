@@ -442,7 +442,12 @@ impl Scene {
         //! ## Returns
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called");
-
+        if self.get_first_render() {
+            info!(
+                "{self}: Render has been called for the first time. Updating entire render config"
+            );
+            self.update_render_config();
+        }
         //self.update_render_config();
         //self.update_render_config_uniform();
         //self.update_render_config_spheres();
@@ -477,10 +482,6 @@ impl Scene {
     fn update_render_config(&mut self) {
         //! updates the field render_context_builder
         info!("{self}: Updating render config builder");
-        println!(
-            "Custom backtrace: {}",
-            std::backtrace::Backtrace::force_capture()
-        );
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
         debug!("Scene mesh data: {:?}", self.get_meshes());
