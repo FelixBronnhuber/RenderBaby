@@ -190,7 +190,7 @@ impl Scene {
         let _ = self.render(); */
     }
 
-    pub fn get_camera_mut(&mut self) -> &mut Camera {
+    pub(in crate::data_plane) fn get_camera_mut(&mut self) -> &mut Camera {
         //! ## Returns
         //! a mutable reference to the camera
         self.scene_graph.get_camera_mut()
@@ -551,7 +551,7 @@ impl Scene {
     //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
     //todo: pass lights from scene
     //todo: do uniforms and lights also need check with first_render?
-    fn update_render_config_uniform(&mut self) {
+    pub(super) fn update_render_config_uniform(&mut self) {
         //! updates the uniforms on field render_config_builder
 
         let sphere_count = self.get_spheres().len();
