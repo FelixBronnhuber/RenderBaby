@@ -264,7 +264,9 @@ impl Scene {
         let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 2.0), 0.5, Material::default(), green);
         let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 2.0), 0.5, Material::default(), red);
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
-        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
+        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), [1.0,1.0,1.0]);
+
+        let light_sphere = Sphere::new(Vec3::new(2.0, 2.0, 1.0), 0.5, Material::default(), cyan);
 
         let cam = Camera::default();
         let light = LightSource::new(
@@ -275,11 +277,12 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
-        self.add_sphere(sphere0);
-        self.add_sphere(sphere1);
-        self.add_sphere(sphere2);
-        self.add_sphere(sphere3);
-        self.add_sphere(sphere4);
+        //self.add_sphere(sphere0);
+        //self.add_sphere(sphere1);
+        //self.add_sphere(sphere2);
+        //self.add_sphere(sphere3);
+        //self.add_sphere(sphere4);
+        self.add_sphere(light_sphere);
 
         self.set_camera(cam);
         self.add_lightsource(light);

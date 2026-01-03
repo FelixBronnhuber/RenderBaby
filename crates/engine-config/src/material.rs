@@ -38,7 +38,7 @@ impl Default for Material {
             _pad1: 0.0,
             specular: [1.0, 0.5, 0.3],
             shininess: 1000.0,
-            emissive: [0.0, 0.0, 0.0],
+            emissive: [150.0, 150.0, 150.0],
             ior: 1.0,
             opacity: 1.0,
             illum: 1,
