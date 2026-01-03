@@ -186,7 +186,8 @@ impl Scene {
         self.add_sphere(sphere3);
         self.add_sphere(sphere4); */
 
-        self.update_render_config();
+        /* self.update_render_config();
+        let _ = self.render(); */
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
@@ -242,6 +243,8 @@ impl Scene {
             res.build_render_config(),
             RenderEngine::Raytracer,
         ));
+        res.update_render_config();
+        let _ = res.render();
         res
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
@@ -250,6 +253,7 @@ impl Scene {
         //! 'sphere': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", sphere);
         self.scene_graph.add_sphere(sphere);
+        self.update_render_config_spheres();
     }
     pub fn add_mesh(&mut self, mesh: Mesh) {
         //! adds an object to the scene
@@ -257,6 +261,7 @@ impl Scene {
         //! 'mesh': GeometricObject that is to be added to the scene
         info!("{self}: adding {:?}", mesh);
         self.scene_graph.add_mesh(mesh);
+        self.update_render_config_triangles();
     }
 
     pub fn add_lightsource(&mut self, light: LightSource) {
@@ -269,7 +274,7 @@ impl Scene {
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
-        self.update_render_config_spheres();
+        //self.update_render_config_spheres();
     }
 
     pub fn clear_polygons(&mut self) {
@@ -436,7 +441,7 @@ impl Scene {
         //! calls the render engine for the scene self.
         //! ## Returns
         //! Result of either the RenderOutput or a error
-        info!("{self}: Render has been called. Collecting render parameters");
+        info!("{self}: Render has been called");
 
         //self.update_render_config();
         //self.update_render_config_uniform();
@@ -472,6 +477,10 @@ impl Scene {
     fn update_render_config(&mut self) {
         //! updates the field render_context_builder
         info!("{self}: Updating render config builder");
+        println!(
+            "Custom backtrace: {}",
+            std::backtrace::Backtrace::force_capture()
+        );
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
         debug!("Scene mesh data: {:?}", self.get_meshes());
@@ -509,7 +518,7 @@ impl Scene {
         debug!("Collected vertices: {:?}", all_vertices);
         debug!("Collected tris: {:?}", all_triangles);
         info!(
-            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
+            "{self}: Updating render config: {} spheres, {} triangles consisting of {} vertices.",
             render_spheres.len(),
             triangles_count,
             all_vertices.len() / 3
@@ -536,12 +545,13 @@ impl Scene {
         };
     }
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
-    //todo: add fns for mesh and spheres and lights, instead of offering get_spheres, get_meshes
+    //todo: add fns for mesh and lights, instead of offering get_lights, get_meshes
     //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
     //todo: pass lights from scene
+    //todo: do uniforms and lights also need check with first_render?
     fn update_render_config_uniform(&mut self) {
         //! updates the uniforms on field render_config_builder
-        info!("{self}: Updating uniforms on render config builder");
+
         let sphere_count = self.get_spheres().len();
         let triangle_count: usize = self
             .get_meshes()
@@ -549,7 +559,13 @@ impl Scene {
             .map(|mesh| mesh.get_tri_indices().len() / 3)
             .sum();
         let uniforms = self.get_render_uniforms(sphere_count as u32, triangle_count as u32);
-        self.render_config_builder = self.render_config_builder.clone().uniforms(uniforms);
+        if self.get_first_render() {
+            self.update_render_config(); // todo: maybe not entire render config update is needed
+            info!("{self}: Change on uniforms before first render: Updating entire render config");
+        } else {
+            info!("{self}: Updating uniforms on render config builder");
+            self.render_config_builder = self.render_config_builder.clone().uniforms(uniforms);
+        }
     }
     fn update_render_config_spheres(&mut self) {
         //! updates the spheres on field render_config_builder
@@ -642,14 +658,14 @@ impl Scene {
         //! ## Parameter
         //! 'position': glam::Vec3 of the new position
         self.get_camera_mut().set_position(position);
-        self.update_render_config_uniform();
+        //self.update_render_config_uniform();
     }
     pub fn set_camera_look_at(&mut self, look_at: Vec3) {
         //! sets the direction of the camera
         //! ## Parameter
         //! 'look_at': glam::Vec3 of the new direction
         self.get_camera_mut().set_look_at(look_at);
-        self.update_render_config_uniform();
+        //self.update_render_config_uniform();
     }
     pub fn get_camera_position(&self) -> Vec3 {
         //! ## Returns
@@ -671,7 +687,7 @@ impl Scene {
         //! ## Parameter
         //! 'up': glam::Vec3 for the new vector
         self.get_camera_mut().set_up(up);
-        self.update_render_config_uniform();
+        //self.update_render_config_uniform();
     }
     pub fn get_camera_fov(&self) -> f32 {
         //! ## Returns
@@ -683,11 +699,11 @@ impl Scene {
         //! Set the camera pane distance
         //! ## Parameter
         //! distance: New value for pane_distance
-        if distance >= 0.0 {
+        if distance > 0.0 {
+            info!("{self}: Setting pane distance to {distance}");
             self.get_camera_mut().set_pane_distance(distance);
             self.update_render_config_uniform();
         }
-        info!("{self}: Setting pane distance to {distance}");
     }
     pub fn get_camera_pane_distance(&self) -> f32 {
         //! ## Returns
@@ -699,8 +715,9 @@ impl Scene {
         //! ## Parameter
         //! width: New value for pane_distance
         if width > 0.0 {
+            info!("{self}: Setting pane width to {width}");
             self.get_camera_mut().set_pane_width(width);
-            self.update_render_config_uniform();
+            //self.update_render_config_uniform();
         }
     }
     pub fn get_camera_pane_width(&self) -> f32 {
@@ -718,7 +735,7 @@ impl Scene {
         //! ## Parameter
         //! 'resolution': New resolution as array of u32
         self.get_camera_mut().set_resolution(resolution);
-        self.update_render_config_uniform();
+        //self.update_render_config_uniform();
     }
     pub fn get_camera_ray_samples(&self) -> u32 {
         self.get_camera().get_ray_samples()
@@ -726,7 +743,7 @@ impl Scene {
     pub fn set_camera_ray_samples(&mut self, samples: u32) {
         self.get_camera_mut().set_ray_samples(samples);
         // here could be a check for values [1, 100] or so
-        self.update_render_config_uniform();
+        //self.update_render_config_uniform();
     }
 
     // sphere stuff
