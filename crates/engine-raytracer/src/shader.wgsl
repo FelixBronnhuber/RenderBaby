@@ -32,7 +32,9 @@ struct Uniforms {
     bvh_node_count: u32,
     bvh_triangle_count: u32,
     bvh_root: u32,
-    _pad1: vec3<u32>,
+    _pad1: u32,
+    _pad2: u32,
+    _pad3: u32,
 };
 
 struct Sphere {
@@ -98,7 +100,6 @@ struct BVHNode {
     right: u32,
     first_primitive: u32,
     primitive_count: u32,
-    _pad2: vec2<u32>,
 };
 
 struct TextureInfo {
@@ -486,9 +487,9 @@ fn trace_ray(
         // if (depth == 0) {
         //     color += closest_hit.material.ambient;
         // }
-        
-        let specular_strength = (closest_hit.material.specular.x + 
-                                closest_hit.material.specular.y + 
+
+        let specular_strength = (closest_hit.material.specular.x +
+                                closest_hit.material.specular.y +
                                 closest_hit.material.specular.z) / 3.0;
         let diffuse_strength = (closest_hit.material.diffuse.x +
                                 closest_hit.material.diffuse.y +
@@ -499,7 +500,7 @@ fn trace_ray(
 
         var scattered: vec3<f32>;
         var albedo: vec3<f32>;
-        
+
         if (is_metal) {
             // Metal material with glossy reflections
             // Map Ns (0-1000) to fuzz (1.0-0.0)
@@ -507,11 +508,11 @@ fn trace_ray(
             // Lower Ns = blurrier reflections (more fuzz)
             let fuzz = clamp(1.0 - (closest_hit.material.shininess / 1000.0), 0.0, 1.0);
             scattered = scatter_metal(direction, closest_hit, fuzz, &seed);
-            
+
             if (dot(scattered, closest_hit.normal) <= 0.0) {
                 break;
             }
-            
+
             albedo = closest_hit.material.specular;
         } else {
             scattered = scatter_lambertian(closest_hit.normal, &seed);

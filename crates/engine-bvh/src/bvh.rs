@@ -20,7 +20,6 @@ pub struct BVHNode {
     //Index of First Primitive in this Node and how many primitives there are in this node
     pub first_primitive: u32,
     pub primitive_count: u32,
-    pub _pad2: [u32; 2],
 }
 
 impl BVHNode {
