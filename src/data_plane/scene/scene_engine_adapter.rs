@@ -61,7 +61,6 @@ fn vec3_to_array(vec: Vec3) -> [f32; 3] {
 fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
-    triangles_count: u32, //might be removeable
     color_hash_enabled: bool,
     bvh_node_count: u32,
     bvh_triangle_count: u32,
@@ -91,7 +90,6 @@ fn camera_to_render_uniforms(
         render_camera,
         camera.get_ray_samples(), //samples: ray per pixel
         spheres_count,
-        triangles_count,
         bvh_node_count,
         bvh_triangle_count,
     )
@@ -301,7 +299,6 @@ impl Scene {
     pub(crate) fn get_render_uniforms(
         &self,
         spheres_count: u32,
-        triangles_count: u32,
         bvh_node_count: u32,
         bvh_triangle_count: u32,
     ) -> RenderUniforms {
@@ -310,7 +307,6 @@ impl Scene {
         camera_to_render_uniforms(
             self.get_camera(),
             spheres_count,
-            triangles_count,
             self.get_color_hash_enabled(),
             bvh_node_count,
             bvh_triangle_count,
@@ -416,12 +412,7 @@ impl Scene {
             bvh_triangle_count
         );
 
-        let uniforms = self.get_render_uniforms(
-            spheres_count,
-            triangles_count,
-            bvh_node_count,
-            bvh_triangle_count,
-        );
+        let uniforms = self.get_render_uniforms(spheres_count, bvh_node_count, bvh_triangle_count);
 
         let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
             [RenderLights::default()].to_vec()

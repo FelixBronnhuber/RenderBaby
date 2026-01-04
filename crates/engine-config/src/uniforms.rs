@@ -41,7 +41,6 @@ impl Uniforms {
         camera: Camera,
         total_samples: u32,
         spheres_count: u32,
-        triangles_count: u32,
         bvh_node_count: u32,
         bvh_triangle_count: u32,
     ) -> Self {
@@ -51,7 +50,6 @@ impl Uniforms {
             camera,
             total_samples,
             spheres_count,
-            triangles_count,
             bvh_node_count,
             bvh_triangle_count,
             ..Default::default()

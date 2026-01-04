@@ -326,7 +326,6 @@ impl Scene {
                         0,
                         0,
                         0,
-                        0,
                     ))
                     .spheres_create(vec![])
                     .uvs_create(vec![])
