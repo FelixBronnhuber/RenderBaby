@@ -64,6 +64,8 @@ struct HitRecord {
     t: f32,
     pos: vec3<f32>,
     normal: vec3<f32>,
+    uv: vec2<f32>,
+    use_texture: bool,
     material: Material,
 }
 
@@ -131,14 +133,25 @@ struct TriangleData {
     _pad: u32,
 };
 
-fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> f32 {
+fn checkerboard(uv: vec2<f32>) -> vec3<f32> {
+    let n = 10.0;
+    let u2 = i32(floor(uv.x * n));
+    let v2 = i32(floor(uv.y * n));
+    if ((u2 + v2) % 2 == 0) {
+        return vec3<f32>(0.0);
+    } else {
+        return vec3<f32>(1.0);
+    }
+}
+
+fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> vec3<f32> {
     let edge1 = tri.v1 - tri.v0;
     let edge2 = tri.v2 - tri.v0;
     let h = cross(ray_dir, edge2);
     let a = dot(edge1, h);
 
     if abs(a) < 1e-6 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let f = 1.0 / a;
@@ -146,23 +159,23 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
     let u = f * dot(s, h);
 
     if u < 0.0 || u > 1.0 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let q = cross(s, edge1);
     let v = f * dot(ray_dir, q);
 
     if v < 0.0 || u + v > 1.0 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let t = f * dot(edge2, q);
 
     if t > 0.0 {
-        return t;
+        return vec3<f32>(t, u, v);
     }
 
-    return -1.0;
+    return vec3<f32>(-1.0, 0.0, 0.0);
 }
 
 fn hash_to_color(n: u32) -> vec3<f32> {
@@ -293,8 +306,8 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         );
 
         let tri = TriangleData(v0, v1, v2, 0u);
-        let t = intersect_triangle(origin, light_dir, tri);
-        if (t > 0.001 && t < max_dist) {
+        let hit_data = intersect_triangle(origin, light_dir, tri);
+        if (hit_data.x > 0.001 && hit_data.x < max_dist) {
             return true;
         }
     }
@@ -346,6 +359,8 @@ fn trace_ray(
             1e20,
             vec3<f32>(0.0),
             vec3<f32>(0.0),
+            vec2<f32>(0.0),
+            false,
             Material(
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
@@ -366,6 +381,8 @@ fn trace_ray(
                 closest_hit.material.diffuse = vec3<f32>(0.5);
                 closest_hit.material.ambient = vec3<f32>(0.0);
                 closest_hit.material.specular = vec3<f32>(0.0);
+                closest_hit.uv = closest_hit.pos.xz;
+                closest_hit.use_texture = true;
             }
         }
         
@@ -391,13 +408,16 @@ fn trace_ray(
                                    vertices[v2_idx * 3u + 2u]);
                 
                 let tri = TriangleData(v0, v1, v2, mesh_idx);
-                let t = intersect_triangle(origin, direction, tri);
+                let hit_data = intersect_triangle(origin, direction, tri);
+                let t = hit_data.x;
                 
                 if (t > 0.001 && t < closest_hit.t) {
                     closest_hit.hit = true;
                     closest_hit.t = t;
                     closest_hit.pos = origin + t * direction;
                     closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
+                    closest_hit.uv = hit_data.yz;
+                    closest_hit.use_texture = true;
                     
                     if (uniforms.color_hash_enabled != 0u) {
                         closest_hit.material.diffuse = hash_to_color(k + 1u);
@@ -460,6 +480,10 @@ fn trace_ray(
         } else {
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
+            // Apply checkerboard texture
+            if (closest_hit.use_texture) {
+                albedo = albedo * checkerboard(closest_hit.uv);
+            }
         }
 
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
