@@ -5,7 +5,7 @@ use engine_config::{RenderConfigBuilder, RenderOutput};
 use engine_bvh::triangle::GPUTriangle;
 use engine_bvh::bvh::BVH;
 use glam::Vec3;
-use log::{debug, error, info};
+use log::{error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
     mesh::Mesh,
