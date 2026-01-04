@@ -12,6 +12,7 @@ use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
+type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
 pub type RenderLights = engine_config::PointLight;
 
@@ -30,7 +31,8 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
         sphere.get_radius(),
         {
             let color = sphere.get_color();
-            engine_config::Vec3::new(color[0], color[1], color[2])
+            let diffuse = engine_config::Vec3::new(color[0], color[1], color[2]);
+            engine_config::Material::new_temp(diffuse).unwrap()
         },
     )
     .unwrap()
@@ -134,26 +136,40 @@ impl Scene {
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
-        // Collect all vertices and triangles into flat vectors
-        let (all_vertices, all_triangles) = if render_tris.is_empty() {
-            (vec![], vec![])
+        // Collect all vertices, triangles, and mesh into flat vectors
+        let (all_vertices, all_triangles, all_meshes) = if render_tris.is_empty() {
+            (vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
+            let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris {
+            for (verts, tris) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
+                let triangle_count = (tris.len() / 3) as u32;
 
+                // Add mesh metadata
+                mesh_infos.push(RenderMesh::new(
+                    triangle_offset,
+                    triangle_count,
+                    engine_config::Material::default(), //replace with Material from mtl
+                ));
+
+                // Add triangles with vertex offset
                 for tri_idx in tris {
                     all_tris.push(tri_idx + vertex_offset);
                 }
 
+                // Add vertices
                 all_verts.extend(verts);
 
                 vertex_offset += vertex_count;
+                triangle_offset += triangle_count;
             }
-            (all_verts, all_tris)
+
+            (all_verts, all_tris, mesh_infos)
         };
         info!("Collected vertices: {:?}", all_vertices);
         info!("Collected tris: {:?}", all_triangles);
@@ -172,6 +188,7 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
+                .meshes_create(all_meshes)
                 .lights_create([RenderLights::default()].to_vec())
                 .build()
         } else {
@@ -182,6 +199,7 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
+                .meshes(all_meshes)
                 .lights([RenderLights::default()].to_vec())
                 .build()
         };

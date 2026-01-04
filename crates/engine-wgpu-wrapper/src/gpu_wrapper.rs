@@ -104,6 +104,9 @@ impl GpuWrapper {
             if let Change::Create(triangles) = &new_rc.triangles {
                 self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
+            if let Change::Create(meshes) = &new_rc.meshes {
+                self.buffer_wrapper.init_meshes(&self.device, meshes);
+            }
             if let Change::Create(lights) = &new_rc.lights {
                 self.buffer_wrapper.init_lights(&self.device, lights);
             }
@@ -179,6 +182,18 @@ impl GpuWrapper {
                 }
             }
 
+            match &new_rc.meshes {
+                Change::Keep => log::info!("Not updating Meshes Buffer."),
+                Change::Update(meshes) => {
+                    self.buffer_wrapper.update_meshes(&self.device, meshes);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_meshes(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for triangles.");
+                }
+            }
             match &new_rc.lights {
                 Change::Keep => log::info!("Not updating Lights Buffer."),
                 Change::Update(lights) => {
