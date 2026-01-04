@@ -1,13 +1,13 @@
 use glam::Vec3;
-use scene_objects::camera::Resolution;
+use scene_objects::{camera::Resolution, light_source::LightType, material::Material};
 
 pub(crate) enum SceneChange {
     CameraChange(CameraChange),
-    LightChange,
-    VerticesChange,
-    TriangleChange,
-    SphereChange,
+    LightChange(LightChange),
+    MeshChange(MeshChange),
+    SphereChange(SphereChange),
 }
+//todo: what about adding, deleting
 
 pub(crate) enum CameraChange {
     Position(Vec3),
@@ -17,4 +17,30 @@ pub(crate) enum CameraChange {
     PaneWidth(f32),
     Resolution(Resolution),
     RaySamples(u32),
+}
+
+pub(crate) enum LightChange {
+    Type(LightType, usize), // maybe not needed
+    Position(Vec3, usize),
+    Luminosity(f32, usize),
+    Color([f32; 3], usize),
+    Direction(Vec3, usize),
+    Name(String),
+}
+
+pub(crate) enum MeshChange {
+    Translate(Vec3, usize),
+    Scale(f32, usize),
+    Rotate(Vec3, usize),
+    Color([f32; 3], usize),
+    Material(Material, usize),
+    Name(String, usize),
+}
+
+pub(crate) enum SphereChange {
+    Translate(Vec3, usize),
+    Scale(f32, usize),
+    Color([f32; 3], usize),
+    Material(Material, usize),
+    Name(String, usize),
 }
