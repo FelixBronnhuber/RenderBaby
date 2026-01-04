@@ -325,6 +325,8 @@ impl Scene {
                         cam.get_ray_samples(),
                         0,
                         0,
+                        0,
+                        0,
                     ))
                     .spheres_create(vec![])
                     .uvs_create(vec![])

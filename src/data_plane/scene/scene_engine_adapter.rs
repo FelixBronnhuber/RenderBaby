@@ -61,8 +61,10 @@ fn vec3_to_array(vec: Vec3) -> [f32; 3] {
 fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
-    triangles_count: u32,
+    triangles_count: u32, //might be removeable
     color_hash_enabled: bool,
+    bvh_node_count: u32,
+    bvh_triangle_count: u32,
 ) -> Result<RenderUniforms, Error> {
     //! converts the given scene_object::camera::Camera to a render_config::Uniforms
     //! so that it can be passed to the render engine
@@ -72,7 +74,7 @@ fn camera_to_render_uniforms(
     //! 'triangles_count': Number of triangles to be rendered <br>
     //! 'color_hash_enabled': Whether color hash is enabled
     //! ## Returns
-    //! render_config::Unfiforms for the given parameters
+    //! render_config::Uniforms for the given parameters
     let position = camera.get_position();
     let dir = camera.get_look_at() - camera.get_position(); //Engine uses currently a direction vector
     let render_camera = RenderCamera::new(
@@ -90,6 +92,8 @@ fn camera_to_render_uniforms(
         camera.get_ray_samples(), //samples: ray per pixel
         spheres_count,
         triangles_count,
+        bvh_node_count,
+        bvh_triangle_count,
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
@@ -298,14 +302,18 @@ impl Scene {
         &self,
         spheres_count: u32,
         triangles_count: u32,
+        bvh_node_count: u32,
+        bvh_triangle_count: u32,
     ) -> RenderUniforms {
         //! ## Returns
-        //! RenderUnfiform for the camera of the scene
+        //! RenderUniform for the camera of the scene
         camera_to_render_uniforms(
             self.get_camera(),
             spheres_count,
             triangles_count,
             self.get_color_hash_enabled(),
+            bvh_node_count,
+            bvh_triangle_count,
         )
         .unwrap()
     }
@@ -387,6 +395,8 @@ impl Scene {
                 // Add vertices
                 all_verts.extend(verts);
 
+        let bvh_node_count = bvh_nodes.len() as u32;
+        let bvh_triangle_count = gpu_triangles.len() as u32;
         let bvh_triangles = gpu_triangles.clone();
                 // Add UVs
                 all_uvs.extend(uvs);
@@ -401,9 +411,16 @@ impl Scene {
         info!("Collected tris count: {}", all_triangles.len());
         info!(
             "{self}: BVH built: {} nodes, {} indices, {} triangles",
-            bvh_nodes.len(),
+            bvh_node_count,
             bvh_indices.len(),
-            bvh_triangles.len()
+            bvh_triangle_count
+        );
+
+        let uniforms = self.get_render_uniforms(
+            spheres_count,
+            triangles_count,
+            bvh_node_count,
+            bvh_triangle_count,
         );
 
         let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
@@ -425,7 +442,7 @@ impl Scene {
                 .meshes_create(all_meshes)
                 .bvh_nodes_create(bvh_nodes)
                 .bvh_indices_create(bvh_indices)
-                .bvh_triangles_create(bvh_triangles)
+                .bvh_triangles_create(gpu_triangles)
                 .lights_create(lights)
                 .textures_create(texture_list)
                 .build()
@@ -438,10 +455,10 @@ impl Scene {
                 .uvs(all_uvs)
                 .bvh_nodes_create(bvh_nodes)
                 .bvh_indices_create(bvh_indices)
-                .bvh_triangles_create(bvh_triangles)
                 .meshes(all_meshes)
                 .lights(lights)
                 .textures(texture_list)
+                .bvh_triangles_create(gpu_triangles)
                 .build()
         };
 

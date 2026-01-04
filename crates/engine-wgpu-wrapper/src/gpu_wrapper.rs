@@ -409,6 +409,22 @@ impl GpuWrapper {
             Change::Keep => {}
         };
 
+        match &self.rc.bvh_nodes {
+            Change::Create(n) | Change::Update(n) => {
+                uniforms.bvh_node_count = n.len() as u32;
+            }
+            Change::Delete => uniforms.bvh_node_count = 0,
+            Change::Keep => {}
+        }
+
+        match &self.rc.bvh_triangles {
+            Change::Create(t) | Change::Update(t) => {
+                uniforms.bvh_triangle_count = t.len() as u32;
+            }
+            Change::Delete => uniforms.bvh_triangle_count = 0,
+            Change::Keep => {}
+        }
+
         log::info!(
             "Writing uniforms to GPU: camera_pos={:?}, camera_dir={:?}, pane_distance={}, pane_width={}, size={}x{}, spheres={}, triangles={}",
             uniforms.camera.pos,
