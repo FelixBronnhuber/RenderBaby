@@ -71,10 +71,9 @@ struct HitRecord {
 }
 
 struct PointLight {
-    position: vec3<f32>,
-    intensity: f32,
-    color: vec3<f32>,
-    _pad: f32,
+    center: vec3<f32>,
+    radius: f32,
+    material: Material,
 };
 
 struct TextureInfo {
@@ -170,6 +169,30 @@ fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -
         }
     }
     
+    return root;
+}
+
+fn intersect_pointlight(ray_origin: vec3<f32>, ray_dir: vec3<f32>, pointlight: PointLight) -> f32 {
+    let oc = ray_origin - pointlight.center;
+    let a = dot(ray_dir, ray_dir);
+    let half_b = dot(oc, ray_dir);
+    let c = dot(oc, oc) - pointlight.radius * pointlight.radius;
+    let discriminant = half_b * half_b - a * c;
+
+    if discriminant < 0.0 {
+        return -1.0;
+    }
+
+    let sqrtd = sqrt(discriminant);
+    var root = (-half_b - sqrtd) / a;
+
+    if root <= 0.001 {
+        root = (-half_b + sqrtd) / a;
+        if root <= 0.001 {
+            return -1.0;
+        }
+    }
+
     return root;
 }
 
@@ -356,6 +379,13 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         }
     }
 
+    for (var k = 0u; k < arrayLength(&point_lights); k = k + 1u) {
+            let t = intersect_pointlight(origin, light_dir, point_lights[k]);
+            if (t > 0.001 && t < max_dist) {
+                return true;
+            }
+        }
+
     return false;
 }
 
@@ -492,7 +522,22 @@ fn trace_ray(
             closest_hit.use_texture = closest_hit.material.texture_index >= 0;
             }
         }
-        
+
+        // Point Light
+
+        for (var k = 0u; k < arrayLength(&point_lights); k = k + 1u) {
+            let point_light = point_lights[k];
+            let t = intersect_pointlight(origin, direction, point_light);
+
+            if (t > 0.001 && t < closest_hit.t) {
+                closest_hit.hit = true;
+                closest_hit.t = t;
+                closest_hit.pos = origin + t * direction;
+                closest_hit.normal = normalize(closest_hit.pos - point_light.center);
+                closest_hit.material = point_light.material;
+            }
+        }
+
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);

@@ -277,15 +277,14 @@ impl Scene {
             Vec3::default(),
             LightType::Ambient,
         );
-        //self.add_sphere(sphere0);
-        //self.add_sphere(sphere1);
-        //self.add_sphere(sphere2);
-        //self.add_sphere(sphere3);
-        //self.add_sphere(sphere4);
-        self.add_sphere(light_sphere);
+        self.add_sphere(sphere0);
+        self.add_sphere(sphere1);
+        self.add_sphere(sphere2);
+        self.add_sphere(sphere3);
+        self.add_sphere(sphere4);
 
         self.set_camera(cam);
-        self.add_lightsource(light);
+        //self.add_lightsource(light);
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {

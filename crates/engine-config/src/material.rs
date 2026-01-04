@@ -26,7 +26,7 @@ pub struct Material {
     // 0: color, 1: diffuse, 2: specular, 3: reflection, 4: refraction + reflection, 5: Fresnel reflection + ray-traced reflection, 6: Transparency + Fresnel + ray-traced refraction
     pub illum: u32,
     pub texture_index: i32,
-    _pad2: u32,
+    pub _pad2: u32,
 }
 
 impl Default for Material {
@@ -38,7 +38,7 @@ impl Default for Material {
             _pad1: 0.0,
             specular: [1.0, 0.5, 0.3],
             shininess: 1000.0,
-            emissive: [150.0, 150.0, 150.0],
+            emissive: [0.0, 0.0, 0.0],
             ior: 1.0,
             opacity: 1.0,
             illum: 1,
