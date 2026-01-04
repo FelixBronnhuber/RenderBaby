@@ -1,6 +1,6 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
-const MAX_DEPTH: i32 = 5;
+const MAX_DEPTH: i32 = 3;
 const SHADOW_SAMPLES: u32 = 8u;
 const SHADOW_EDGE: f32 = 0.2;
 
@@ -56,7 +56,8 @@ struct Material {
     ior: f32,
     opacity: f32,
     illum: u32,
-    _pad2: vec2<u32>,
+    texture_index: i32,
+    _pad2: u32,
 }
 
 struct HitRecord {
@@ -85,6 +86,7 @@ struct PointLight {
 @group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
 @group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
+@group(0) @binding(9) var<storage, read> uvs: array<f32>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -366,7 +368,7 @@ fn trace_ray(
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
-                0.0, 0u, vec2<u32>(0u)
+                0.0, 0u, -1, 0u
             )
         );
         
@@ -416,15 +418,26 @@ fn trace_ray(
                     closest_hit.t = t;
                     closest_hit.pos = origin + t * direction;
                     closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
-                    closest_hit.uv = hit_data.yz;
-                    closest_hit.use_texture = true;
+                    
+                    let u = hit_data.y;
+                    let v = hit_data.z;
+                    let w = 1.0 - u - v;
+                    
+                    let uv0 = vec2<f32>(uvs[v0_idx * 2u], uvs[v0_idx * 2u + 1u]);
+                    let uv1 = vec2<f32>(uvs[v1_idx * 2u], uvs[v1_idx * 2u + 1u]);
+                    let uv2 = vec2<f32>(uvs[v2_idx * 2u], uvs[v2_idx * 2u + 1u]);
+                    
+                    closest_hit.uv = w * uv0 + u * uv1 + v * uv2;
                     
                     if (uniforms.color_hash_enabled != 0u) {
                         closest_hit.material.diffuse = hash_to_color(k + 1u);
                         closest_hit.material.ambient = vec3<f32>(0.0);
                         closest_hit.material.specular = vec3<f32>(0.0);
+                        closest_hit.use_texture = false;
                     } else {
                         closest_hit.material = mesh.material;
+                        // Use texture if material has a valid texture index
+                        closest_hit.use_texture = closest_hit.material.texture_index >= 0;
                     }
                 }
             }

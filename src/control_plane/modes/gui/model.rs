@@ -2,6 +2,8 @@ use std::path::PathBuf;
 use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
+use glam::Vec3;
+use scene_objects::camera::Resolution;
 
 #[allow(dead_code)]
 pub struct Model {
@@ -16,6 +18,38 @@ impl Model {
             Ok(scene) => Ok(Self::new(scene)),
             Err(e) => Err(e),
         }
+    }
+
+    pub fn new_with_capsule() -> Self {
+        let mut scene = Scene::new();
+        // scene.proto_init();
+
+        // Load capsule fixture
+        let cwd = std::env::current_dir().unwrap();
+        let obj_path = cwd.join("fixtures/capsule/capsule.obj");
+        if obj_path.exists() {
+            log::info!("Loading capsule fixture from {:?}", obj_path);
+            if let Err(e) = scene.load_object_from_file(obj_path) {
+                log::error!("Failed to load capsule fixture: {}", e);
+            }
+            // Set up camera for capsule
+            scene
+                .get_camera_mut()
+                .set_position(Vec3::new(0.0, 2.0, 4.0));
+            scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
+            scene
+                .get_camera_mut()
+                .set_resolution(Resolution::new(256, 256));
+            scene.set_color_hash_enabled(false); // Disable color hash to see textures
+        } else {
+            log::warn!(
+                "Capsule fixture not found at {:?}, falling back to proto_init",
+                obj_path
+            );
+            scene.proto_init();
+        }
+
+        Self::new(scene)
     }
 
     pub fn new_from_template(_file: &'static File<'static>) -> anyhow::Result<Self> {

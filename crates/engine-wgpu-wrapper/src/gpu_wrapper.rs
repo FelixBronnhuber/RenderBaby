@@ -20,7 +20,7 @@ pub struct ProgressiveRenderHelper {
 
 impl ProgressiveRenderHelper {
     pub fn new(total_samples: u32) -> Self {
-        let samples_per_pass = 10;
+        let samples_per_pass = 4;
         Self {
             total_passes: (total_samples.div_ceil(samples_per_pass)),
             current_pass: 0,
@@ -101,6 +101,9 @@ impl GpuWrapper {
             if let Change::Create(vertices) = &new_rc.vertices {
                 self.buffer_wrapper.init_vertices(&self.device, vertices);
             }
+            if let Change::Create(uvs) = &new_rc.uvs {
+                self.buffer_wrapper.init_uvs(&self.device, uvs);
+            }
             if let Change::Create(triangles) = &new_rc.triangles {
                 self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
@@ -165,6 +168,19 @@ impl GpuWrapper {
                 }
                 Change::Create(_) => {
                     log::warn!("Create not allowed after initialization for vertices.");
+                }
+            }
+
+            match &new_rc.uvs {
+                Change::Keep => log::info!("Not updating UVs Buffer."),
+                Change::Update(uvs) => {
+                    self.buffer_wrapper.update_uvs(&self.device, uvs);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_uvs(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for uvs.");
                 }
             }
 
@@ -401,6 +417,11 @@ impl GpuWrapper {
                 0,
                 bytemuck::cast_slice(vertices),
             );
+        }
+
+        if let Change::Create(uvs) | Change::Update(uvs) = &self.rc.uvs {
+            self.queue
+                .write_buffer(&self.buffer_wrapper.uvs, 0, bytemuck::cast_slice(uvs));
         }
 
         if let Change::Create(triangles) | Change::Update(triangles) = &self.rc.triangles {

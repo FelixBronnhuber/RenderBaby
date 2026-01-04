@@ -91,6 +91,7 @@ impl Scene {
                                     mat.ks.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
+                                    mat.map_kd.clone(),
                                 ))
                             }),
                             Err(error) => {
@@ -104,15 +105,58 @@ impl Scene {
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
 
-                let mut tris = Vec::with_capacity(100);
-                let mut material_index = Vec::with_capacity(10);
+                let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
+                let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
+                let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
+                let mut material_index = Vec::with_capacity(objs.faces.len());
+
+                let mut vertex_count = 0;
+
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        tris.push(vs.0 as u32 - 1);
-                        tris.push(vs.1 as u32 - 1);
-                        tris.push(vs.2 as u32 - 1);
+                        // Get indices for the triangle (0, i, i+1)
+                        let v_indices = [0, i, i + 1];
+
+                        for &idx in &v_indices {
+                            // Position
+                            let v_idx = face.v[idx] as usize - 1;
+                            if v_idx * 3 + 2 < objs.vertices.len() {
+                                new_vertices.push(objs.vertices[v_idx * 3]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 1]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 2]);
+                            } else {
+                                // Fallback if index is out of bounds (shouldn't happen with valid OBJ)
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                            }
+
+                            // UV
+                            if !face.vt.is_empty() && idx < face.vt.len() {
+                                let vt_idx = face.vt[idx] as usize - 1;
+                                if let Some(tex_coords) = &objs.texture_coordinate {
+                                    if vt_idx * 2 + 1 < tex_coords.len() {
+                                        new_uvs.push(tex_coords[vt_idx * 2]);
+                                        new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                                    } else {
+                                        new_uvs.push(0.0);
+                                        new_uvs.push(0.0);
+                                    }
+                                } else {
+                                    new_uvs.push(0.0);
+                                    new_uvs.push(0.0);
+                                }
+                            } else {
+                                new_uvs.push(0.0);
+                                new_uvs.push(0.0);
+                            }
+
+                            // Index
+                            new_tris.push(vertex_count);
+                            vertex_count += 1;
+                        }
+
                         if let Some(m) = material_list
                             .iter()
                             .position(|x| x.name == face.material_name.clone())
@@ -122,8 +166,13 @@ impl Scene {
                     }
                 }
                 let mesh = Mesh::new(
-                    objs.vertices,
-                    tris,
+                    new_vertices,
+                    new_tris,
+                    if !new_uvs.is_empty() {
+                        Some(new_uvs)
+                    } else {
+                        None
+                    },
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
@@ -218,6 +267,7 @@ impl Scene {
                     ))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
+                    .uvs_create(vec![])
                     .triangles_create(vec![])
                     .meshes_create(vec![])
                     .lights_create(vec![])
@@ -240,7 +290,7 @@ impl Scene {
         //! adds an object to the scene
         //! ## Arguments
         //! 'mesh': GeometricObject that is to be added to the scene
-        info!("{self}: adding {:?}", mesh);
+        info!("{self}: adding {:?}", mesh.get_name());
         self.scene_graph.add_mesh(mesh);
     }
 

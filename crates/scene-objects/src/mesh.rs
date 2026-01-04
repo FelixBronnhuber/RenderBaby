@@ -14,6 +14,7 @@ use crate::{
 pub struct Mesh {
     vertices: Vec<f32>,
     tris: Vec<u32>,
+    uvs: Option<Vec<f32>>,
     materials: Option<Vec<Material>>,
     material_index: Option<Vec<usize>>,
     path: Option<String>,
@@ -29,6 +30,7 @@ impl Mesh {
     pub fn new(
         vertices: Vec<f32>,
         tris: Vec<u32>,
+        uvs: Option<Vec<f32>>,
         materials: Option<Vec<Material>>,
         material_index: Option<Vec<usize>>,
         name: Option<String>,
@@ -39,6 +41,7 @@ impl Mesh {
             Ok(c) => Ok(Self {
                 vertices,
                 tris,
+                uvs,
                 materials,
                 material_index,
                 path: None,
@@ -50,6 +53,10 @@ impl Mesh {
             }),
             Err(error) => Err(Error::msg(format!("Failed to create new mesh: {error}"))),
         }
+    }
+
+    pub fn get_materials(&self) -> Option<&Vec<Material>> {
+        self.materials.as_ref()
     }
     fn update_centroid(&mut self) -> Result<(), Error> {
         //! Calculates the centroid based on self.vertices
@@ -102,6 +109,9 @@ impl Mesh {
         //! ## Returns
         //! Reference to Vec<f32>, where three entries define one point in 3d space
         &self.vertices
+    }
+    pub fn get_uvs(&self) -> Option<&Vec<f32>> {
+        self.uvs.as_ref()
     }
     pub fn get_tri_indices(&self) -> &Vec<u32> {
         //! Returns

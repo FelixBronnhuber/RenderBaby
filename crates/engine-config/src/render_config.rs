@@ -5,6 +5,7 @@ pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
     pub spheres: Change<Vec<Sphere>>,
     pub vertices: Change<Vec<f32>>,
+    pub uvs: Change<Vec<f32>>,
     pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
     pub lights: Change<Vec<PointLight>>,
@@ -68,6 +69,9 @@ impl ValidateInit for RenderConfig {
         if !matches!(self.vertices, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidVertices);
         }
+        if !matches!(self.uvs, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidUVs);
+        }
         if !matches!(self.triangles, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidTriangles);
         }
@@ -128,6 +132,18 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
+        match &self.uvs {
+            Change::Update(uvs) | Change::Create(uvs) => {
+                if uvs.len() % 2 != 0 {
+                    return Err(RenderConfigBuilderError::InvalidUVs);
+                }
+            }
+            Change::Delete => {
+                todo!("Implement UVs Deletion")
+            }
+            Change::Keep => {}
+        }
+
         match &self.triangles {
             Change::Update(triangles) | Change::Create(triangles) => {
                 if triangles.len() % 3 != 0 {
@@ -170,6 +186,7 @@ pub struct RenderConfigBuilder {
     pub uniforms: Option<Change<Uniforms>>,
     pub spheres: Option<Change<Vec<Sphere>>>,
     pub vertices: Option<Change<Vec<f32>>>,
+    pub uvs: Option<Change<Vec<f32>>>,
     pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
     pub lights: Option<Change<Vec<PointLight>>>,
@@ -181,6 +198,7 @@ impl RenderConfigBuilder {
             uniforms: None,
             spheres: None,
             vertices: None,
+            uvs: None,
             triangles: None,
             meshes: None,
             lights: None,
@@ -244,6 +262,26 @@ impl RenderConfigBuilder {
 
     pub fn vertices_delete(mut self) -> Self {
         self.vertices = Some(Change::Delete);
+        self
+    }
+
+    pub fn uvs(mut self, uvs: Vec<f32>) -> Self {
+        self.uvs = Some(Change::Update(uvs));
+        self
+    }
+
+    pub fn uvs_create(mut self, uvs: Vec<f32>) -> Self {
+        self.uvs = Some(Change::Create(uvs));
+        self
+    }
+
+    pub fn uvs_no_change(mut self) -> Self {
+        self.uvs = Some(Change::Keep);
+        self
+    }
+
+    pub fn uvs_delete(mut self) -> Self {
+        self.uvs = Some(Change::Delete);
         self
     }
 
@@ -317,6 +355,9 @@ impl RenderConfigBuilder {
         if self.vertices.is_none() {
             log::info!("RenderConfigBuilder: vertices not set, defaulting to NoChange.");
         }
+        if self.uvs.is_none() {
+            log::info!("RenderConfigBuilder: uvs not set, defaulting to NoChange.");
+        }
         if self.triangles.is_none() {
             log::info!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
         }
@@ -331,6 +372,7 @@ impl RenderConfigBuilder {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
             spheres: self.spheres.unwrap_or(Change::Keep),
             vertices: self.vertices.unwrap_or(Change::Keep),
+            uvs: self.uvs.unwrap_or(Change::Keep),
             triangles: self.triangles.unwrap_or(Change::Keep),
             meshes: self.meshes.unwrap_or(Change::Keep),
             lights: self.lights.unwrap_or(Change::Keep),
@@ -346,6 +388,7 @@ pub enum RenderConfigBuilderError {
     InvalidUniforms,
     InvalidSpheres,
     InvalidVertices,
+    InvalidUVs,
     InvalidTriangles,
     InvalidMeshes,
     InvalidLights,
@@ -367,6 +410,7 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::InvalidUniforms => write!(f, "Invalid Uniforms"),
             RenderConfigBuilderError::InvalidSpheres => write!(f, "Invalid Spheres"),
             RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
+            RenderConfigBuilderError::InvalidUVs => write!(f, "Invalid UVs"),
             RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
             RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
             RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),

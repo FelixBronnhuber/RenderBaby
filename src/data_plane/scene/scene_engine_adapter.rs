@@ -77,12 +77,68 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
+fn material_to_render_material(mat: &scene_objects::material::Material) -> engine_config::Material {
+    let ambient = [
+        mat.ambient_reflectivity[0] as f32,
+        mat.ambient_reflectivity[1] as f32,
+        mat.ambient_reflectivity[2] as f32,
+    ];
+    let diffuse = engine_config::Vec3::new(
+        mat.diffuse_reflectivity[0] as f32,
+        mat.diffuse_reflectivity[1] as f32,
+        mat.diffuse_reflectivity[2] as f32,
+    );
+    let specular = [
+        mat.specular_reflectivity[0] as f32,
+        mat.specular_reflectivity[1] as f32,
+        mat.specular_reflectivity[2] as f32,
+    ];
+
+    // Simple heuristic: if texture path is present, set index to 0 (placeholder)
+    // In a real system, we would look up the index in a texture manager
+    let texture_index = if mat.texture_path.is_some() { 0 } else { -1 };
+
+    engine_config::Material::new(
+        ambient,
+        diffuse,
+        specular,
+        mat.shininess as f32,
+        [0.0, 0.0, 0.0],               // emissive
+        1.0,                           // ior
+        1.0 - mat.transparency as f32, // opacity
+        2,                             // illum (default to specular)
+        texture_index,
+    )
+    .unwrap_or_default()
+}
+
+fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material) {
     //! Extracts vertices and point references from the given mesh
     //! ## Parameter
     //! 'mesh': Mesh from scene_objects crate that is to be converted
     //! Returns: touple of: Vec<f32> where 3 entries define one point in 3d space, and Vec<u32> referencing which points make up a triangle
-    (mesh.get_vertices().clone(), mesh.get_tri_indices().clone())
+    let vertices = mesh.get_vertices().clone();
+    let indices = mesh.get_tri_indices().clone();
+    let uvs = if let Some(uvs) = mesh.get_uvs() {
+        uvs.clone()
+    } else {
+        // Default UVs (0,0) for each vertex
+        vec![0.0; (vertices.len() / 3) * 2]
+    };
+
+    // Take the first material if available, otherwise default
+    // Note: This ignores per-face material assignments for now
+    let material = if let Some(mats) = mesh.get_materials() {
+        if !mats.is_empty() {
+            material_to_render_material(&mats[0])
+        } else {
+            engine_config::Material::default()
+        }
+    } else {
+        engine_config::Material::default()
+    };
+
+    (vertices, indices, uvs, material)
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
@@ -111,7 +167,7 @@ impl Scene {
         .unwrap()
     }
 
-    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
+    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material)> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         self.get_meshes().iter().map(mesh_to_render_data).collect()
@@ -131,31 +187,28 @@ impl Scene {
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
             .iter()
-            .map(|(_, tri)| tri.len() as u32 / 3)
+            .map(|(_, tri, _, _)| tri.len() as u32 / 3)
             .sum();
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
         // Collect all vertices, triangles, and mesh into flat vectors
-        let (all_vertices, all_triangles, all_meshes) = if render_tris.is_empty() {
-            (vec![], vec![], vec![])
+        let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
+            (vec![], vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut all_uvs = vec![];
             let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
             let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris.iter() {
+            for (verts, tris, uvs, material) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
                 let triangle_count = (tris.len() / 3) as u32;
 
                 // Add mesh metadata
-                mesh_infos.push(RenderMesh::new(
-                    triangle_offset,
-                    triangle_count,
-                    engine_config::Material::default(), //replace with Material from mtl
-                ));
+                mesh_infos.push(RenderMesh::new(triangle_offset, triangle_count, *material));
 
                 // Add triangles with vertex offset
                 for tri_idx in tris {
@@ -165,14 +218,17 @@ impl Scene {
                 // Add vertices
                 all_verts.extend(verts);
 
+                // Add UVs
+                all_uvs.extend(uvs);
+
                 vertex_offset += vertex_count;
                 triangle_offset += triangle_count;
             }
 
-            (all_verts, all_tris, mesh_infos)
+            (all_verts, all_tris, mesh_infos, all_uvs)
         };
-        info!("Collected vertices: {:?}", all_vertices);
-        info!("Collected tris: {:?}", all_triangles);
+        info!("Collected vertices count: {}", all_vertices.len());
+        info!("Collected tris count: {}", all_triangles.len());
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
@@ -187,6 +243,7 @@ impl Scene {
                 .uniforms_create(uniforms)
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
+                .uvs_create(all_uvs)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
                 .lights_create([RenderLights::default()].to_vec())
@@ -198,6 +255,7 @@ impl Scene {
                 .uniforms(uniforms)
                 .spheres(render_spheres)
                 .vertices(all_vertices)
+                .uvs(all_uvs)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
                 .lights([RenderLights::default()].to_vec())
