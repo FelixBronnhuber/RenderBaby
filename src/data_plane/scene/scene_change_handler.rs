@@ -3,7 +3,7 @@ use log::{info, warn};
 
 use crate::data_plane::scene::{
     render_scene::Scene,
-    scene_change::{CameraChange, SceneChange},
+    scene_change::{CameraChange, LightChange, MeshChange, SceneChange, SphereChange},
 };
 
 pub(crate) struct SceneChangeHandler {
@@ -24,23 +24,19 @@ impl SceneChangeHandler {
                 self.handle_camera_change(camera_change)?;
                 self.scene.update_render_config_uniform();
             }
-            SceneChange::SphereChange => {
+            SceneChange::SphereChange(sphere_change) => {
+                self.handle_sphere_change(sphere_change)?;
                 self.scene.update_render_config_spheres();
-                todo!()
             }
-            SceneChange::TriangleChange => {
-                self.scene.update_render_config_triangles();
-                todo!()
+
+            SceneChange::MeshChange(mesh_change) => {
+                self.handle_mesh_change(mesh_change)?;
+                // handle_mesh_change decides if render config vertices or tris need to be updated
             }
-            SceneChange::VerticesChange => {
-                self.scene.update_render_config_vertices();
-                todo!()
+            SceneChange::LightChange(light_change) => {
+                self.handle_light_change(light_change)?;
+                self.scene.update_render_config_lights(); // maybe not needed if only rename?
             }
-            SceneChange::LightChange => {
-                self.scene.update_render_config_vertices();
-                todo!()
-            }
-            //_ => todo!("Unknown change type"),
         }
         Ok(())
     }
@@ -105,5 +101,37 @@ impl SceneChangeHandler {
             )
         }
         Ok(())
+    }
+    fn handle_light_change(&mut self, light_change: LightChange) -> Result<(), Error> {
+        match light_change {
+            LightChange::Type(light_type, index) => todo!(),
+            LightChange::Position(position, index) => todo!(),
+            LightChange::Luminosity(luminosity, index) => todo!(),
+            LightChange::Color(color, index) => todo!(),
+            LightChange::Direction(direction, index) => todo!(),
+            LightChange::Name(name) => todo!(),
+        }
+        todo!()
+    }
+
+    fn handle_mesh_change(&mut self, mesh_change: MeshChange) -> Result<(), Error> {
+        match mesh_change {
+            MeshChange::Translate(translation, index) => todo!(),
+            MeshChange::Scale(factor, index) => todo!(),
+            MeshChange::Rotate(rotation, index) => todo!(),
+            MeshChange::Color(color, index) => todo!(),
+            MeshChange::Material(material, index) => todo!(),
+            MeshChange::Name(name, index) => todo!(),
+        }
+    }
+
+    fn handle_sphere_change(&mut self, sphere_change: SphereChange) -> Result<(), Error> {
+        match sphere_change {
+            SphereChange::Translate(translation, index) => todo!(),
+            SphereChange::Scale(factor, index) => todo!(),
+            SphereChange::Color(color, index) => todo!(),
+            SphereChange::Material(material, index) => todo!(),
+            SphereChange::Name(name, index) => todo!(),
+        }
     }
 }
