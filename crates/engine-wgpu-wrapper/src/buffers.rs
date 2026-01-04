@@ -111,7 +111,7 @@ impl GpuBuffers {
                 _pad: 0,
             });
             data.extend_from_slice(&tex.rgba_data);
-            offset += (tex.width * tex.height) as u32;
+            offset += tex.width * tex.height;
         }
 
         (data, info)

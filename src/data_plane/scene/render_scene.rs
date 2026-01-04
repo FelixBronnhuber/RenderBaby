@@ -92,7 +92,9 @@ impl Scene {
                                     let tex_path = parent_dir.join(tex_name);
                                     let tex_key = tex_path.to_string_lossy().to_string();
 
-                                    if !self.textures.contains_key(&tex_key) {
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        self.textures.entry(tex_key)
+                                    {
                                         info!("Loading texture from {:?}", tex_path);
                                         match image::open(&tex_path) {
                                             Ok(img) => {
@@ -103,10 +105,7 @@ impl Scene {
                                                     .map(|p| u32::from_le_bytes(p.0))
                                                     .collect();
 
-                                                self.textures.insert(
-                                                    tex_key,
-                                                    TextureData::new(width, height, data),
-                                                );
+                                                e.insert(TextureData::new(width, height, data));
                                             }
                                             Err(e) => error!(
                                                 "Failed to load texture {:?}: {}",

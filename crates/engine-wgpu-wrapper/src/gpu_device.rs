@@ -34,8 +34,10 @@ impl GpuDevice {
             Err(_) => return Err(anyhow!("WGPU: no suitable GPU adapter found")),
         };
 
-        let mut limits = wgpu::Limits::default();
-        limits.max_storage_buffers_per_shader_stage = 16;
+        let limits = wgpu::Limits {
+            max_storage_buffers_per_shader_stage: 16,
+            ..Default::default()
+        };
 
         let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
             label: Some("Render device"),
