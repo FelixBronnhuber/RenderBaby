@@ -508,11 +508,17 @@ fn trace_ray(
         let specular_strength = (closest_hit.material.specular.x + 
                                 closest_hit.material.specular.y + 
                                 closest_hit.material.specular.z) / 3.0;
+        let diffuse_strength = (closest_hit.material.diffuse.x + 
+                                closest_hit.material.diffuse.y + 
+                                closest_hit.material.diffuse.z) / 3.0;
+        
+        // Only treat as metal if it has specular but negligible diffuse
+        let is_metal = specular_strength > 0.01 && diffuse_strength < 0.01;
         
         var scattered: vec3<f32>;
         var albedo: vec3<f32>;
         
-        if (specular_strength > 0.01) {
+        if (is_metal) {
             // Metal material with glossy reflections
             // Map Ns (0-1000) to fuzz (1.0-0.0)
             // Higher Ns = sharper reflections (less fuzz)
@@ -559,7 +565,7 @@ fn trace_ray(
             light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        if (specular_strength <= 0.01) {
+        if (!is_metal) {
             color += attenuation * light_total * albedo;
             attenuation *= albedo * 0.5;
         } else {

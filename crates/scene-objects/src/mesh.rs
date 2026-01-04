@@ -118,6 +118,10 @@ impl Mesh {
         //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
         &self.tris
     }
+
+    pub fn get_material_indices(&self) -> Option<&Vec<usize>> {
+        self.material_index.as_ref()
+    }
 }
 
 #[allow(unused)]

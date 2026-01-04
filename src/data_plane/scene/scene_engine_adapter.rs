@@ -121,23 +121,116 @@ fn material_to_render_material(
 fn mesh_to_render_data(
     mesh: &Mesh,
     texture_map: &HashMap<String, i32>,
-) -> (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material) {
+) -> Vec<(Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material)> {
     //! Extracts vertices and point references from the given mesh
     //! ## Parameter
     //! 'mesh': Mesh from scene_objects crate that is to be converted
-    //! Returns: touple of: Vec<f32> where 3 entries define one point in 3d space, and Vec<u32> referencing which points make up a triangle
-    let vertices = mesh.get_vertices().clone();
-    let indices = mesh.get_tri_indices().clone();
-    let uvs = if let Some(uvs) = mesh.get_uvs() {
+    //! Returns: Vector of tuples: (vertices, indices, uvs, material)
+
+    let original_vertices = mesh.get_vertices();
+    let original_indices = mesh.get_tri_indices();
+    let original_uvs = mesh.get_uvs();
+
+    let materials = mesh.get_materials();
+    let material_indices = mesh.get_material_indices();
+
+    if let (Some(mats), Some(mat_indices)) = (materials, material_indices) {
+        if !mats.is_empty() && !mat_indices.is_empty() {
+            let mut sub_meshes: HashMap<usize, (Vec<f32>, Vec<u32>, Vec<f32>)> = HashMap::new();
+
+            let num_triangles = original_indices.len() / 3;
+
+            for i in 0..num_triangles {
+                let mat_idx = if i < mat_indices.len() {
+                    mat_indices[i]
+                } else {
+                    0
+                };
+
+                let entry =
+                    sub_meshes
+                        .entry(mat_idx)
+                        .or_insert((Vec::new(), Vec::new(), Vec::new()));
+                let (verts, inds, uvs) = entry;
+
+                let current_v_count = (verts.len() / 3) as u32;
+
+                let idx0 = original_indices[i * 3] as usize;
+                let idx1 = original_indices[i * 3 + 1] as usize;
+                let idx2 = original_indices[i * 3 + 2] as usize;
+
+                // Add vertices
+                verts.push(original_vertices[idx0 * 3]);
+                verts.push(original_vertices[idx0 * 3 + 1]);
+                verts.push(original_vertices[idx0 * 3 + 2]);
+
+                verts.push(original_vertices[idx1 * 3]);
+                verts.push(original_vertices[idx1 * 3 + 1]);
+                verts.push(original_vertices[idx1 * 3 + 2]);
+
+                verts.push(original_vertices[idx2 * 3]);
+                verts.push(original_vertices[idx2 * 3 + 1]);
+                verts.push(original_vertices[idx2 * 3 + 2]);
+
+                // Add UVs
+                if let Some(orig_uvs) = original_uvs {
+                    if idx0 * 2 + 1 < orig_uvs.len() {
+                        uvs.push(orig_uvs[idx0 * 2]);
+                        uvs.push(orig_uvs[idx0 * 2 + 1]);
+                    } else {
+                        uvs.push(0.0);
+                        uvs.push(0.0);
+                    }
+
+                    if idx1 * 2 + 1 < orig_uvs.len() {
+                        uvs.push(orig_uvs[idx1 * 2]);
+                        uvs.push(orig_uvs[idx1 * 2 + 1]);
+                    } else {
+                        uvs.push(0.0);
+                        uvs.push(0.0);
+                    }
+
+                    if idx2 * 2 + 1 < orig_uvs.len() {
+                        uvs.push(orig_uvs[idx2 * 2]);
+                        uvs.push(orig_uvs[idx2 * 2 + 1]);
+                    } else {
+                        uvs.push(0.0);
+                        uvs.push(0.0);
+                    }
+                } else {
+                    for _ in 0..6 {
+                        uvs.push(0.0);
+                    }
+                }
+
+                // Add indices
+                inds.push(current_v_count);
+                inds.push(current_v_count + 1);
+                inds.push(current_v_count + 2);
+            }
+
+            let mut result = Vec::new();
+            for (mat_idx, (verts, inds, uvs)) in sub_meshes {
+                let material = if mat_idx < mats.len() {
+                    material_to_render_material(&mats[mat_idx], texture_map)
+                } else {
+                    engine_config::Material::default()
+                };
+                result.push((verts, inds, uvs, material));
+            }
+            return result;
+        }
+    }
+
+    let vertices = original_vertices.clone();
+    let indices = original_indices.clone();
+    let uvs = if let Some(uvs) = original_uvs {
         uvs.clone()
     } else {
-        // Default UVs (0,0) for each vertex
         vec![0.0; (vertices.len() / 3) * 2]
     };
 
-    // Take the first material if available, otherwise default
-    // Note: This ignores per-face material assignments for now
-    let material = if let Some(mats) = mesh.get_materials() {
+    let material = if let Some(mats) = materials {
         if !mats.is_empty() {
             material_to_render_material(&mats[0], texture_map)
         } else {
@@ -147,7 +240,7 @@ fn mesh_to_render_data(
         engine_config::Material::default()
     };
 
-    (vertices, indices, uvs, material)
+    vec![(vertices, indices, uvs, material)]
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
@@ -184,7 +277,7 @@ impl Scene {
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         self.get_meshes()
             .iter()
-            .map(|m| mesh_to_render_data(m, texture_map))
+            .flat_map(|m| mesh_to_render_data(m, texture_map))
             .collect()
     }
 

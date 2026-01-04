@@ -168,11 +168,17 @@ impl Scene {
 
                             // UV
                             if !face.vt.is_empty() && idx < face.vt.len() {
-                                let vt_idx = face.vt[idx] as usize - 1;
-                                if let Some(tex_coords) = &objs.texture_coordinate {
-                                    if vt_idx * 2 + 1 < tex_coords.len() {
-                                        new_uvs.push(tex_coords[vt_idx * 2]);
-                                        new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                                let vt_val = face.vt[idx] as usize;
+                                if vt_val > 0 {
+                                    let vt_idx = vt_val - 1;
+                                    if let Some(tex_coords) = &objs.texture_coordinate {
+                                        if vt_idx * 2 + 1 < tex_coords.len() {
+                                            new_uvs.push(tex_coords[vt_idx * 2]);
+                                            new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                                        } else {
+                                            new_uvs.push(0.0);
+                                            new_uvs.push(0.0);
+                                        }
                                     } else {
                                         new_uvs.push(0.0);
                                         new_uvs.push(0.0);
