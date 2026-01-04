@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::path::{PathBuf};
 use anyhow::{Error};
-use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
+use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
 use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
@@ -30,6 +31,7 @@ pub struct Scene {
     first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
+    pub textures: HashMap<String, TextureData>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -71,6 +73,7 @@ impl Scene {
         //! ## Returns
         //! Result of either a reference to the new object or an error
         let path_str = path.to_str().unwrap();
+        let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
         info!("Scene {self}: Loading object from {path_str}");
         let result = OBJParser::parse(path.clone());
 
@@ -84,6 +87,35 @@ impl Scene {
                         let parsed = mtl_parser::MTLParser::parse(i.as_str());
                         match parsed {
                             Ok(parsed) => parsed.iter().for_each(|mat| {
+                                // Load texture if present
+                                if let Some(tex_name) = &mat.map_kd {
+                                    let tex_path = parent_dir.join(tex_name);
+                                    let tex_key = tex_path.to_string_lossy().to_string();
+
+                                    if !self.textures.contains_key(&tex_key) {
+                                        info!("Loading texture from {:?}", tex_path);
+                                        match image::open(&tex_path) {
+                                            Ok(img) => {
+                                                let img = img.to_rgba8();
+                                                let (width, height) = img.dimensions();
+                                                let data: Vec<u32> = img
+                                                    .pixels()
+                                                    .map(|p| u32::from_le_bytes(p.0))
+                                                    .collect();
+
+                                                self.textures.insert(
+                                                    tex_key,
+                                                    TextureData::new(width, height, data),
+                                                );
+                                            }
+                                            Err(e) => error!(
+                                                "Failed to load texture {:?}: {}",
+                                                tex_path, e
+                                            ),
+                                        }
+                                    }
+                                }
+
                                 material_list.push(Material::new(
                                     mat.name.clone(),
                                     mat.ka.iter().map(|a| *a as f64).collect(),
@@ -91,7 +123,9 @@ impl Scene {
                                     mat.ks.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
-                                    mat.map_kd.clone(),
+                                    mat.map_kd.clone().map(|name| {
+                                        parent_dir.join(name).to_string_lossy().to_string()
+                                    }),
                                 ))
                             }),
                             Err(error) => {
@@ -271,12 +305,14 @@ impl Scene {
                     .triangles_create(vec![])
                     .meshes_create(vec![])
                     .lights_create(vec![])
+                    .textures_create(vec![])
                     .build(),
                 RenderEngine::Raytracer,
             )),
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
+            textures: HashMap::new(),
         }
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {

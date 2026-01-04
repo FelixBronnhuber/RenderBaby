@@ -9,6 +9,7 @@ pub struct RenderConfig {
     pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
     pub lights: Change<Vec<PointLight>>,
+    pub textures: Change<Vec<TextureData>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -80,6 +81,9 @@ impl ValidateInit for RenderConfig {
         }
         if !matches!(self.lights, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidLights);
+        }
+        if !matches!(self.textures, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidTextures);
         }
         Ok(self)
     }
@@ -177,6 +181,16 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
+        match &self.textures {
+            Change::Update(_) | Change::Create(_) => {
+                // TODO: Texture validation
+            }
+            Change::Delete => {
+                todo!("Implement textures Deletion")
+            }
+            Change::Keep => {}
+        }
+
         Ok(self)
     }
 }
@@ -190,6 +204,7 @@ pub struct RenderConfigBuilder {
     pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
     pub lights: Option<Change<Vec<PointLight>>>,
+    pub textures: Option<Change<Vec<TextureData>>>,
 }
 
 impl RenderConfigBuilder {
@@ -202,6 +217,7 @@ impl RenderConfigBuilder {
             triangles: None,
             meshes: None,
             lights: None,
+            textures: None,
         }
     }
 
@@ -345,6 +361,26 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn textures(mut self, textures: Vec<TextureData>) -> Self {
+        self.textures = Some(Change::Update(textures));
+        self
+    }
+
+    pub fn textures_create(mut self, textures: Vec<TextureData>) -> Self {
+        self.textures = Some(Change::Create(textures));
+        self
+    }
+
+    pub fn textures_no_change(mut self) -> Self {
+        self.textures = Some(Change::Keep);
+        self
+    }
+
+    pub fn textures_delete(mut self) -> Self {
+        self.textures = Some(Change::Delete);
+        self
+    }
+
     pub fn build(self) -> RenderConfig {
         if self.uniforms.is_none() {
             log::info!("RenderConfigBuilder: uniforms not set, defaulting to NoChange.");
@@ -367,6 +403,9 @@ impl RenderConfigBuilder {
         if self.lights.is_none() {
             log::info!("RenderConfigBuilder: lights not set, defaulting to NoChange.");
         }
+        if self.textures.is_none() {
+            log::info!("RenderConfigBuilder: textures not set, defaulting to NoChange.");
+        }
 
         RenderConfig {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
@@ -376,6 +415,7 @@ impl RenderConfigBuilder {
             triangles: self.triangles.unwrap_or(Change::Keep),
             meshes: self.meshes.unwrap_or(Change::Keep),
             lights: self.lights.unwrap_or(Change::Keep),
+            textures: self.textures.unwrap_or(Change::Keep),
         }
     }
 }
@@ -392,6 +432,7 @@ pub enum RenderConfigBuilderError {
     InvalidTriangles,
     InvalidMeshes,
     InvalidLights,
+    InvalidTextures,
     CannotDeleteNonexistent,
 }
 
@@ -414,6 +455,7 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
             RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
             RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),
+            RenderConfigBuilderError::InvalidTextures => write!(f, "Invalid Textures"),
             RenderConfigBuilderError::CannotDeleteNonexistent => {
                 write!(f, "Cannot delete none existent")
             }

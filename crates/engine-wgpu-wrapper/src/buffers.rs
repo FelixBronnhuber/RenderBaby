@@ -1,8 +1,18 @@
-use engine_config::{Mesh, RenderConfig, Sphere, Uniforms, PointLight};
+use engine_config::{Mesh, RenderConfig, Sphere, Uniforms, PointLight, TextureData};
 use engine_config::render_config::Change;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, Device};
 use crate::ProgressiveRenderHelper;
+use bytemuck::{Pod, Zeroable};
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+pub struct TextureInfo {
+    pub offset: u32,
+    pub width: u32,
+    pub height: u32,
+    pub _pad: u32,
+}
 
 pub struct GpuBuffers {
     pub spheres: Buffer,
@@ -16,6 +26,8 @@ pub struct GpuBuffers {
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
     pub lights: Buffer,
+    pub texture_data: Buffer,
+    pub texture_info: Buffer,
 }
 
 impl GpuBuffers {
@@ -48,6 +60,12 @@ impl GpuBuffers {
             Change::Create(l) => l.as_slice(),
             _ => panic!("Lights must be Create during initialization"),
         };
+        let textures = match &rc.textures {
+            Change::Create(t) => t,
+            _ => panic!("Textures must be Create during initialization"),
+        };
+
+        let (tex_data, tex_info) = Self::process_textures(textures);
 
         let size = (uniforms.width * uniforms.height * 4) as u64;
 
@@ -75,7 +93,28 @@ impl GpuBuffers {
                 &[*prh],
             ),
             lights: Self::create_storage_buffer(device, "Light Buffer", lights),
+            texture_data: Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data),
+            texture_info: Self::create_storage_buffer(device, "Texture Info Buffer", &tex_info),
         }
+    }
+
+    pub fn process_textures(textures: &[TextureData]) -> (Vec<u32>, Vec<TextureInfo>) {
+        let mut data = Vec::new();
+        let mut info = Vec::new();
+        let mut offset = 0;
+
+        for tex in textures {
+            info.push(TextureInfo {
+                offset,
+                width: tex.width,
+                height: tex.height,
+                _pad: 0,
+            });
+            data.extend_from_slice(&tex.rgba_data);
+            offset += (tex.width * tex.height) as u32;
+        }
+
+        (data, info)
     }
 
     pub fn grow_resolution(&mut self, device: &Device, size: u64) {
@@ -111,6 +150,12 @@ impl GpuBuffers {
 
     pub fn grow_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
+    pub fn grow_textures(&mut self, device: &Device, textures: &[TextureData]) {
+        let (tex_data, tex_info) = Self::process_textures(textures);
+        self.texture_data = Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data);
+        self.texture_info = Self::create_storage_buffer(device, "Texture Info Buffer", &tex_info);
     }
 
     fn create_uniform_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &T) -> Buffer {
@@ -186,6 +231,12 @@ impl GpuBuffers {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
     }
 
+    pub fn init_textures(&mut self, device: &Device, textures: &[TextureData]) {
+        let (tex_data, tex_info) = Self::process_textures(textures);
+        self.texture_data = Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data);
+        self.texture_info = Self::create_storage_buffer(device, "Texture Info Buffer", &tex_info);
+    }
+
     // Update methods for existing buffers
     pub fn update_uniforms(&mut self, device: &Device, uniforms: &Uniforms) {
         self.uniforms = Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms);
@@ -213,6 +264,12 @@ impl GpuBuffers {
 
     pub fn update_lights(&mut self, device: &Device, lights: &[PointLight]) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer", lights);
+    }
+
+    pub fn update_textures(&mut self, device: &Device, textures: &[TextureData]) {
+        let (tex_data, tex_info) = Self::process_textures(textures);
+        self.texture_data = Self::create_storage_buffer(device, "Texture Data Buffer", &tex_data);
+        self.texture_info = Self::create_storage_buffer(device, "Texture Info Buffer", &tex_info);
     }
 
     // Delete methods (create minimal empty buffers)
@@ -248,5 +305,15 @@ impl GpuBuffers {
 
     pub fn delete_lights(&mut self, device: &Device) {
         self.lights = Self::create_storage_buffer(device, "Lights Buffer (deleted)", &[] as &[u32]);
+    }
+
+    pub fn delete_textures(&mut self, device: &Device) {
+        self.texture_data =
+            Self::create_storage_buffer(device, "Texture Data Buffer (deleted)", &[] as &[u32]);
+        self.texture_info = Self::create_storage_buffer(
+            device,
+            "Texture Info Buffer (deleted)",
+            &[] as &[TextureInfo],
+        );
     }
 }

@@ -1,4 +1,5 @@
 /// Serves as an adpter between the scene plane and the render engine.
+use std::collections::HashMap;
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use glam::Vec3;
@@ -77,7 +78,10 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-fn material_to_render_material(mat: &scene_objects::material::Material) -> engine_config::Material {
+fn material_to_render_material(
+    mat: &scene_objects::material::Material,
+    texture_map: &HashMap<String, i32>,
+) -> engine_config::Material {
     let ambient = [
         mat.ambient_reflectivity[0] as f32,
         mat.ambient_reflectivity[1] as f32,
@@ -94,9 +98,11 @@ fn material_to_render_material(mat: &scene_objects::material::Material) -> engin
         mat.specular_reflectivity[2] as f32,
     ];
 
-    // Simple heuristic: if texture path is present, set index to 0 (placeholder)
-    // In a real system, we would look up the index in a texture manager
-    let texture_index = if mat.texture_path.is_some() { 0 } else { -1 };
+    let texture_index = if let Some(path) = &mat.texture_path {
+        *texture_map.get(path).unwrap_or(&-1)
+    } else {
+        -1
+    };
 
     engine_config::Material::new(
         ambient,
@@ -112,7 +118,10 @@ fn material_to_render_material(mat: &scene_objects::material::Material) -> engin
     .unwrap_or_default()
 }
 
-fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material) {
+fn mesh_to_render_data(
+    mesh: &Mesh,
+    texture_map: &HashMap<String, i32>,
+) -> (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material) {
     //! Extracts vertices and point references from the given mesh
     //! ## Parameter
     //! 'mesh': Mesh from scene_objects crate that is to be converted
@@ -130,7 +139,7 @@ fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>, Vec<f32>, engine_con
     // Note: This ignores per-face material assignments for now
     let material = if let Some(mats) = mesh.get_materials() {
         if !mats.is_empty() {
-            material_to_render_material(&mats[0])
+            material_to_render_material(&mats[0], texture_map)
         } else {
             engine_config::Material::default()
         }
@@ -167,10 +176,16 @@ impl Scene {
         .unwrap()
     }
 
-    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material)> {
+    fn get_render_tris(
+        &self,
+        texture_map: &HashMap<String, i32>,
+    ) -> Vec<(Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material)> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        self.get_meshes().iter().map(mesh_to_render_data).collect()
+        self.get_meshes()
+            .iter()
+            .map(|m| mesh_to_render_data(m, texture_map))
+            .collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
@@ -180,7 +195,17 @@ impl Scene {
         info!("{self}: Render has been called. Collecting render parameters");
 
         let render_spheres = self.get_render_spheres();
-        let render_tris = self.get_render_tris();
+
+        // Collect textures
+        let mut texture_list = Vec::new();
+        let mut texture_map = HashMap::new();
+
+        for (path, data) in &self.textures {
+            texture_map.insert(path.clone(), texture_list.len() as i32);
+            texture_list.push(data.clone());
+        }
+
+        let render_tris = self.get_render_tris(&texture_map);
         debug!("Scene mesh data: {:?}", self.get_meshes());
         debug!("Collected mesh data: {:?}", render_tris);
 
@@ -247,6 +272,7 @@ impl Scene {
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
                 .lights_create([RenderLights::default()].to_vec())
+                .textures_create(texture_list)
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -259,6 +285,7 @@ impl Scene {
                 .triangles(all_triangles)
                 .meshes(all_meshes)
                 .lights([RenderLights::default()].to_vec())
+                .textures(texture_list)
                 .build()
         };
 

@@ -113,6 +113,9 @@ impl GpuWrapper {
             if let Change::Create(lights) = &new_rc.lights {
                 self.buffer_wrapper.init_lights(&self.device, lights);
             }
+            if let Change::Create(textures) = &new_rc.textures {
+                self.buffer_wrapper.init_textures(&self.device, textures);
+            }
             // Recreate bind group with new buffers
             self.recreate_bind_group();
             self.initialized = true;
@@ -220,6 +223,19 @@ impl GpuWrapper {
                 }
                 Change::Create(_) => {
                     log::warn!("Create not allowed after initialization for lights.");
+                }
+            }
+
+            match &new_rc.textures {
+                Change::Keep => log::info!("Not updating Textures Buffer."),
+                Change::Update(textures) => {
+                    self.buffer_wrapper.update_textures(&self.device, textures);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_textures(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for textures.");
                 }
             }
             // Recreate bind group after any buffer updates
@@ -435,6 +451,20 @@ impl GpuWrapper {
         if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {
             self.queue
                 .write_buffer(&self.buffer_wrapper.lights, 0, bytemuck::cast_slice(lights));
+        }
+
+        if let Change::Create(textures) | Change::Update(textures) = &self.rc.textures {
+            let (tex_data, tex_info) = crate::buffers::GpuBuffers::process_textures(textures);
+            self.queue.write_buffer(
+                &self.buffer_wrapper.texture_data,
+                0,
+                bytemuck::cast_slice(&tex_data),
+            );
+            self.queue.write_buffer(
+                &self.buffer_wrapper.texture_info,
+                0,
+                bytemuck::cast_slice(&tex_info),
+            );
         }
     }
 }

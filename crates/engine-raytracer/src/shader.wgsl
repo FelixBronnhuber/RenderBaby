@@ -77,6 +77,13 @@ struct PointLight {
     _pad: f32,
 };
 
+struct TextureInfo {
+    offset: u32,
+    width: u32,
+    height: u32,
+    _pad: u32,
+}
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
@@ -87,6 +94,9 @@ struct PointLight {
 @group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
 @group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
 @group(0) @binding(9) var<storage, read> uvs: array<f32>;
+@group(0) @binding(10) var<storage, read> texture_data: array<u32>;
+@group(0) @binding(11) var<storage, read> texture_info: array<TextureInfo>;
+
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -102,6 +112,41 @@ fn color_map(color: vec3<f32>) -> u32 {
     let a: u32 = 255u;
 
     return (a << 24u) | (b << 16u) | (g << 8u) | r;
+}
+
+fn sample_texture(index: i32, uv: vec2<f32>) -> vec3<f32> {
+    if (index < 0) {
+        // Missing texture pattern (Magenta/Black checkerboard)
+        let n = 10.0;
+        let u2 = i32(floor(uv.x * n));
+        let v2 = i32(floor(uv.y * n));
+        if ((u2 + v2) % 2 == 0) {
+            return vec3<f32>(0.0); // Black
+        } else {
+            return vec3<f32>(1.0, 0.0, 1.0); // Magenta
+        }
+    }
+    let info = texture_info[u32(index)];
+    
+    // Wrap UVs (repeat)
+    let u = fract(uv.x);
+    let v = fract(uv.y);
+    
+    // Map to pixel coordinates
+    // Flip V because standard UVs have (0,0) at bottom-left, but image data is top-left
+    let x = min(u32(u * f32(info.width)), info.width - 1u);
+    let y = min(u32((1.0 - v) * f32(info.height)), info.height - 1u);
+    
+    let pixel_index = info.offset + y * info.width + x;
+    let pixel = texture_data[pixel_index];
+    
+    // Unpack RGBA8 (Little Endian: A B G R)
+    let r = f32(pixel & 255u) / 255.0;
+    let g = f32((pixel >> 8u) & 255u) / 255.0;
+    let b = f32((pixel >> 16u) & 255u) / 255.0;
+    
+    // Convert sRGB to Linear
+    return vec3<f32>(pow(r, 2.2), pow(g, 2.2), pow(b, 2.2));
 }
 
 fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -> f32 {
@@ -135,16 +180,6 @@ struct TriangleData {
     _pad: u32,
 };
 
-fn checkerboard(uv: vec2<f32>) -> vec3<f32> {
-    let n = 10.0;
-    let u2 = i32(floor(uv.x * n));
-    let v2 = i32(floor(uv.y * n));
-    if ((u2 + v2) % 2 == 0) {
-        return vec3<f32>(0.0);
-    } else {
-        return vec3<f32>(1.0);
-    }
-}
 
 fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> vec3<f32> {
     let edge1 = tri.v1 - tri.v0;
@@ -466,9 +501,9 @@ fn trace_ray(
         }
         
         //has to be reviewed
-        if (depth == 0) {
-            color += closest_hit.material.ambient;
-        }
+        // if (depth == 0) {
+        //     color += closest_hit.material.ambient;
+        // }
         
         let specular_strength = (closest_hit.material.specular.x + 
                                 closest_hit.material.specular.y + 
@@ -493,9 +528,9 @@ fn trace_ray(
         } else {
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
-            // Apply checkerboard texture
+            // Apply texture
             if (closest_hit.use_texture) {
-                albedo = albedo * checkerboard(closest_hit.uv);
+                albedo = albedo * sample_texture(closest_hit.material.texture_index, closest_hit.uv);
             }
         }
 
