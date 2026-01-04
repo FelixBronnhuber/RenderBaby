@@ -327,9 +327,7 @@ impl Scene {
                         0,
                     ))
                     .spheres_create(vec![])
-                    .vertices_create(vec![])
                     .uvs_create(vec![])
-                    .triangles_create(vec![])
                     .meshes_create(vec![])
                     .lights_create(vec![])
                     .textures_create(vec![])

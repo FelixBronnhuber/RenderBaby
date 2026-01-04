@@ -99,14 +99,8 @@ impl GpuWrapper {
             if let Change::Create(spheres) = &new_rc.spheres {
                 self.buffer_wrapper.init_spheres(&self.device, spheres);
             }
-            if let Change::Create(vertices) = &new_rc.vertices {
-                self.buffer_wrapper.init_vertices(&self.device, vertices);
-            }
             if let Change::Create(uvs) = &new_rc.uvs {
                 self.buffer_wrapper.init_uvs(&self.device, uvs);
-            }
-            if let Change::Create(triangles) = &new_rc.triangles {
-                self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
             if let Change::Create(meshes) = &new_rc.meshes {
                 self.buffer_wrapper.init_meshes(&self.device, meshes);
@@ -173,19 +167,6 @@ impl GpuWrapper {
                 }
             }
 
-            match &new_rc.vertices {
-                Change::Keep => log::info!("Not updating Vertices Buffer."),
-                Change::Update(vertices) => {
-                    self.buffer_wrapper.update_vertices(&self.device, vertices);
-                }
-                Change::Delete => {
-                    self.buffer_wrapper.delete_vertices(&self.device);
-                }
-                Change::Create(_) => {
-                    log::warn!("Create not allowed after initialization for vertices.");
-                }
-            }
-
             match &new_rc.uvs {
                 Change::Keep => log::info!("Not updating UVs Buffer."),
                 Change::Update(uvs) => {
@@ -196,20 +177,6 @@ impl GpuWrapper {
                 }
                 Change::Create(_) => {
                     log::warn!("Create not allowed after initialization for uvs.");
-                }
-            }
-
-            match &new_rc.triangles {
-                Change::Keep => log::info!("Not updating Triangles Buffer."),
-                Change::Update(triangles) => {
-                    self.buffer_wrapper
-                        .update_triangles(&self.device, triangles);
-                }
-                Change::Delete => {
-                    self.buffer_wrapper.delete_triangles(&self.device);
-                }
-                Change::Create(_) => {
-                    log::warn!("Create not allowed after initialization for triangles.");
                 }
             }
 
@@ -245,8 +212,8 @@ impl GpuWrapper {
                 Change::Delete => {
                     self.buffer_wrapper.delete_bvh_nodes(&self.device);
                 }
-                Change::Create(_) => {
-                    log::warn!("Create not allowed after initialization for bvh_nodes.");
+                Change::Create(nodes) => {
+                    self.buffer_wrapper.update_bvh_nodes(&self.device, nodes);
                 }
             }
             match &new_rc.bvh_indices {
@@ -258,8 +225,9 @@ impl GpuWrapper {
                 Change::Delete => {
                     self.buffer_wrapper.delete_bvh_indices(&self.device);
                 }
-                Change::Create(_) => {
-                    log::warn!("Create not allowed after initialization for bvh_indices.");
+                Change::Create(indices) => {
+                    self.buffer_wrapper
+                        .update_bvh_indices(&self.device, indices);
                 }
             }
             match &new_rc.bvh_triangles {
@@ -270,8 +238,9 @@ impl GpuWrapper {
                 Change::Delete => {
                     self.buffer_wrapper.delete_bvh_triangles(&self.device);
                 }
-                Change::Create(_) => {
-                    log::warn!("Create not allowed after initialization for bvh_triangles.");
+                Change::Create(triangles) => {
+                    self.buffer_wrapper
+                        .update_bvh_triangles(&self.device, triangles);
                 }
             }
 
@@ -439,11 +408,6 @@ impl GpuWrapper {
             Change::Delete => uniforms.spheres_count = 0,
             Change::Keep => {}
         };
-        match &self.rc.triangles {
-            Change::Create(t) | Change::Update(t) => uniforms.triangles_count = t.len() as u32 / 3,
-            Change::Delete => uniforms.triangles_count = 0,
-            Change::Keep => {}
-        };
 
         log::info!(
             "Writing uniforms to GPU: camera_pos={:?}, camera_dir={:?}, pane_distance={}, pane_width={}, size={}x{}, spheres={}, triangles={}",
@@ -477,25 +441,9 @@ impl GpuWrapper {
             );
         }
 
-        if let Change::Create(vertices) | Change::Update(vertices) = &self.rc.vertices {
-            self.queue.write_buffer(
-                &self.buffer_wrapper.vertices,
-                0,
-                bytemuck::cast_slice(vertices),
-            );
-        }
-
         if let Change::Create(uvs) | Change::Update(uvs) = &self.rc.uvs {
             self.queue
                 .write_buffer(&self.buffer_wrapper.uvs, 0, bytemuck::cast_slice(uvs));
-        }
-
-        if let Change::Create(triangles) | Change::Update(triangles) = &self.rc.triangles {
-            self.queue.write_buffer(
-                &self.buffer_wrapper.triangles,
-                0,
-                bytemuck::cast_slice(triangles),
-            );
         }
 
         if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {

@@ -245,6 +245,81 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
     return vec3<f32>(-1.0, 0.0, 0.0);
 }
 
+fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
+    var hit = HitRecord(false, 1e20, vec3<f32>(0.0), vec3<f32>(0.0), vec3<f32>(0.0));
+
+    var stack: array<u32, 256>;     //very large, might be too big for bad GPUs, might have to make this variable
+    var sp: i32 = 0;
+
+    if (uniforms.bvh_node_count == 0u) {
+        return hit;
+    }
+
+    stack[sp] = 0u;
+    sp = sp + 1;
+
+    loop {
+        if sp == 0 {
+            break;
+        }
+        sp = sp - 1;
+        let node_idx = stack[sp];
+
+        if (node_idx >= uniforms.bvh_node_count) {
+            continue;
+        }
+
+        let node = bvh_nodes[node_idx];
+
+        if (!intersect_aabb(ray_origin, ray_dir, node.aabb_min, node.aabb_max)) {
+            continue;
+        }
+
+        if node.primitive_count > 0u {
+            for (var i: u32 = 0u; i < node.primitive_count; i = i + 1u) {
+                let tri_idx = node.first_primitive + i;
+
+                if (tri_idx >= uniforms.bvh_triangle_count || tri_idx >= arrayLength(&bvh_indices)) {
+                    continue;
+                }
+
+                let bvh_tri_idx = bvh_indices[tri_idx];
+
+                if (bvh_tri_idx >= uniforms.bvh_triangle_count) {
+                    continue;
+                }
+
+                let tri = bvh_triangles[bvh_tri_idx];
+
+                let t = intersect_triangle(ray_origin, ray_dir, TriangleData(tri.v0, tri.v1, tri.v2, 0u));
+                if t > 0.001 && t < hit.t {
+                    hit.hit = true;
+                    hit.t = t;
+                    hit.pos = ray_origin + t * ray_dir;
+                    hit.normal = normalize(cross(tri.v1 - tri.v0, tri.v2 - tri.v0));
+
+                    if uniforms.color_hash_enabled != 0u {
+                        hit.color = hash_to_color(bvh_tri_idx + 1u);
+                    } else {
+                        hit.color = vec3<f32>(0.3, 0.3, 0.3);
+                    }
+                }
+            }
+        } else {
+            if node.left < uniforms.bvh_node_count {
+                stack[sp] = node.left;
+                sp = sp + 1;
+            }
+            if node.right < uniforms.bvh_node_count {
+                stack[sp] = node.right;
+                sp = sp + 1;
+            }
+        }
+    }
+
+    return hit;
+}
+
 fn hash_to_color(n: u32) -> vec3<f32> {
     let h = n * 2654435761u;
     let r = f32(h % 41u) / 40.0;
@@ -351,32 +426,9 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         }
     }
 
-    for (var k = 0u; k < uniforms.triangles_count; k = k + 1u) {
-        let v0_idx = triangles[k * 3u + 0u];
-        let v1_idx = triangles[k * 3u + 1u];
-        let v2_idx = triangles[k * 3u + 2u];
-
-        let v0 = vec3<f32>(
-            vertices[v0_idx * 3u + 0u],
-            vertices[v0_idx * 3u + 1u],
-            vertices[v0_idx * 3u + 2u]
-        );
-        let v1 = vec3<f32>(
-            vertices[v1_idx * 3u + 0u],
-            vertices[v1_idx * 3u + 1u],
-            vertices[v1_idx * 3u + 2u]
-        );
-        let v2 = vec3<f32>(
-            vertices[v2_idx * 3u + 0u],
-            vertices[v2_idx * 3u + 1u],
-            vertices[v2_idx * 3u + 2u]
-        );
-
-        let tri = TriangleData(v0, v1, v2, 0u);
-        let hit_data = intersect_triangle(origin, light_dir, tri);
-        if (hit_data.x > 0.001 && hit_data.x < max_dist) {
-            return true;
-        }
+    let bvh_hit = intersect_bvh(origin, light_dir);
+    if (bvh_hit.hit && bvh_hit.t < max_dist) {
+        return true;
     }
 
     for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
@@ -569,55 +621,6 @@ fn intersect_aabb(ray_origin: vec3<f32>, ray_dir: vec3<f32>, aabb_min: vec3<f32>
     let tmin = max(max(min(t0s.x, t1s.x), min(t0s.y, t1s.y)), min(t0s.z, t1s.z));
     let tmax = min(min(max(t0s.x, t1s.x), max(t0s.y, t1s.y)), max(t0s.z, t1s.z));
     return tmax >= max(tmin, 0.0);
-}
-
-fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
-    var hit = HitRecord(false, 1e20, vec3<f32>(0.0), vec3<f32>(0.0), vec3<f32>(0.0));
-
-    var stack: array<u32, 128>;
-    var sp: i32 = 0;
-    stack[sp] = 0u;
-    sp = sp + 1;
-
-    loop {
-        if sp == 0 {
-            break;
-        }
-        sp = sp - 1;
-        let node_idx = stack[sp];
-        let node = bvh_nodes[node_idx];
-
-        if (!intersect_aabb(ray_origin, ray_dir, node.aabb_min, node.aabb_max)) {
-            continue;
-        }
-
-        if node.primitive_count > 0u {
-            for (var i: u32 = 0u; i < node.primitive_count; i = i + 1u) {
-                let tri_idx = bvh_indices[node.first_primitive + i];
-                let tri = bvh_triangles[tri_idx];
-
-                let t = intersect_triangle(ray_origin, ray_dir, TriangleData(tri.v0, tri.v1, tri.v2, 0u));
-                if t > 0.001 && t < hit.t {
-                    hit.hit = true;
-                    hit.t = t;
-                    hit.pos = ray_origin + t * ray_dir;
-                    hit.normal = normalize(cross(tri.v1 - tri.v0, tri.v2 - tri.v0));
-
-                    if uniforms.color_hash_enabled != 0u {
-                        hit.color = hash_to_color(tri_idx + 1u);
-                    } else {
-                        hit.color = vec3<f32>(0.3, 0.3, 0.3);
-                    }
-                }
-            }
-        } else {
-            stack[sp] = node.left;
-            sp = sp + 1;
-            stack[sp] = node.right;
-            sp = sp + 1;
-        }
-    }
-    return hit;
 }
 
 @compute @workgroup_size(16, 16, 1)

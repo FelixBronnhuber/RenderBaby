@@ -21,9 +21,7 @@ pub struct GpuBuffers {
     pub uniforms: Buffer,
     pub output: Buffer,
     pub staging: Buffer,
-    pub vertices: Buffer,
     pub uvs: Buffer,
-    pub triangles: Buffer,
     pub meshes: Buffer,
     pub accumulation: Buffer,
     pub progressive_render: Buffer,
@@ -45,17 +43,9 @@ impl GpuBuffers {
             Change::Create(s) => s.as_slice(),
             _ => panic!("Spheres must be Create during initialization"),
         };
-        let vertices = match &rc.vertices {
-            Change::Create(v) => v.as_slice(),
-            _ => panic!("Vertices must be Create during initialization"),
-        };
         let uvs = match &rc.uvs {
             Change::Create(v) => v.as_slice(),
             _ => panic!("UVs must be Create during initialization"),
-        };
-        let triangles = match &rc.triangles {
-            Change::Create(t) => t.as_slice(),
-            _ => panic!("Triangles must be Create during initialization"),
         };
         let meshes = match &rc.meshes {
             Change::Create(t) => t.as_slice(),
@@ -99,9 +89,7 @@ impl GpuBuffers {
             uniforms: Self::create_uniform_buffer(device, "Uniforms Buffer", uniforms),
             output: Self::create_output_buffer(device, size),
             staging: Self::create_staging_buffer(device, size),
-            vertices: Self::create_storage_buffer(device, "Vertices Buffer", vertices),
             uvs: Self::create_storage_buffer(device, "UVs Buffer", uvs),
-            triangles: Self::create_storage_buffer(device, "Triangles Buffer", triangles),
             meshes: Self::create_storage_buffer(device, "Meshes Buffer", meshes),
             accumulation: accumulation_buffer,
             progressive_render: Self::create_uniform_buffer(
@@ -156,16 +144,8 @@ impl GpuBuffers {
         self.spheres = Self::create_storage_buffer(device, "Spheres Buffer", spheres);
     }
 
-    pub fn grow_vertices(&mut self, device: &Device, vertices: &[f32]) {
-        self.vertices = Self::create_storage_buffer(device, "Vertices Buffer", vertices);
-    }
-
     pub fn grow_uvs(&mut self, device: &Device, uvs: &[f32]) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer", uvs);
-    }
-
-    pub fn grow_triangles(&mut self, device: &Device, triangles: &[u32]) {
-        self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
     }
 
     pub fn grow_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
@@ -247,18 +227,10 @@ impl GpuBuffers {
         self.spheres = Self::create_storage_buffer(device, "Spheres Buffer", spheres);
     }
 
-    pub fn init_vertices(&mut self, device: &Device, vertices: &[f32]) {
-        self.vertices = Self::create_storage_buffer(device, "Vertices Buffer", vertices);
-    }
-
     pub fn init_uvs(&mut self, device: &Device, uvs: &[f32]) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer", uvs);
     }
-
-    pub fn init_triangles(&mut self, device: &Device, triangles: &[u32]) {
-        self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
-    }
-
+    
     pub fn init_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
@@ -294,18 +266,10 @@ impl GpuBuffers {
         self.spheres = Self::create_storage_buffer(device, "Spheres Buffer", spheres);
     }
 
-    pub fn update_vertices(&mut self, device: &Device, vertices: &[f32]) {
-        self.vertices = Self::create_storage_buffer(device, "Vertices Buffer", vertices);
-    }
-
     pub fn update_uvs(&mut self, device: &Device, uvs: &[f32]) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer", uvs);
     }
-
-    pub fn update_triangles(&mut self, device: &Device, triangles: &[u32]) {
-        self.triangles = Self::create_storage_buffer(device, "Triangles Buffer", triangles);
-    }
-
+    
     pub fn update_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
@@ -344,18 +308,8 @@ impl GpuBuffers {
             Self::create_storage_buffer(device, "Spheres Buffer (deleted)", &[] as &[Sphere]);
     }
 
-    pub fn delete_vertices(&mut self, device: &Device) {
-        self.vertices =
-            Self::create_storage_buffer(device, "Vertices Buffer (deleted)", &[] as &[f32]);
-    }
-
     pub fn delete_uvs(&mut self, device: &Device) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer (deleted)", &[] as &[f32]);
-    }
-
-    pub fn delete_triangles(&mut self, device: &Device) {
-        self.triangles =
-            Self::create_storage_buffer(device, "Triangles Buffer (deleted)", &[] as &[u32]);
     }
 
     pub fn delete_meshes(&mut self, device: &Device) {

@@ -2,6 +2,8 @@
 use std::collections::HashMap;
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
+use engine_bvh::triangle::GPUTriangle;
+use engine_bvh::bvh::BVH;
 use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
@@ -254,6 +256,34 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
     vec![(vertices, indices, uvs, material)]
 }
 
+fn mesh_to_gpu_triangles(mesh: &Mesh) -> Vec<GPUTriangle> {
+    let verts = mesh.get_vertices(); // Vec<f32>
+    let indices = mesh.get_tri_indices(); // Vec<u32>
+
+    let mut tris = Vec::with_capacity(indices.len() / 3);
+
+    for i in (0..indices.len()).step_by(3) {
+        let i0 = indices[i] as usize * 3;
+        let i1 = indices[i + 1] as usize * 3;
+        let i2 = indices[i + 2] as usize * 3;
+
+        let v0 = Vec3::new(verts[i0], verts[i0 + 1], verts[i0 + 2]);
+        let v1 = Vec3::new(verts[i1], verts[i1 + 1], verts[i1 + 2]);
+        let v2 = Vec3::new(verts[i2], verts[i2 + 1], verts[i2 + 2]);
+
+        tris.push(GPUTriangle {
+            v0,
+            _pad0: 0,
+            v1,
+            _pad1: 0,
+            v2,
+            _pad2: 0,
+        });
+    }
+
+    tris
+}
+
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
@@ -311,6 +341,14 @@ impl Scene {
         debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
+
+        let mut gpu_triangles: Vec<GPUTriangle> = Vec::new();
+
+        for mesh in self.get_meshes() {
+            gpu_triangles.extend(mesh_to_gpu_triangles(mesh));
+        }
+
+        let triangles_count = gpu_triangles.len() as u32;
         let triangles_count = render_tris
             .iter()
             .map(|(_, tri, _, _)| tri.len() as u32 / 3)
@@ -318,10 +356,15 @@ impl Scene {
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
+        let (bvh_nodes, bvh_indices) = if gpu_triangles.is_empty() {
+            (vec![], vec![])
         // Collect all vertices, triangles, and mesh into flat vectors
         let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
             (vec![], vec![], vec![], vec![])
         } else {
+            let bvh = BVH::new(&gpu_triangles);
+            (bvh.nodes, bvh.indices)
+        };
             let mut all_verts = vec![];
             let mut all_tris = vec![];
             let mut all_uvs = vec![];
@@ -344,6 +387,7 @@ impl Scene {
                 // Add vertices
                 all_verts.extend(verts);
 
+        let bvh_triangles = gpu_triangles.clone();
                 // Add UVs
                 all_uvs.extend(uvs);
 
@@ -356,10 +400,10 @@ impl Scene {
         info!("Collected vertices count: {}", all_vertices.len());
         info!("Collected tris count: {}", all_triangles.len());
         info!(
-            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
-            render_spheres.len(),
-            triangles_count,
-            all_vertices.len() / 3
+            "{self}: BVH built: {} nodes, {} indices, {} triangles",
+            bvh_nodes.len(),
+            bvh_indices.len(),
+            bvh_triangles.len()
         );
 
         let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
@@ -377,10 +421,11 @@ impl Scene {
             RenderConfigBuilder::new()
                 .uniforms_create(uniforms)
                 .spheres_create(render_spheres)
-                .vertices_create(all_vertices)
                 .uvs_create(all_uvs)
-                .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
+                .bvh_nodes_create(bvh_nodes)
+                .bvh_indices_create(bvh_indices)
+                .bvh_triangles_create(bvh_triangles)
                 .lights_create(lights)
                 .textures_create(texture_list)
                 .build()
@@ -390,9 +435,10 @@ impl Scene {
             RenderConfigBuilder::new()
                 .uniforms(uniforms)
                 .spheres(render_spheres)
-                .vertices(all_vertices)
                 .uvs(all_uvs)
-                .triangles(all_triangles)
+                .bvh_nodes_create(bvh_nodes)
+                .bvh_indices_create(bvh_indices)
+                .bvh_triangles_create(bvh_triangles)
                 .meshes(all_meshes)
                 .lights(lights)
                 .textures(texture_list)
