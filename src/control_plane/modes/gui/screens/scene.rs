@@ -8,6 +8,7 @@ use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
+use crate::control_plane::modes::is_debug_mode;
 use crate::data_plane::scene_proxy::proxy_light::ProxyLight;
 
 #[allow(dead_code)]
@@ -38,7 +39,6 @@ impl SceneScreen {
     }
 }
 
-#[allow(dead_code)]
 impl SceneScreen {
     fn logs_ui(ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("Log-view")
@@ -57,6 +57,18 @@ impl SceneScreen {
                     });
             });
     }
+
+    fn do_render(&mut self, ctx: &egui::Context) {
+        match self.model.scene.render() {
+            Ok(output) => {
+                self.image_area
+                    .set_image(ctx, Image::new(output.width, output.height, output.pixels));
+            }
+            Err(e) => {
+                self.message_popup_pipe.push_message(Message::from_error(e));
+            }
+        }
+    }
 }
 
 impl Screen for SceneScreen {
@@ -64,17 +76,19 @@ impl Screen for SceneScreen {
         egui::Vec2::new(1200.0, 800.0)
     }
 
+    fn on_start(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.do_render(ctx);
+    }
+
     fn update(
         &mut self,
         ctx: &egui::Context,
         _frame: &mut eframe::Frame,
     ) -> Option<Box<dyn Screen>> {
-        if ctx.input(|i| i.viewport().close_requested()) {
+        if ctx.input(|i| i.viewport().close_requested()) && !is_debug_mode() {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             return Some(Box::new(StartScreen::new()));
         }
-
-        // TODO: set image_area image
 
         self.message_popup_pipe.show_last(ctx);
 
@@ -87,7 +101,8 @@ impl Screen for SceneScreen {
                 if ui.button("Import Obj").clicked() {
                     self.file_dialog_obj.pick_file(|res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path);
+                            println!("Selected file: {:?}", path.display());
+                            todo!("requires thread safe scene...")
                         }
                     });
                 }
@@ -96,7 +111,8 @@ impl Screen for SceneScreen {
                 if ui.button("Export PNG").clicked() {
                     self.file_dialog_export.save_file(|res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path);
+                            println!("Selected file: {:?}", path.display());
+                            todo!("requires thread safe scene...")
                         }
                     });
                 }
@@ -109,25 +125,12 @@ impl Screen for SceneScreen {
             .min_width(220.0)
             .show(ctx, |ui| {
                 if ui.button("Render").clicked() {
-                    match self.model.scene.render() {
-                        Ok(output) => {
-                            self.image_area.set_image(
-                                ctx,
-                                Image::new(output.width, output.height, output.pixels),
-                            );
-                        }
-                        Err(e) => {
-                            self.message_popup_pipe.push_message(Message::from_error(e));
-                        }
-                    }
+                    self.do_render(ctx);
                 }
 
                 ui.separator();
 
-                self.model
-                    .proxy
-                    .camera
-                    .ui(ui, self.model.scene.get_camera_mut());
+                self.model.proxy.camera.ui(ui, &mut self.model.scene);
 
                 ui.separator();
 

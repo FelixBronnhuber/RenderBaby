@@ -1,6 +1,7 @@
 use engine_wgpu_wrapper::GpuDevice;
 use view_wrappers::ViewWrapper;
 use crate::control_plane::app::App;
+use crate::control_plane::modes::is_debug_mode;
 
 pub mod model;
 mod screens;
@@ -12,7 +13,7 @@ pub struct GuiApp {
 
 impl App for GuiApp {
     fn new() -> Self {
-        // fix device creation bug on windows AMD:
+        // fixes device creation bug on Windows AMD:
         let _ = GpuDevice::new();
 
         let view = view::View::new();

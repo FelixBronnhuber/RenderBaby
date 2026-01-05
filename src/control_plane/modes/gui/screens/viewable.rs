@@ -1,5 +1,5 @@
 use egui::{CollapsingHeader, Ui};
-use scene_objects::camera::{Camera, Resolution};
+use scene_objects::camera::Resolution;
 use scene_objects::geometric_object::GeometricObject;
 use scene_objects::light_source::{LightSource, LightType};
 use scene_objects::material::Material;
@@ -84,9 +84,9 @@ fn color_ui(ui: &mut Ui, color: &mut Color) -> bool {
 }
 
 impl Viewable for ProxyCamera {
-    type RealSceneObject = Camera;
+    type RealSceneObject = Scene;
 
-    fn ui(&mut self, ui: &mut Ui, camera: &mut Camera) {
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene) {
         ui.label("Camera");
 
         // TODO: Get the fov limits from somewhere central as consts.
@@ -94,14 +94,16 @@ impl Viewable for ProxyCamera {
             .add(egui::Slider::new(&mut self.pane_width, 0.1..=100.0).text("Pane Width"))
             .changed()
         {
-            camera.set_pane_width(self.pane_width);
+            // TODO MICHAEL:
+            scene.get_camera_mut().set_pane_width(self.pane_width);
         }
 
         if ui
             .add(egui::Slider::new(&mut self.pane_distance, 0.1..=100.0).text("Pane Distance"))
             .changed()
         {
-            camera.set_pane_distance(self.pane_distance);
+            // TODO MICHAEL:
+            scene.get_camera_mut().set_pane_distance(self.pane_distance);
         }
 
         ui.horizontal(|ui| {
@@ -112,7 +114,8 @@ impl Viewable for ProxyCamera {
                 )
                 .changed()
             {
-                camera.set_resolution(Resolution {
+                // TODO MICHAEL:
+                scene.get_camera_mut().set_resolution(Resolution {
                     width: self.resolution[0],
                     height: self.resolution[1],
                 });
@@ -127,7 +130,8 @@ impl Viewable for ProxyCamera {
                 )
                 .changed()
             {
-                camera.set_resolution(Resolution {
+                // TODO MICHAEL:
+                scene.get_camera_mut().set_resolution(Resolution {
                     width: self.resolution[0],
                     height: self.resolution[1],
                 })
@@ -137,12 +141,18 @@ impl Viewable for ProxyCamera {
 
         ui.label("Camera Position:");
         if vec3_ui(ui, &mut self.position) {
-            camera.set_position(self.position.clone().into());
+            // TODO MICHAEL:
+            scene
+                .get_camera_mut()
+                .set_position(self.position.clone().into());
         }
 
         ui.label("Camera Direction:");
         if vec3_ui(ui, &mut self.look_at) {
-            camera.set_look_at(self.look_at.clone().into());
+            // TODO MICHAEL:
+            scene
+                .get_camera_mut()
+                .set_look_at(self.look_at.clone().into());
         }
     }
 }
@@ -151,9 +161,11 @@ impl Viewable for ProxyMesh {
     type RealSceneObject = Mesh;
 
     fn ui(&mut self, ui: &mut Ui, mesh: &mut Mesh) {
+        // TODO MICHAEL: Hier weiß ich nicht, wie dein neues interface genau sein soll. Falls die meshes hinter einer private reference liegen und irgendwie über indizes geändert werden, müssen wir uns hier etwas neues überlegen.
+
         ui.label("Rotation:");
         if vec3_ui(ui, &mut self.rotation) {
-            mesh.rotate(self.rotation.clone().into()); // TODO: this is probably wrong!
+            mesh.rotate(self.rotation.clone().into()); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
         }
 
         ui.label("Scale:");
@@ -200,6 +212,7 @@ impl Viewable for Misc {
             .checkbox(&mut self.color_hash_enabled, "Enable Color Hash")
             .changed()
         {
+            // TODO MICHAEL: die Methode wird zwar aufgerufen ändert aber tatsächlich nichts - schau das bitte an, kann aber auch sein, dass das bereits gefixt wurde.
             scene.set_color_hash_enabled(self.color_hash_enabled);
         }
 

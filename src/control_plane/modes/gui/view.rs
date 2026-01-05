@@ -12,8 +12,18 @@ pub struct View {
 
 impl ViewWrapper for View {
     fn new() -> Self {
+        let current_screen: Box<dyn Screen> = if is_debug_mode() {
+            // TODO: best to replace this with a proto_scene.json from templates
+            // so that model::Model::new_from_template is used
+            let mut model = model::Model::new_empty();
+            model.scene.proto_init();
+            model.reload_proxy();
+            Box::new(screens::scene::SceneScreen::new(model))
+        } else {
+            Box::new(screens::start::StartScreen::new())
+        };
         Self {
-            current_screen: Box::new(screens::start::StartScreen::new()),
+            current_screen,
             first_frame: true,
         }
     }
@@ -34,6 +44,7 @@ impl eframe::App for View {
             ctx.send_viewport_cmd(egui::ViewportCommand::Resizable(
                 self.current_screen.resizable(),
             ));
+            self.current_screen.on_start(ctx, frame);
         }
 
         if let Some(next_screen) = self.current_screen.update(ctx, frame) {

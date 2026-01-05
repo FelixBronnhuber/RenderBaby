@@ -48,4 +48,8 @@ impl Model {
     pub fn frame_buffer_ref(&self) -> &String {
         todo!()
     }
+
+    pub fn reload_proxy(&mut self) {
+        self.proxy = self.scene.get_proxy_scene();
+    }
 }
