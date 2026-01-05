@@ -489,6 +489,7 @@ fn trace_ray(
                 closest_hit.pos = origin + t * direction;
                 closest_hit.normal = normalize(closest_hit.pos - sphere.center);
                 closest_hit.material = sphere.material;
+            closest_hit.use_texture = closest_hit.material.texture_index >= 0;
             }
         }
         
@@ -513,7 +514,8 @@ fn trace_ray(
                                 closest_hit.material.diffuse.z) / 3.0;
         
         // Only treat as metal if it has specular but negligible diffuse
-        let is_metal = specular_strength > 0.01 && diffuse_strength < 0.01;
+        // OR if it has no texture (restoring previous behavior for untextured objects like spheres)
+        let is_metal = specular_strength > 0.01 && (diffuse_strength < 0.01 || !closest_hit.use_texture);
         
         var scattered: vec3<f32>;
         var albedo: vec3<f32>;

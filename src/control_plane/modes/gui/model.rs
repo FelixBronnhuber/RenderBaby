@@ -3,7 +3,7 @@ use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 use glam::Vec3;
-use scene_objects::camera::Resolution;
+use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 
 #[allow(dead_code)]
 pub struct Model {
@@ -32,14 +32,12 @@ impl Model {
             if let Err(e) = scene.load_object_from_file(obj_path) {
                 log::error!("Failed to load capsule fixture: {}", e);
             }
-            // Set up camera for capsule
-            scene
-                .get_camera_mut()
-                .set_position(Vec3::new(0.0, 2.0, 4.0));
-            scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
-            scene
-                .get_camera_mut()
-                .set_resolution(Resolution::new(256, 256));
+            scene.add_sphere(Sphere::new(
+                Vec3::new(2.0, 0.0, 2.0),
+                1.0,
+                Material::default(),
+                [1.0, 1.0, 1.0],
+            ));
             scene.set_color_hash_enabled(false); // Disable color hash to see textures
         } else {
             log::warn!(
