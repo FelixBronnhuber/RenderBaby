@@ -15,6 +15,7 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::{
+            scene_change_handler::SceneChangeHandler,
             scene_engine_adapter::{
                 camera_to_render_uniforms, mesh_to_render_data, sphere_to_render_sphere,
             },
@@ -37,6 +38,7 @@ pub struct Scene {
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
+    change_handler: SceneChangeHandler,
     render_engine: Option<Engine>,
     render_config_builder: RenderConfigBuilder,
     first_render: bool,
@@ -218,6 +220,7 @@ impl Scene {
         let mut res = Self {
             scene_graph: SceneGraph::new(),
             name: "scene".to_owned(),
+            change_handler: SceneChangeHandler {},
             background_color: [1.0, 1.0, 1.0],
             render_engine: None,
             render_config_builder: RenderConfigBuilder::new(),
@@ -245,6 +248,8 @@ impl Scene {
         ));
         res.update_render_config();
         let _ = res.render();
+        res.update_render_config(); // 2nd time so that nothing is set to create. Maybe find a better way for this
+
         res
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
