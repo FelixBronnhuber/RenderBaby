@@ -6,6 +6,7 @@ use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
     camera::{Camera, Resolution},
+    geometric_object::GeometricObject,
     light_source::{LightSource, LightType},
     material::Material,
     mesh::Mesh,
@@ -66,7 +67,7 @@ impl Scene {
             }
         }
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+    fn parse_obj_to_mesh(&mut self, path: PathBuf) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
@@ -218,8 +219,7 @@ impl Scene {
                     Some(path.to_string_lossy().to_string()),
                 )?;
                 info!("Scene {self}: Successfully loaded object from {path_str}");
-                self.add_mesh(mesh);
-                Ok(())
+                Ok(mesh)
             }
 
             Err(error) => {
@@ -227,6 +227,27 @@ impl Scene {
                 Err(error.into())
             }
         }
+    }
+
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path)?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    pub fn load_object_from_file_transformed(
+        &mut self,
+        path: PathBuf,
+        translation: Vec3,
+        rotation: Vec3,
+        scale: f32,
+    ) -> Result<(), Error> {
+        let mut mesh = self.parse_obj_to_mesh(path)?;
+        mesh.scale(scale);
+        mesh.rotate(rotation);
+        mesh.translate(translation);
+        self.add_mesh(mesh);
+        Ok(())
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource

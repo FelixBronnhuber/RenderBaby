@@ -34,8 +34,10 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
         sphere.get_radius(),
         {
             let color = sphere.get_color();
-            let diffuse = engine_config::Vec3::new(color[0], color[1], color[2]);
-            engine_config::Material::new_temp(diffuse).unwrap()
+            let mut mat = engine_config::Material::default();
+            mat.diffuse = engine_config::Vec3::new(0.0, 0.0, 0.0);
+            mat.specular = [color[0], color[1], color[2]];
+            mat
         },
     )
     .unwrap()

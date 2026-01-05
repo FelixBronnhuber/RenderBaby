@@ -1,6 +1,6 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
-const MAX_DEPTH: i32 = 3;
+const MAX_DEPTH: i32 = 5;
 const SHADOW_SAMPLES: u32 = 8u;
 const SHADOW_EDGE: f32 = 0.2;
 
@@ -514,8 +514,7 @@ fn trace_ray(
                                 closest_hit.material.diffuse.z) / 3.0;
         
         // Only treat as metal if it has specular but negligible diffuse
-        // OR if it has no texture (restoring previous behavior for untextured objects like spheres)
-        let is_metal = specular_strength > 0.01 && (diffuse_strength < 0.01 || !closest_hit.use_texture);
+        let is_metal = specular_strength > 0.01 && diffuse_strength < 0.01;
         
         var scattered: vec3<f32>;
         var albedo: vec3<f32>;

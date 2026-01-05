@@ -26,26 +26,44 @@ impl Model {
 
         // Load capsule fixture
         let cwd = std::env::current_dir().unwrap();
-        let obj_path = cwd.join("fixtures/capsule/capsule.obj");
-        if obj_path.exists() {
-            log::info!("Loading capsule fixture from {:?}", obj_path);
-            if let Err(e) = scene.load_object_from_file(obj_path) {
+        let capsule_path = cwd.join("fixtures/capsule/capsule.obj");
+        if capsule_path.exists() {
+            log::info!("Loading capsule fixture from {:?}", capsule_path);
+            if let Err(e) = scene.load_object_from_file(capsule_path) {
                 log::error!("Failed to load capsule fixture: {}", e);
             }
-            scene.add_sphere(Sphere::new(
-                Vec3::new(2.0, 0.0, 2.0),
-                1.0,
-                Material::default(),
-                [1.0, 1.0, 1.0],
-            ));
-            scene.set_color_hash_enabled(false); // Disable color hash to see textures
         } else {
             log::warn!(
                 "Capsule fixture not found at {:?}, falling back to proto_init",
-                obj_path
+                capsule_path
             );
             scene.proto_init();
         }
+
+        // Load ferris fixture
+        let ferris_path = cwd.join("fixtures/ferris_low_poly/rustacean-3d.obj");
+        if ferris_path.exists() {
+            log::info!("Loading ferris fixture from {:?}", ferris_path);
+            // Move ferris to (0, 0, 4) to be visible in reflection
+            if let Err(e) = scene.load_object_from_file_transformed(
+                ferris_path,
+                Vec3::new(3.5, -0.2, -1.0),
+                Vec3::new(-90.0, 250.0, 0.0),
+                1.0,
+            ) {
+                log::error!("Failed to load ferris fixture: {}", e);
+            }
+        } else {
+            log::warn!("Ferris fixture not found at {:?}", ferris_path);
+        }
+
+        scene.add_sphere(Sphere::new(
+            Vec3::new(2.0, 0.0, 2.0),
+            1.0,
+            Material::default(),
+            [1.0, 1.0, 1.0],
+        ));
+        scene.set_color_hash_enabled(false); // Disable color hash to see textures
 
         Self::new(scene)
     }
