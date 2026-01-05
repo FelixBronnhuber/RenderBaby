@@ -109,7 +109,7 @@ impl Model {
             Ok(_) => Ok(()),
             Err(e) => {
                 eprintln!("Error exporting scene: {:?}", e);
-                Err(Error::from(e))
+                Err(e)
             }
         }
     }

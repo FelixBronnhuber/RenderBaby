@@ -10,7 +10,6 @@ use scene_objects::{
     mesh::Mesh,
     sphere::Sphere,
 };
-use scene_objects::geometric_object::SceneObject;
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
