@@ -434,7 +434,7 @@ impl GpuWrapper {
             uniforms.width,
             uniforms.height,
             uniforms.spheres_count,
-            uniforms.triangles_count
+            uniforms.bvh_triangle_count
         );
 
         self.queue.write_buffer(
