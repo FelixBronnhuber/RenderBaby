@@ -1,8 +1,6 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
 const MAX_DEPTH: i32 = 5;
-const SHADOW_SAMPLES: u32 = 8u;
-const SHADOW_EDGE: f32 = 0.2;
 
 struct Camera {
     pane_distance: f32,
@@ -387,25 +385,6 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         }
 
     return false;
-}
-
-fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: ptr<function, u32>) -> f32 {
-    var visible_light: f32 = 0.0;
-
-    for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
-        let rand_jitter = random_unit_vector(seed) * SHADOW_EDGE;
-        let jittered_pos = light_pos + rand_jitter;
-
-        let light_dir = jittered_pos - origin;
-        let distance = length(light_dir);
-        let dir_normalized = light_dir / distance;
-
-        if (!collision(origin, dir_normalized, distance)) {
-            visible_light += 1.0;
-        }
-    }
-
-    return visible_light / f32(SHADOW_SAMPLES);
 }
 
 fn trace_ray(

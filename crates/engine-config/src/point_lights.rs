@@ -31,7 +31,11 @@ impl Material {
             specular: [0.0, 0.0, 0.0],
             _pad1: 0.0,
             shininess: 0.0,
-            emissive: [color.x()*luminosity, color.y()*luminosity, color.z()*luminosity],
+            emissive: [
+                color.x() * luminosity,
+                color.y() * luminosity,
+                color.z() * luminosity,
+            ],
             ior: 1.0,
             opacity: 1.0,
             illum: 0,
@@ -41,14 +45,11 @@ impl Material {
 }
 
 impl PointLight {
-    pub fn new(position: [f32; 3],radius: f32, luminosity: f32, color: [f32; 3]) -> Self {
+    pub fn new(position: [f32; 3], radius: f32, luminosity: f32, color: [f32; 3]) -> Self {
         Self {
             center: Vec3(position),
             radius,
-            material: Material::emissive(
-                Vec3(color),
-                luminosity,
-            ),
+            material: Material::emissive(Vec3(color), luminosity),
         }
     }
 }
