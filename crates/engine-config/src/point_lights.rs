@@ -14,7 +14,7 @@ impl Default for PointLight {
         Self {
             position: [2.0, 4.0, 1.0],
             luminosity: 20.0,
-            color: [1.0, 1.0, 1.0],
+            color: [1.0, 0.9, 0.8],
             _pad: 0.0,
         }
     }

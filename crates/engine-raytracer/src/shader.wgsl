@@ -30,22 +30,41 @@ struct Uniforms {
     spheres_count: u32,
     triangles_count: u32,
     _pad1: vec2<u32>,
-
 };
 
 struct Sphere {
     center: vec3<f32>,
     radius: f32,
-    color: vec3<f32>,
-    _pad: u32,
+    material: Material,
 };
+
+struct Mesh {
+    triangle_index_start: u32,
+    triangle_count: u32,
+    _pad: vec2<u32>,
+    material: Material,
+}
+
+struct Material {
+    ambient: vec3<f32>,
+    _pad0: f32,
+    diffuse: vec3<f32>,
+    _pad1: f32,
+    specular: vec3<f32>,
+    shininess: f32,
+    emissive: vec3<f32>,
+    ior: f32,
+    opacity: f32,
+    illum: u32,
+    _pad2: vec2<u32>,
+}
 
 struct HitRecord {
     hit: bool,
     t: f32,
     pos: vec3<f32>,
     normal: vec3<f32>,
-    color: vec3<f32>,
+    material: Material,
 }
 
 struct PointLight {
@@ -60,9 +79,10 @@ struct PointLight {
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
 @group(0) @binding(3) var<storage, read> vertices: array<f32>;
 @group(0) @binding(4) var<storage, read> triangles: array<u32>;
-@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
-@group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight>;
+@group(0) @binding(5) var<storage, read> meshes: array<Mesh>;
+@group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
+@group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
+@group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -83,13 +103,25 @@ fn color_map(color: vec3<f32>) -> u32 {
 fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -> f32 {
     let oc = ray_origin - sphere.center;
     let a = dot(ray_dir, ray_dir);
-    let b = 2.0 * dot(oc, ray_dir);
+    let half_b = dot(oc, ray_dir);
     let c = dot(oc, oc) - sphere.radius * sphere.radius;
-    let discriminant = b * b - 4.0 * a * c;
+    let discriminant = half_b * half_b - a * c;
+    
     if discriminant < 0.0 {
         return -1.0;
     }
-    return (-b - sqrt(discriminant)) / (2.0 * a);
+    
+    let sqrtd = sqrt(discriminant);
+    var root = (-half_b - sqrtd) / a;
+    
+    if root <= 0.001 {
+        root = (-half_b + sqrtd) / a;
+        if root <= 0.001 {
+            return -1.0;
+        }
+    }
+    
+    return root;
 }
 
 struct TriangleData {
@@ -155,46 +187,80 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
     return -1.0;
 }
 
+// PCG random number generator
 fn hash(seed: u32) -> u32 {
     var state = seed * 747796405u + 2891336453u;
     var word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
     return (word >> 22u) ^ word;
 }
 
-fn random_float(seed: u32) -> f32 {
-    return f32(hash(seed)) / 4294967296.0;
+fn random_float(seed: ptr<function, u32>) -> f32 {
+    *seed = hash(*seed);
+    return f32(*seed) / 4294967296.0;
 }
 
-fn random_range(seed: u32, min: f32, max: f32) -> f32 {
-    return min + random_float(seed) * (max - min);
-}
-
-fn random_unit_vector(seed: u32) -> vec3<f32> {
-    var current_seed = seed;
-
-    for (var i = 0u; i < 16u; i = i + 1u) {
+// Random vector in unit sphere (rejection sampling)
+fn random_in_unit_sphere(seed: ptr<function, u32>) -> vec3<f32> {
+    loop {
         let p = vec3<f32>(
-            random_range(current_seed, -1.0, 1.0),
-            random_range(hash(current_seed), -1.0, 1.0),
-            random_range(hash(hash(current_seed)), -1.0, 1.0)
+            random_float(seed) * 2.0 - 1.0,
+            random_float(seed) * 2.0 - 1.0,
+            random_float(seed) * 2.0 - 1.0
         );
-
-        let lensq = dot(p, p);
-
-        if (lensq > 1e-16 && lensq <= 1.0) {
-            return p / sqrt(lensq);
+        if dot(p, p) < 1.0 {
+            return p;
         }
-
-        current_seed = hash(current_seed + 1u);
     }
+    return vec3<f32>(0.0);
+}
 
-    let fallback = vec3<f32>(
-        random_range(current_seed, -1.0, 1.0),
-        random_range(hash(current_seed), -1.0, 1.0),
-        random_range(hash(hash(current_seed)), -1.0, 1.0)
-    );
+// Random unit vector on hemisphere
+fn random_unit_vector(seed: ptr<function, u32>) -> vec3<f32> {
+    return normalize(random_in_unit_sphere(seed));
+}
 
-    return normalize(fallback);
+// Cosine-weighted hemisphere sampling
+fn random_in_hemisphere(normal: vec3<f32>, seed: ptr<function, u32>) -> vec3<f32> {
+    let in_unit_sphere = random_unit_vector(seed);
+    
+    if (dot(in_unit_sphere, normal) > 0.0) {
+        return in_unit_sphere;
+    } else {
+        return -in_unit_sphere;
+    }
+}
+
+fn reflect_vector(v: vec3<f32>, n: vec3<f32>) -> vec3<f32> {
+    return v - 2.0 * dot(v, n) * n;
+}
+
+fn near_zero(v: vec3<f32>) -> bool {
+    let s = 1e-8;
+    return (abs(v.x) < s) && (abs(v.y) < s) && (abs(v.z) < s);
+}
+
+fn scatter_lambertian(
+    normal: vec3<f32>,
+    seed: ptr<function, u32>
+) -> vec3<f32> {
+    let scatter_direction = normal + random_unit_vector(seed);
+    
+    if near_zero(scatter_direction) {
+        return normal;
+    }
+    
+    return normalize(scatter_direction);
+}
+
+fn scatter_metal(
+    ray_dir: vec3<f32>,
+    hit: HitRecord,
+    fuzz: f32,
+    seed: ptr<function, u32>
+) -> vec3<f32> {
+    let reflected = reflect_vector(normalize(ray_dir), hit.normal);
+    let fuzzed = reflected + fuzz * random_unit_vector(seed);
+    return fuzzed;
 }
 
 fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
@@ -243,12 +309,11 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
     return false;
 }
 
-fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
+fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: ptr<function, u32>) -> f32 {
     var visible_light: f32 = 0.0;
-    var next_seed = seed;
 
     for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
-        let rand_jitter = random_unit_vector(next_seed) * SHADOW_EDGE;
+        let rand_jitter = random_unit_vector(seed) * SHADOW_EDGE;
         let jittered_pos = light_pos + rand_jitter;
 
         let light_dir = jittered_pos - origin;
@@ -258,8 +323,6 @@ fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: u32) -> f32 {
         if (!collision(origin, dir_normalized, distance)) {
             visible_light += 1.0;
         }
-
-        next_seed = hash(next_seed + i);
     }
 
     return visible_light / f32(SHADOW_SAMPLES);
@@ -270,85 +333,133 @@ fn trace_ray(
     direction0: vec3<f32>,
     seed0: u32
 ) -> vec3<f32> {
-
-    var origin     = origin0;
-    var direction  = direction0;
-    var seed       = seed0;
-
-    var attenuation = vec3<f32>(1.0, 1.0, 1.0);
-    var color       = vec3<f32>(0.0);
-
+    var origin = origin0;
+    var direction = direction0;
+    var seed = seed0;
+    
+    var color = vec3<f32>(0.0);
+    var attenuation = vec3<f32>(1.0);
+    
     for (var depth = 0; depth < MAX_DEPTH; depth = depth + 1) {
-        var closest_hit = HitRecord(false, 1e20, vec3<f32>(0.0), vec3<f32>(0.0), vec3<f32>(0.0));
-
+        var closest_hit = HitRecord(
+            false,
+            1e20,
+            vec3<f32>(0.0),
+            vec3<f32>(0.0),
+            Material(
+                vec3<f32>(0.0), 0.0,
+                vec3<f32>(0.0), 0.0,
+                vec3<f32>(0.0), 0.0,
+                vec3<f32>(0.0), 0.0,
+                0.0, 0u, vec2<u32>(0u)
+            )
+        );
+        
         // Ground
         if (GROUND_ENABLED) {
             let t = intersect_ground(origin, direction);
             if (t > 0.001 && t < closest_hit.t) {
-                closest_hit.hit   = true;
-                closest_hit.t     = t;
+                closest_hit.hit = true;
+                closest_hit.t = t;
                 closest_hit.pos = origin + t * direction;
                 closest_hit.normal = vec3<f32>(0.0, 1.0, 0.0);
-                closest_hit.color  = vec3<f32>(0.7);
+                closest_hit.material.diffuse = vec3<f32>(0.5);
+                closest_hit.material.ambient = vec3<f32>(0.0);
+                closest_hit.material.specular = vec3<f32>(0.0);
             }
         }
-
+        
         // Triangles
-        for (var k = 0u; k < uniforms.triangles_count; k = k + 1u) {
-            let v0_idx = triangles[k * 3u + 0u];
-            let v1_idx = triangles[k * 3u + 1u];
-            let v2_idx = triangles[k * 3u + 2u];
-
-            let v0 = vec3<f32>(vertices[v0_idx * 3u + 0u],
-                               vertices[v0_idx * 3u + 1u],
-                               vertices[v0_idx * 3u + 2u]);
-
-            let v1 = vec3<f32>(vertices[v1_idx * 3u + 0u],
-                               vertices[v1_idx * 3u + 1u],
-                               vertices[v1_idx * 3u + 2u]);
-
-            let v2 = vec3<f32>(vertices[v2_idx * 3u + 0u],
-                               vertices[v2_idx * 3u + 1u],
-                               vertices[v2_idx * 3u + 2u]);
-
-            let tri = TriangleData(v0, v1, v2, 0u);
-            let t   = intersect_triangle(origin, direction, tri);
-
-            if (t > 0.001 && t < closest_hit.t) {
-                closest_hit.hit    = true;
-                closest_hit.t      = t;
-                closest_hit.pos  = origin + t * direction;
-                closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
-                if (uniforms.color_hash_enabled != 0u) {
-                    closest_hit.color  = hash_to_color(k + 1u);
-                } else {
-                    closest_hit.color  = vec3<f32>(0.3, 0.3, 0.3);
+        for (var mesh_idx = 0u; mesh_idx < arrayLength(&meshes); mesh_idx = mesh_idx + 1u) {
+            let mesh = meshes[mesh_idx];
+            let tri_start = mesh.triangle_index_start;
+            let tri_end = tri_start + mesh.triangle_count;
+            
+            for (var k = tri_start; k < tri_end; k = k + 1u) {
+                let v0_idx = triangles[k * 3u + 0u];
+                let v1_idx = triangles[k * 3u + 1u];
+                let v2_idx = triangles[k * 3u + 2u];
+                
+                let v0 = vec3<f32>(vertices[v0_idx * 3u + 0u],
+                                   vertices[v0_idx * 3u + 1u],
+                                   vertices[v0_idx * 3u + 2u]);
+                let v1 = vec3<f32>(vertices[v1_idx * 3u + 0u],
+                                   vertices[v1_idx * 3u + 1u],
+                                   vertices[v1_idx * 3u + 2u]);
+                let v2 = vec3<f32>(vertices[v2_idx * 3u + 0u],
+                                   vertices[v2_idx * 3u + 1u],
+                                   vertices[v2_idx * 3u + 2u]);
+                
+                let tri = TriangleData(v0, v1, v2, mesh_idx);
+                let t = intersect_triangle(origin, direction, tri);
+                
+                if (t > 0.001 && t < closest_hit.t) {
+                    closest_hit.hit = true;
+                    closest_hit.t = t;
+                    closest_hit.pos = origin + t * direction;
+                    closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
+                    
+                    if (uniforms.color_hash_enabled != 0u) {
+                        closest_hit.material.diffuse = hash_to_color(k + 1u);
+                        closest_hit.material.ambient = vec3<f32>(0.0);
+                        closest_hit.material.specular = vec3<f32>(0.0);
+                    } else {
+                        closest_hit.material = mesh.material;
+                    }
                 }
             }
         }
-
+        
         // Spheres
         for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
             let sphere = spheres[k];
             let t = intersect_sphere(origin, direction, sphere);
-
+            
             if (t > 0.001 && t < closest_hit.t) {
-                closest_hit.hit    = true;
-                closest_hit.t      = t;
-                closest_hit.pos  = origin + t * direction;
+                closest_hit.hit = true;
+                closest_hit.t = t;
+                closest_hit.pos = origin + t * direction;
                 closest_hit.normal = normalize(closest_hit.pos - sphere.center);
-                closest_hit.color  = sphere.color;
+                closest_hit.material = sphere.material;
             }
         }
-
-        // Sky + exit recursion
+        
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
             let sky = (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
-
             color += attenuation * sky;
             break;
+        }
+        
+        //has to be reviewed
+        if (depth == 0) {
+            color += closest_hit.material.ambient;
+        }
+        
+        let specular_strength = (closest_hit.material.specular.x + 
+                                closest_hit.material.specular.y + 
+                                closest_hit.material.specular.z) / 3.0;
+        
+        var scattered: vec3<f32>;
+        var albedo: vec3<f32>;
+        
+        if (specular_strength > 0.01) {
+            // Metal material with glossy reflections
+            // Map Ns (0-1000) to fuzz (1.0-0.0)
+            // Higher Ns = sharper reflections (less fuzz)
+            // Lower Ns = blurrier reflections (more fuzz)
+            let fuzz = clamp(1.0 - (closest_hit.material.shininess / 1000.0), 0.0, 1.0);
+            scattered = scatter_metal(direction, closest_hit, fuzz, &seed);
+            
+            if (dot(scattered, closest_hit.normal) <= 0.0) {
+                break;
+            }
+            
+            albedo = closest_hit.material.specular;
+        } else {
+            scattered = scatter_lambertian(closest_hit.normal, &seed);
+            albedo = closest_hit.material.diffuse;
         }
 
         let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
@@ -370,75 +481,67 @@ fn trace_ray(
             let visibility = shadow(
                 shadow_origin,
                 light.position,
-                seed + i
+                &seed
             );
 
             light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        color += attenuation * light_total * closest_hit.color;
+        if (specular_strength <= 0.01) {
+            color += attenuation * light_total * albedo;
+            attenuation *= albedo * 0.5;
+        } else {
+            attenuation *= albedo;
+        }
 
-        // Hit + scatter ray
-        seed = hash(seed + u32(depth));
-        let scatter_dir = closest_hit.normal + random_unit_vector(seed);
-
-        // Update ray
-        origin = closest_hit.pos + 0.001 * closest_hit.normal;
-        direction = scatter_dir;
-
-        // Apply diffuse attenuation
-        attenuation *= closest_hit.color * 0.5;
+        // Move ray update HERE (after all lighting/attenuation)
+        origin = closest_hit.pos + 0.001 * normalize(scattered);
+        direction = normalize(scattered);
     }
-
     return color;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
-
+    
     if (x >= uniforms.width || y >= uniforms.height) {
         return;
     }
-
+    
     let pixel_index = y * uniforms.width + x;
 
     // Load previous accumulation
     var accumulated_color = accumulation[pixel_index].xyz;
     var total_samples = u32(accumulation[pixel_index].w);
-
-    // Render new samples for this pass
+    
     for (var sample: u32 = 0u; sample < prh.samples_per_pass; sample = sample + 1u) {
         let aspect = f32(uniforms.width) / f32(uniforms.height);
-
-        // Use pass index to ensure different samples each pass
+        
         let sample_offset = prh.current_pass * prh.samples_per_pass + sample;
-        let seed = hash(pixel_index + hash(sample_offset));
-
-        let offset_x = random_float(seed) - 0.5;
-        let offset_y = random_float(hash(seed)) - 0.5;
-
+        var seed = hash(pixel_index + hash(sample_offset));
+        
+        let offset_x = random_float(&seed) - 0.5;
+        let offset_y = random_float(&seed) - 0.5;
+        
         let u = (((f32(x) + offset_x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
         let v = 1.0 - ((f32(y) + offset_y) / f32(uniforms.height - 1u)) * 2.0;
-
+        
         let camera_pos = uniforms.camera.pos;
-
         let camera_forward = normalize(uniforms.camera.dir);
         let world_up = vec3<f32>(0.0, 1.0, 0.0);
         let camera_right = normalize(cross(world_up, camera_forward));
         let camera_up = cross(camera_forward, camera_right);
-
+        
         let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
         let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
-
+        
         let sample_color = trace_ray(camera_pos, ray_dir, seed);
         accumulated_color = accumulated_color + sample_color;
         total_samples = total_samples + 1u;
     }
-
-    // Store accumulated result
+    
     accumulation[pixel_index] = vec4<f32>(accumulated_color, f32(total_samples));
 
     // Write final color (averaged + reinhard tone mapping)

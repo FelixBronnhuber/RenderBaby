@@ -64,9 +64,20 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                //accu buffer
+                // Meshes Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 5,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                //accu buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: false },
@@ -77,7 +88,7 @@ impl BindGroupLayout {
                 },
                 // Progressive Render Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 6,
+                    binding: 7,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
@@ -88,7 +99,7 @@ impl BindGroupLayout {
                 },
                 //Pointlight Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 7,
+                    binding: 8,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -142,14 +153,18 @@ impl BindGroup {
                 },
                 wgpu::BindGroupEntry {
                     binding: 5,
-                    resource: buffers.accumulation.as_entire_binding(),
+                    resource: buffers.meshes.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 6,
-                    resource: buffers.progressive_render.as_entire_binding(),
+                    resource: buffers.accumulation.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 7,
+                    resource: buffers.progressive_render.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 8,
                     resource: buffers.lights.as_entire_binding(),
                 },
             ],
