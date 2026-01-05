@@ -9,6 +9,8 @@ use engine_config::{RenderConfig, Uniforms};
 use log::info;
 use pipeline::ComputePipeline;
 
+const SAMPLES_PER_PASS: u32 = 1;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct ProgressiveRenderHelper {
@@ -20,12 +22,11 @@ pub struct ProgressiveRenderHelper {
 
 impl ProgressiveRenderHelper {
     pub fn new(total_samples: u32) -> Self {
-        let samples_per_pass = 4;
         Self {
-            total_passes: (total_samples.div_ceil(samples_per_pass)),
+            total_passes: (total_samples.div_ceil(SAMPLES_PER_PASS)),
             current_pass: 0,
             total_samples,
-            samples_per_pass,
+            samples_per_pass: SAMPLES_PER_PASS,
         }
     }
 
