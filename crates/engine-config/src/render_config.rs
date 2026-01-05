@@ -6,6 +6,8 @@ pub struct RenderConfig {
     pub spheres: Change<Vec<Sphere>>,
     pub vertices: Change<Vec<f32>>,
     pub triangles: Change<Vec<u32>>,
+    pub meshes: Change<Vec<Mesh>>,
+    pub lights: Change<Vec<PointLight>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -69,6 +71,12 @@ impl ValidateInit for RenderConfig {
         if !matches!(self.triangles, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidTriangles);
         }
+        if !matches!(self.meshes, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidMeshes);
+        }
+        if !matches!(self.lights, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidLights);
+        }
         Ok(self)
     }
 }
@@ -131,6 +139,27 @@ impl Validate for RenderConfig {
             }
             Change::Keep => {}
         }
+        match &self.meshes {
+            Change::Update(_meshes) | Change::Create(_meshes) => {
+                //TODO: Mesh Validation
+            }
+            Change::Delete => {
+                todo!("Implement meshes Deletion")
+            }
+            Change::Keep => {}
+        }
+
+        match &self.lights {
+            Change::Update(lights) | Change::Create(lights) => {
+                if lights.iter().any(|l| l.luminosity <= 0.0) {
+                    return Err(RenderConfigBuilderError::InvalidLights);
+                }
+            }
+            Change::Delete => {
+                todo!("Implement lights Deletion")
+            }
+            Change::Keep => {}
+        }
 
         Ok(self)
     }
@@ -142,6 +171,8 @@ pub struct RenderConfigBuilder {
     pub spheres: Option<Change<Vec<Sphere>>>,
     pub vertices: Option<Change<Vec<f32>>>,
     pub triangles: Option<Change<Vec<u32>>>,
+    pub meshes: Option<Change<Vec<Mesh>>>,
+    pub lights: Option<Change<Vec<PointLight>>>,
 }
 
 impl RenderConfigBuilder {
@@ -151,6 +182,8 @@ impl RenderConfigBuilder {
             spheres: None,
             vertices: None,
             triangles: None,
+            meshes: None,
+            lights: None,
         }
     }
 
@@ -234,6 +267,46 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn meshes(mut self, meshes: Vec<Mesh>) -> Self {
+        self.meshes = Some(Change::Update(meshes));
+        self
+    }
+
+    pub fn meshes_create(mut self, meshes: Vec<Mesh>) -> Self {
+        self.meshes = Some(Change::Create(meshes));
+        self
+    }
+
+    pub fn meshes_no_change(mut self) -> Self {
+        self.meshes = Some(Change::Keep);
+        self
+    }
+
+    pub fn meshes_delete(mut self) -> Self {
+        self.meshes = Some(Change::Delete);
+        self
+    }
+
+    pub fn lights(mut self, lights: Vec<PointLight>) -> Self {
+        self.lights = Some(Change::Update(lights));
+        self
+    }
+
+    pub fn lights_create(mut self, lights: Vec<PointLight>) -> Self {
+        self.lights = Some(Change::Create(lights));
+        self
+    }
+
+    pub fn lights_no_change(mut self) -> Self {
+        self.lights = Some(Change::Keep);
+        self
+    }
+
+    pub fn lights_delete(mut self) -> Self {
+        self.lights = Some(Change::Delete);
+        self
+    }
+
     pub fn build(self) -> RenderConfig {
         if self.uniforms.is_none() {
             log::info!("RenderConfigBuilder: uniforms not set, defaulting to NoChange.");
@@ -247,12 +320,20 @@ impl RenderConfigBuilder {
         if self.triangles.is_none() {
             log::info!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
         }
+        if self.meshes.is_none() {
+            log::info!("RenderConfigBuilder: meshes not set, defaulting to NoChange.");
+        }
+        if self.lights.is_none() {
+            log::info!("RenderConfigBuilder: lights not set, defaulting to NoChange.");
+        }
 
         RenderConfig {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
             spheres: self.spheres.unwrap_or(Change::Keep),
             vertices: self.vertices.unwrap_or(Change::Keep),
             triangles: self.triangles.unwrap_or(Change::Keep),
+            meshes: self.meshes.unwrap_or(Change::Keep),
+            lights: self.lights.unwrap_or(Change::Keep),
         }
     }
 }
@@ -266,6 +347,8 @@ pub enum RenderConfigBuilderError {
     InvalidSpheres,
     InvalidVertices,
     InvalidTriangles,
+    InvalidMeshes,
+    InvalidLights,
     CannotDeleteNonexistent,
 }
 
@@ -285,6 +368,8 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::InvalidSpheres => write!(f, "Invalid Spheres"),
             RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
             RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
+            RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
+            RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),
             RenderConfigBuilderError::CannotDeleteNonexistent => {
                 write!(f, "Cannot delete none existent")
             }

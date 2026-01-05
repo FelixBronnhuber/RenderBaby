@@ -1,4 +1,4 @@
-use scene_objects::{geometric_object::SceneObject, tri_geometry::TriGeometry};
+use scene_objects::{geometric_object::SceneObject, mesh::Mesh};
 use serde::{Deserialize, Serialize};
 use crate::data_plane::scene_proxy::position::Vec3d;
 
@@ -13,7 +13,7 @@ pub(crate) struct ProxyMesh {
 }
 
 impl ProxyMesh {
-    pub fn new_from_real_mesh(mesh: &TriGeometry) -> Self {
+    pub fn new_from_real_mesh(mesh: &Mesh) -> Self {
         Self {
             name: mesh.get_name(),
             path: {

@@ -2,17 +2,19 @@
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use glam::Vec3;
-use log::{info, error};
+use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
+    mesh::Mesh,
     sphere::Sphere,
-    tri_geometry::TriGeometry,
 };
 use crate::data_plane::scene::{render_scene::Scene};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
+type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
+pub type RenderLights = engine_config::PointLight;
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -29,7 +31,8 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
         sphere.get_radius(),
         {
             let color = sphere.get_color();
-            engine_config::Vec3::new(color[0], color[1], color[2])
+            let diffuse = engine_config::Vec3::new(color[0], color[1], color[2]);
+            engine_config::Material::new_temp(diffuse).unwrap()
         },
     )
     .unwrap()
@@ -74,27 +77,12 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-
-fn tri_geometry_to_render_tri(tri_geom: &TriGeometry) -> (Vec<f32>, Vec<u32>) {
-    //! Converts the given TriGeometry to a touple of a Vector represention the triangle vertices and a vector referencing which points make up the triangles
-    //! Purpose of the conversion is to pass the result to the render engine
+fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
+    //! Extracts vertices and point references from the given mesh
     //! ## Parameter
-    //! 'tri_geom': Reference to the TriGeometry that is to be converted
-    let mut res_points = vec![];
-    let mut res_tri = vec![];
-    let mut count = 0u32;
-    for tri in tri_geom.get_triangles() {
-        for point in tri.get_points() {
-            res_points.push(point.x);
-            res_points.push(point.y);
-            res_points.push(point.z);
-        }
-        res_tri.push(count);
-        res_tri.push(count + 1);
-        res_tri.push(count + 2);
-        count += 3;
-    }
-    (res_points, res_tri)
+    //! 'mesh': Mesh from scene_objects crate that is to be converted
+    //! Returns: touple of: Vec<f32> where 3 entries define one point in 3d space, and Vec<u32> referencing which points make up a triangle
+    (mesh.get_vertices().clone(), mesh.get_tri_indices().clone())
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
@@ -102,11 +90,10 @@ impl Scene {
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
-        let mut res = vec![];
-        for sphere in self.get_spheres() {
-            res.push(sphere_to_render_sphere(sphere));
-        }
-        res
+        self.get_spheres()
+            .iter()
+            .map(sphere_to_render_sphere)
+            .collect()
     }
     pub(crate) fn get_render_uniforms(
         &self,
@@ -127,11 +114,7 @@ impl Scene {
     fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        let mut res = vec![];
-        for tri in self.get_tri_geometries() {
-            res.push(tri_geometry_to_render_tri(tri))
-        }
-        res
+        self.get_meshes().iter().map(mesh_to_render_data).collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
@@ -142,6 +125,8 @@ impl Scene {
 
         let render_spheres = self.get_render_spheres();
         let render_tris = self.get_render_tris();
+        debug!("Scene mesh data: {:?}", self.get_meshes());
+        debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
@@ -151,27 +136,43 @@ impl Scene {
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
-        // Collect all vertices and triangles into flat vectors
-        let (all_vertices, all_triangles) = if render_tris.is_empty() {
-            (vec![], vec![])
+        // Collect all vertices, triangles, and mesh into flat vectors
+        let (all_vertices, all_triangles, all_meshes) = if render_tris.is_empty() {
+            (vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
+            let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris {
+            for (verts, tris) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
+                let triangle_count = (tris.len() / 3) as u32;
 
+                // Add mesh metadata
+                mesh_infos.push(RenderMesh::new(
+                    triangle_offset,
+                    triangle_count,
+                    engine_config::Material::default(), //replace with Material from mtl
+                ));
+
+                // Add triangles with vertex offset
                 for tri_idx in tris {
                     all_tris.push(tri_idx + vertex_offset);
                 }
 
+                // Add vertices
                 all_verts.extend(verts);
 
                 vertex_offset += vertex_count;
+                triangle_offset += triangle_count;
             }
-            (all_verts, all_tris)
+
+            (all_verts, all_tris, mesh_infos)
         };
+        info!("Collected vertices: {:?}", all_vertices);
+        info!("Collected tris: {:?}", all_triangles);
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
@@ -187,6 +188,8 @@ impl Scene {
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
+                .meshes_create(all_meshes)
+                .lights_create([RenderLights::default()].to_vec())
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -196,6 +199,8 @@ impl Scene {
                 .spheres(render_spheres)
                 .vertices(all_vertices)
                 .triangles(all_triangles)
+                .meshes(all_meshes)
+                .lights([RenderLights::default()].to_vec())
                 .build()
         };
 
