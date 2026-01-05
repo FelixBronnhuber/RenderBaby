@@ -192,15 +192,15 @@ impl GeometricObject for Mesh {
             let y_translated = self.vertices[i * 3 + 1] - self.centroid.y;
             let z_translated = self.vertices[i * 3 + 2] - self.centroid.z;
             self.vertices[i * 3] = multiplied[0][0] * x_translated
-                + r[0][1] * y_translated
+                + multiplied[0][1] * y_translated
                 + multiplied[0][2] * z_translated
                 + self.centroid.x;
             self.vertices[i * 3 + 1] = multiplied[1][0] * x_translated
-                + r[1][1] * y_translated
+                + multiplied[1][1] * y_translated
                 + multiplied[1][2] * z_translated
                 + self.centroid.x;
             self.vertices[i * 3 + 2] = multiplied[2][0] * x_translated
-                + r[2][1] * y_translated
+                + multiplied[2][1] * y_translated
                 + multiplied[2][2] * z_translated
                 + self.centroid.x;
         }
