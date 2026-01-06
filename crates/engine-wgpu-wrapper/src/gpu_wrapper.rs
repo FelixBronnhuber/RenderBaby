@@ -244,7 +244,6 @@ impl GpuWrapper {
                 }
             }
 
-
             match &new_rc.textures {
                 Change::Keep => log::info!("Not updating Textures Buffer."),
                 Change::Update(textures) => {

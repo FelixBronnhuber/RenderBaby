@@ -226,8 +226,6 @@ impl RenderConfigBuilder {
         self
     }
 
-
-
     pub fn uvs(mut self, uvs: Vec<f32>) -> Self {
         self.uvs = Some(Change::Update(uvs));
         self
