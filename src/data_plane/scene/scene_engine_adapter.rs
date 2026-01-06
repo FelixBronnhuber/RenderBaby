@@ -18,8 +18,13 @@ pub type RenderCamera = engine_config::Camera;
 pub type RenderLight = engine_config::PointLight;
 
 fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
+    //! Converts the given LightSource to a engine_config::PointLight if has the type Point
+    //! ## Parameter:
+    //! 'light': LightSource that is to be converted
+    //! ## Returns
+    //! Options of engine_config::PointLight: Some if light has Type Point
     match light.get_light_type() {
-        scene_objects::light_source::LightType::Ambient => Some(RenderLight::new(
+        scene_objects::light_source::LightType::Point => Some(RenderLight::new(
             light.get_position().into(),
             light.get_luminositoy(),
             light.get_color(),
@@ -100,6 +105,8 @@ fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
     fn get_render_point_lights(&self) -> Vec<RenderLight> {
+        //! ## Returns
+        //! A vector with all engine_config::PointLight from self
         let mut res = vec![];
         for light in self.get_light_sources() {
             if let Some(render_light) = light_to_render_point_light(light) {
@@ -201,6 +208,8 @@ impl Scene {
             all_vertices.len() / 3
         );
 
+        let point_lights = self.get_render_point_lights();
+
         let rc = if self.get_first_render() {
             self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
@@ -210,7 +219,7 @@ impl Scene {
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
-                .lights_create(self.get_render_point_lights())
+                .lights_create(point_lights)
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -221,7 +230,7 @@ impl Scene {
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
-                .lights(self.get_render_point_lights())
+                .lights(point_lights)
                 .build()
         };
 
