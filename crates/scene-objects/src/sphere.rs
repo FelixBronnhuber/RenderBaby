@@ -50,7 +50,7 @@ impl Sphere {
         self.center
     }
 
-    pub fn set_senter(&mut self, center: Vec3) {
+    pub fn set_center(&mut self, center: Vec3) {
         //! sets the Sphere center
         //! ## Parameter
         //! 'center'
