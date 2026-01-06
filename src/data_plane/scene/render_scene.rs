@@ -166,7 +166,7 @@ impl Scene {
             LightType::Ambient,
         );
         let point_light = LightSource::new(
-            Vec3::new(-2.0, -4.0, -1.0),
+            Vec3::new(2.0, 4.0, 1.0),
             20.0,
             [1.0, 0.9, 0.8],
             "point_light".to_owned(),
