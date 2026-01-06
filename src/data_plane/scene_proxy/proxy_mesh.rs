@@ -17,7 +17,7 @@ impl ProxyMesh {
     pub fn new_from_real_mesh(mesh: &Mesh) -> Self {
         Self {
             name: mesh.get_name(),
-            path: { mesh.get_path().unwrap_or_else(|| PathBuf::new()) },
+            path: mesh.get_path().unwrap_or_default(),
             scale: mesh.get_scale().into(),
             rotation: mesh.get_rotation().into(),
             translation: mesh.get_translation().into(),

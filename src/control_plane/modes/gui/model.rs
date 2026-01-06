@@ -1,11 +1,12 @@
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 
 #[allow(dead_code)]
 pub struct Model {
-    pub scene: Scene,
+    pub scene: Arc<Mutex<Scene>>,
     pub proxy: ProxyScene,
 }
 
@@ -28,7 +29,10 @@ impl Model {
 
     pub fn new(scene: Scene) -> Self {
         let proxy = scene.get_proxy_scene();
-        Self { scene, proxy }
+        Self {
+            scene: Arc::new(Mutex::new(scene)),
+            proxy,
+        }
     }
 
     pub fn set_output_path(_path: PathBuf) -> anyhow::Result<()> {
@@ -50,6 +54,6 @@ impl Model {
     }
 
     pub fn reload_proxy(&mut self) {
-        self.proxy = self.scene.get_proxy_scene();
+        self.proxy = self.scene.lock().unwrap().get_proxy_scene();
     }
 }

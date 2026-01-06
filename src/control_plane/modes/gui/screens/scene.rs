@@ -17,6 +17,7 @@ pub struct SceneScreen {
     bottom_visible: bool,
     file_dialog_obj: ThreadedNativeFileDialog,
     file_dialog_export: ThreadedNativeFileDialog,
+    file_dialog_save: ThreadedNativeFileDialog,
     image_area: ImageArea,
     message_popup_pipe: MessagePopupPipe,
 }
@@ -32,6 +33,9 @@ impl SceneScreen {
             ),
             file_dialog_export: ThreadedNativeFileDialog::new(
                 FileDialog::new().add_filter("IMAGE", &["png"]),
+            ),
+            file_dialog_save: ThreadedNativeFileDialog::new(
+                FileDialog::new().add_filter("JSON", &["json"]),
             ),
             image_area: ImageArea::new(Default::default()),
             message_popup_pipe: MessagePopupPipe::new(),
@@ -59,7 +63,7 @@ impl SceneScreen {
     }
 
     fn do_render(&mut self, ctx: &egui::Context) {
-        match self.model.scene.render() {
+        match self.model.scene.lock().unwrap().render() {
             Ok(output) => {
                 self.image_area
                     .set_image(ctx, Image::new(output.width, output.height, output.pixels));
@@ -95,28 +99,60 @@ impl Screen for SceneScreen {
         egui::TopBottomPanel::top("Toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Toolbar");
+
                 if ui.button("Toggle log-view").clicked() {
                     self.bottom_visible = !self.bottom_visible;
                 }
+
+                let scene_clone = self.model.scene.clone();
+                let message_pipe_clone = self.message_popup_pipe.clone();
                 if ui.button("Import Obj").clicked() {
-                    self.file_dialog_obj.pick_file(|res| {
+                    self.file_dialog_obj.pick_file(move |res| {
                         if let Ok(path) = res {
                             println!("Selected file: {:?}", path.display());
-                            todo!("requires thread safe scene...")
+                            match scene_clone.lock().unwrap().load_object_from_file(path) {
+                                Ok(_) => {
+                                    todo!("Update the proxy in model")
+                                }
+                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
+                            };
                         }
                     });
                 }
                 self.file_dialog_obj.update_effect(ctx);
 
+                let scene_clone = self.model.scene.clone();
+                let message_pipe_clone = self.message_popup_pipe.clone();
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.save_file(|res| {
+                    self.file_dialog_export.save_file(move |res| {
                         if let Ok(path) = res {
                             println!("Selected file: {:?}", path.display());
-                            todo!("requires thread safe scene...")
-                        }
+                            match scene_clone.lock().unwrap().export_render_img(path.clone()) {
+                                Ok(_) => message_pipe_clone.push_message(Message::new(
+                                    "Export successful.",
+                                    format!("Saved PNG to {}", path.display()).as_str(),
+                                )),
+                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
+                            }
+                        };
                     });
                 }
                 self.file_dialog_export.update_effect(ctx);
+
+                let scene_clone = self.model.scene.clone();
+                let message_pipe_clone = self.message_popup_pipe.clone();
+                if ui.button("Save").clicked() {
+                    self.file_dialog_save.save_file(move |res| {
+                        if let Ok(path) = res {
+                            println!("Selected file: {:?}", path.display());
+                            match scene_clone.lock().unwrap().export_scene(path.clone()) {
+                                Ok(_) => {}
+                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
+                            }
+                        }
+                    });
+                }
+                self.file_dialog_save.update_effect(ctx);
             })
         });
 
@@ -130,16 +166,23 @@ impl Screen for SceneScreen {
 
                 ui.separator();
 
-                self.model.proxy.camera.ui(ui, &mut self.model.scene);
+                self.model
+                    .proxy
+                    .camera
+                    .ui(ui, &mut self.model.scene.lock().unwrap());
 
                 ui.separator();
 
-                self.model.proxy.misc.ui(ui, &mut self.model.scene);
+                self.model
+                    .proxy
+                    .misc
+                    .ui(ui, &mut self.model.scene.lock().unwrap());
 
                 ui.separator();
 
                 {
-                    let real_meshes = self.model.scene.get_meshes_mut();
+                    let mut scene_lock = self.model.scene.lock().unwrap();
+                    let real_meshes = scene_lock.get_meshes_mut();
                     ui.label("Objects");
                     let enum_meshes = self.model.proxy.objects.iter_mut();
                     if enum_meshes.len() == 0 {
@@ -164,7 +207,8 @@ impl Screen for SceneScreen {
                 ui.separator();
 
                 {
-                    let real_lights = self.model.scene.get_light_sources_mut();
+                    let mut scene_lock = self.model.scene.lock().unwrap();
+                    let real_lights = scene_lock.get_light_sources_mut();
                     ui.label("Lights");
                     let enum_light = self.model.proxy.lights.iter_mut();
                     if enum_light.len() == 0 {
@@ -187,7 +231,11 @@ impl Screen for SceneScreen {
 
                     if ui.small_button("+").clicked() {
                         let new_light = ProxyLight::default();
-                        self.model.scene.add_lightsource(new_light.clone().into());
+                        self.model
+                            .scene
+                            .lock()
+                            .unwrap()
+                            .add_lightsource(new_light.clone().into());
                         self.model.proxy.lights.push(new_light);
                     }
                 }

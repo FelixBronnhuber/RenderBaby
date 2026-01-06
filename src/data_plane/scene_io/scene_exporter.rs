@@ -5,7 +5,7 @@ use scene_objects::light_source::*;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_io::scene_io_objects::*;
 
-pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()> {
+pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     let mut objects: Vec<ParsingObject> = Vec::with_capacity(2);
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();

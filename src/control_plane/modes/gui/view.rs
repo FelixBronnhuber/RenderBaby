@@ -16,7 +16,7 @@ impl ViewWrapper for View {
             // TODO: best to replace this with a proto_scene.json from templates
             // so that model::Model::new_from_template is used
             let mut model = model::Model::new_empty();
-            model.scene.proto_init();
+            model.scene.lock().unwrap().proto_init();
             model.reload_proxy();
             Box::new(screens::scene::SceneScreen::new(model))
         } else {

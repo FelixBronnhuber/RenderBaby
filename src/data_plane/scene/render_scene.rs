@@ -66,7 +66,7 @@ impl Scene {
             }
         }
     }
-    pub fn export_scene(&mut self, path: PathBuf) -> Result<(), Error> {
+    pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
         info!("Scene {self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
         match result {
@@ -434,15 +434,16 @@ impl Scene {
         self.first_render
     }
 
-    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
+    pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
             ))
         })?;
 
-        info!("{self}: Saved image to {:?}", path);
-        export_img_png(path, render)
+        info!("{self}: Saved image to {:?}", path.clone());
+        export_img_png(path, render)?;
+        Ok(())
     }
 }
 
