@@ -7,7 +7,6 @@ pub struct LightSource {
     pub luminosity: f32,
     pub name: String,
     pub color: [f32; 3],
-    //#[serde(skip_serializing_if = "Vec3::is_zero")]
     pub rotation: Vec3,
     pub light_type: LightType,
 }
