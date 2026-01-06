@@ -28,7 +28,6 @@ pub enum Event {
     DeleteSpheres,
     DeletePolygons,
     ExportImage,
-    ExportScene,
 }
 
 pub struct View {
@@ -202,15 +201,6 @@ impl eframe::App for View {
                         ThreadedNativeFileDialog::save_file,
                         pipeline::Pipeline::submit_export_file_path,
                         Event::ExportImage,
-                    );
-                }
-
-                if ui.button("Export Scene").clicked() {
-                    self.do_file_dialog(
-                        &self.file_dialog_scene,
-                        ThreadedNativeFileDialog::save_file,
-                        pipeline::Pipeline::submit_export_file_path,
-                        Event::ExportScene,
                     );
                 }
                 self.file_dialog_export.update_effect(ctx);

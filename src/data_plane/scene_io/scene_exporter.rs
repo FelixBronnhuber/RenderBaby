@@ -73,7 +73,7 @@ pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()> {
         },
     };
 
-    let output = File::create(path).expect("Could not create file");
-    serde_json::to_writer_pretty(output, &final_scene).expect("Could not write scene into file");
+    let output = File::create(path)?;
+    serde_json::to_writer_pretty(output, &final_scene)?;
     Ok(())
 }

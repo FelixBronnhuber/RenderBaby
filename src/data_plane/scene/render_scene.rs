@@ -42,8 +42,7 @@ impl Scene {
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
-        let path_str = path.to_str().unwrap();
-        info!("Scene: Loading new scene from {path_str}");
+        info!("Scene: Loading new scene from {}", path.display());
         let scene_and_path = parse_scene(path.clone());
         match scene_and_path {
             Ok(scene_and_path) => {
@@ -68,7 +67,6 @@ impl Scene {
         }
     }
     pub fn export_scene(&mut self, path: PathBuf) -> Result<(), Error> {
-        let path_str = path.to_str().unwrap_or_default();
         info!("Scene {self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
         match result {
@@ -80,7 +78,7 @@ impl Scene {
                 Err(error)
             }
             _ => {
-                info!("Scene {self}: Successfully exported scene to {path_str}");
+                info!("Scene {self}: Successfully exported scene to {}", path.display());
                 Ok(())
             }
         }
@@ -98,15 +96,14 @@ impl Scene {
     pub fn load_object_from_file_inner(
         &mut self,
         path: PathBuf,
-        rela: Option<PathBuf>,
+        relative_path: Option<PathBuf>,
     ) -> Result<(), Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let path_str = path.to_str().unwrap_or_default();
-        info!("Scene {self}: Loading object from {path_str}");
+        info!("Scene {self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -156,27 +153,26 @@ impl Scene {
                         }
                     }
                 }
-                let mut used_path: PathBuf = PathBuf::new();
-                if let Some(path_buf) = rela {
-                    used_path = path_buf;
+                let mut used_path: PathBuf = if let Some(relative_path) = relative_path {
+                    relative_path
                 } else {
-                    used_path = path.clone();
-                }
+                    path.clone()
+                };
                 let mesh = Mesh::new(
                     objs.vertices,
                     tris,
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(used_path.to_string_lossy().to_string()),
+                    Some(used_path),
                 )?;
-                info!("Scene {self}: Successfully loaded object from {path_str}");
+                info!("Scene {self}: Successfully loaded object from {}", path.display());
                 self.add_mesh(mesh);
                 Ok(())
             }
 
             Err(error) => {
-                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                error!("{self}: Parsing obj from {} resulted in error: {error}", path.display());
                 Err(error.into())
             }
         }

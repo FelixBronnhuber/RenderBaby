@@ -16,7 +16,7 @@ pub struct Mesh {
     tris: Vec<u32>,
     materials: Option<Vec<Material>>,
     material_index: Option<Vec<usize>>,
-    path: Option<String>,
+    path: Option<PathBuf>,
     name: String,
     scale: Vec3,
     translation: Vec3,
@@ -32,7 +32,7 @@ impl Mesh {
         materials: Option<Vec<Material>>,
         material_index: Option<Vec<usize>>,
         name: Option<String>,
-        _path: Option<String>,
+        _path: Option<PathBuf>,
     ) -> Result<Self, Error> {
         //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
@@ -109,7 +109,7 @@ impl Mesh {
         &self.tris
     }
     pub fn set_path(&mut self, path: PathBuf) {
-        self.path = Some(path.to_string_lossy().into_owned());
+        self.path = Some(path);
     }
 }
 
@@ -199,7 +199,7 @@ impl GeometricObject for Mesh {
 
 impl SceneObject for Mesh {
     fn get_path(&self) -> Option<&str> {
-        self.path.as_deref()
+        self.path.as_ref().and_then(|p| p.to_str())
     }
 
     fn get_scale(&self) -> glam::Vec3 {

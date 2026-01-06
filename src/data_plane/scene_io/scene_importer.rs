@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use anyhow::Context;
 use glam::Vec3;
 use scene_objects::{
@@ -237,11 +237,10 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
             }
         }
     });
-    let json_value = serde_json::from_str(_json_content.clone().as_str()).context("value error")?;
+    let json_value = serde_json::from_str(_json_content.clone().as_str())?;
     if jsonschema::is_valid(&schema, &json_value) {
-        let read = serde_json::from_str::<SceneFile>(&_json_content).context("invalid JSON")?;
-        let res = transform_to_scene(read)
-            .context("JSON content could not be properly transformed into scene")?;
+        let read = serde_json::from_str::<SceneFile>(&_json_content)?;
+        let res = transform_to_scene(read)?;
         Result::Ok(res)
     } else {
         Err(anyhow::Error::msg(
