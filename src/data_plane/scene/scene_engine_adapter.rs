@@ -38,7 +38,7 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
             ..Default::default()
         },
     )
-        .unwrap()
+    .unwrap()
     //todo error handling
 }
 
