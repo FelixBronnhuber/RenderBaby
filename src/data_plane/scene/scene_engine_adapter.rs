@@ -43,6 +43,16 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     .unwrap()
     //todo error handling
 }
+
+fn light_to_render_light(light: &scene_objects::light_source::LightSource) -> RenderLights {
+    let pos = light.get_position();
+    RenderLights::new(
+        [pos.x, pos.y, pos.z],
+        light.get_luminositoy(),
+        light.get_color(),
+    )
+}
+
 fn vec3_to_array(vec: Vec3) -> [f32; 3] {
     [vec.x, vec.y, vec.z]
 }
@@ -352,6 +362,15 @@ impl Scene {
             all_vertices.len() / 3
         );
 
+        let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
+            [RenderLights::default()].to_vec()
+        } else {
+            self.get_light_sources()
+                .iter()
+                .map(light_to_render_light)
+                .collect()
+        };
+
         let rc = if self.get_first_render() {
             self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
@@ -362,7 +381,7 @@ impl Scene {
                 .uvs_create(all_uvs)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
-                .lights_create([RenderLights::default()].to_vec())
+                .lights_create(lights)
                 .textures_create(texture_list)
                 .build()
         } else {
@@ -375,7 +394,7 @@ impl Scene {
                 .uvs(all_uvs)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
-                .lights([RenderLights::default()].to_vec())
+                .lights(lights)
                 .textures(texture_list)
                 .build()
         };

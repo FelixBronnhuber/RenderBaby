@@ -85,7 +85,8 @@ impl Scene {
 
                 if let Some(obj) = objs.material_path {
                     for i in obj {
-                        let parsed = mtl_parser::MTLParser::parse(i.as_str());
+                        let mtl_path = parent_dir.join(&i);
+                        let parsed = mtl_parser::MTLParser::parse(mtl_path.to_str().unwrap_or(&i));
                         match parsed {
                             Ok(parsed) => parsed.iter().for_each(|mat| {
                                 // Load texture if present

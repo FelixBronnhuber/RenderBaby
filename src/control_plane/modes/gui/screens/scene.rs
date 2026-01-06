@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use eframe::emath::Align;
 use egui::CollapsingHeader;
 use rfd::FileDialog;
@@ -11,6 +13,12 @@ use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
 use crate::data_plane::scene_proxy::proxy_light::ProxyLight;
 
+#[derive(Debug)]
+enum GuiAction {
+    ImportObj(PathBuf),
+    ExportPng(PathBuf),
+}
+
 #[allow(dead_code)]
 pub struct SceneScreen {
     model: Model,
@@ -19,11 +27,14 @@ pub struct SceneScreen {
     file_dialog_export: ThreadedNativeFileDialog,
     image_area: ImageArea,
     message_popup_pipe: MessagePopupPipe,
+    action_tx: Sender<GuiAction>,
+    action_rx: Receiver<GuiAction>,
 }
 
 #[allow(dead_code)]
 impl SceneScreen {
     pub fn new(model: Model) -> Self {
+        let (action_tx, action_rx) = channel();
         Self {
             model,
             bottom_visible: false,
@@ -35,6 +46,8 @@ impl SceneScreen {
             ),
             image_area: ImageArea::new(Default::default()),
             message_popup_pipe: MessagePopupPipe::new(),
+            action_tx,
+            action_rx,
         }
     }
 }
@@ -85,6 +98,23 @@ impl Screen for SceneScreen {
         ctx: &egui::Context,
         _frame: &mut eframe::Frame,
     ) -> Option<Box<dyn Screen>> {
+        while let Ok(action) = self.action_rx.try_recv() {
+            match action {
+                GuiAction::ImportObj(path) => {
+                    if let Err(e) = self.model.scene.load_object_from_file(path) {
+                        self.message_popup_pipe.push_message(Message::from_error(e));
+                    } else {
+                        self.model.reload_proxy();
+                        self.do_render(ctx);
+                    }
+                }
+                GuiAction::ExportPng(path) => {
+                    // TODO: Implement PNG export
+                    println!("Export PNG to {:?} (Not implemented)", path);
+                }
+            }
+        }
+
         if ctx.input(|i| i.viewport().close_requested()) && !is_debug_mode() {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             return Some(Box::new(StartScreen::new()));
@@ -99,20 +129,20 @@ impl Screen for SceneScreen {
                     self.bottom_visible = !self.bottom_visible;
                 }
                 if ui.button("Import Obj").clicked() {
-                    self.file_dialog_obj.pick_file(|res| {
+                    let tx = self.action_tx.clone();
+                    self.file_dialog_obj.pick_file(move |res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path.display());
-                            todo!("requires thread safe scene...")
+                            let _ = tx.send(GuiAction::ImportObj(path));
                         }
                     });
                 }
                 self.file_dialog_obj.update_effect(ctx);
 
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.save_file(|res| {
+                    let tx = self.action_tx.clone();
+                    self.file_dialog_export.save_file(move |res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path.display());
-                            todo!("requires thread safe scene...")
+                            let _ = tx.send(GuiAction::ExportPng(path));
                         }
                     });
                 }
