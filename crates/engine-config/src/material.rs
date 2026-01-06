@@ -25,7 +25,8 @@ pub struct Material {
     // Illumination model (illum) - 0-10
     // 0: color, 1: diffuse, 2: specular, 3: reflection, 4: refraction + reflection, 5: Fresnel reflection + ray-traced reflection, 6: Transparency + Fresnel + ray-traced refraction
     pub illum: u32,
-    _pad2: [u32; 2],
+    pub texture_index: i32,
+    _pad2: u32,
 }
 
 impl Default for Material {
@@ -41,7 +42,8 @@ impl Default for Material {
             ior: 1.0,
             opacity: 1.0,
             illum: 1,
-            _pad2: [0; 2],
+            texture_index: -1,
+            _pad2: 0,
         }
     }
 }
@@ -71,6 +73,7 @@ impl Material {
         ior: f32,
         opacity: f32,
         illum: u32,
+        texture_index: i32,
     ) -> Result<Material, MaterialError> {
         match diffuse.is_valid_color() {
             false => Err(MaterialError::ColorOutOfBounds),
@@ -83,6 +86,7 @@ impl Material {
                 ior,
                 opacity,
                 illum,
+                texture_index,
                 ..Default::default()
             }),
         }

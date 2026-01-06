@@ -1,107 +1,113 @@
 use std::path::PathBuf;
-use anyhow::Error;
-use glam::Vec3;
-use scene_objects::camera::Resolution;
+use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
-use engine_config::RenderOutput;
+use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
+use glam::Vec3;
+use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 
+#[allow(dead_code)]
 pub struct Model {
-    scene: Scene,
-    currently_rendering: bool, // should later be replaced with some mutex guard
+    pub scene: Scene,
+    pub proxy: ProxyScene,
 }
 
+#[allow(dead_code)]
 impl Model {
-    pub fn new() -> Self {
+    pub fn new_from_path(path: PathBuf) -> anyhow::Result<Self> {
+        match Scene::load_scene_from_file(path) {
+            Ok(scene) => Ok(Self::new(scene)),
+            Err(e) => Err(e),
+        }
+    }
+
+    pub fn new_with_capsule() -> Self {
         let mut scene = Scene::new();
-        scene.proto_init();
-        Self {
-            scene,
-            currently_rendering: false,
-        }
-    }
+        // scene.proto_init();
 
-    pub fn import_obj(&mut self, obj_file_path: PathBuf) -> anyhow::Result<()> {
-        match self.scene.load_object_from_file(obj_file_path) {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                eprintln!("Error loading OBJ file: {:?}", e);
-                Err(e)
+        // Load capsule fixture
+        let cwd = std::env::current_dir().unwrap();
+        let capsule_path = cwd.join("fixtures/capsule/capsule.obj");
+        if capsule_path.exists() {
+            log::info!("Loading capsule fixture from {:?}", capsule_path);
+            if let Err(e) = scene.load_object_from_file(capsule_path) {
+                log::error!("Failed to load capsule fixture: {}", e);
             }
+            // Set up camera for capsule
+            scene
+                .get_camera_mut()
+                .set_position(Vec3::new(0.0, 2.0, 4.0));
+            scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
+            scene
+                .get_camera_mut()
+                .set_resolution(Resolution::new(256, 256));
+        } else {
+            log::warn!(
+                "Capsule fixture not found at {:?}, falling back to proto_init",
+                capsule_path
+            );
+            scene.proto_init();
         }
-    }
 
-    pub fn import_scene(&mut self, scene_file_path: PathBuf) -> anyhow::Result<&Scene> {
-        match Scene::load_scene_from_file(scene_file_path) {
-            Err(e) => {
-                eprintln!("Error loading scene: {:?}", e);
-                Err(e)
+        // Load ferris fixture
+        let ferris_path = cwd.join("fixtures/ferris_low_poly/rustacean-3d.obj");
+        if ferris_path.exists() {
+            log::info!("Loading ferris fixture from {:?}", ferris_path);
+            // Move ferris to (0, 0, 4) to be visible in reflection
+            if let Err(e) = scene.load_object_from_file_transformed(
+                ferris_path,
+                Vec3::new(3.5, -0.2, -1.0),
+                Vec3::new(-90.0, 250.0, 0.0),
+                1.0,
+            ) {
+                log::error!("Failed to load ferris fixture: {}", e);
             }
-            Ok(s) => {
-                self.scene = s;
-                Ok(&self.scene)
-            }
+        } else {
+            log::warn!("Ferris fixture not found at {:?}", ferris_path);
         }
-    }
-    pub fn set_fov(&mut self, fov: f32) {
-        self.scene.get_camera_mut().set_pane_width(fov);
+
+        scene.add_sphere(Sphere::new(
+            Vec3::new(2.0, 0.0, 2.0),
+            1.0,
+            Material::default(),
+            [1.0, 1.0, 1.0],
+        ));
+        scene.set_color_hash_enabled(false); // Disable color hash to see textures
+
+        Self::new(scene)
     }
 
-    pub fn set_resolution(&mut self, width: u32, height: u32) {
-        self.scene
-            .get_camera_mut()
-            .set_resolution(Resolution::new(width, height));
+    pub fn new_from_template(_file: &'static File<'static>) -> anyhow::Result<Self> {
+        todo!()
     }
 
-    pub fn set_camera_pos(&mut self, pos: [f32; 3]) {
-        self.scene
-            .get_camera_mut()
-            .set_position(Vec3::from_array(pos));
+    pub fn new_empty() -> Self {
+        Self::new(Scene::new())
     }
 
-    pub fn set_camera_dir(&mut self, dir: [f32; 3]) {
-        self.scene
-            .get_camera_mut()
-            .set_look_at(Vec3::from_array(dir));
+    pub fn new(scene: Scene) -> Self {
+        let proxy = scene.get_proxy_scene();
+        Self { scene, proxy }
     }
 
-    pub fn set_color_hash_enabled(&mut self, enabled: bool) {
-        self.scene.set_color_hash_enabled(enabled);
+    pub fn set_output_path(_path: PathBuf) -> anyhow::Result<()> {
+        // ask scene to change the output path. This would require the destination not to already exist
+        todo!()
     }
 
-    pub fn set_samples(&mut self, samples: u32) {
-        self.scene.get_camera_mut().set_ray_samples(samples);
+    pub fn save() -> anyhow::Result<()> {
+        // throws an error if an output path isn't set
+        todo!()
     }
 
-    pub fn delete_spheres(&mut self) {
-        self.scene.clear_spheres();
+    pub fn render(&self) -> anyhow::Result<()> {
+        todo!()
     }
 
-    pub fn delete_polygons(&mut self) {
-        self.scene.clear_polygons();
+    pub fn frame_buffer_ref(&self) -> &String {
+        todo!()
     }
 
-    pub fn generate_render_output(&mut self) -> RenderOutput {
-        if self.currently_rendering {
-            log::warn!("Render already in progress, skipping new render request.");
-            return RenderOutput::new(1, 1, vec![0, 0, 0, 255]);
-        }
-        self.currently_rendering = true;
-        let output = self.scene.render();
-        self.currently_rendering = false;
-        output.unwrap_or_else(|e| {
-            log::error!("Render failed: {}", e);
-            // Return a dummy output (magenta image) to avoid panic for now...
-            RenderOutput::new(1, 1, vec![255, 0, 255, 255])
-        })
-    }
-
-    pub fn export_image(&mut self, file_path: PathBuf) -> anyhow::Result<()> {
-        match self.scene.export_render_img(file_path) {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                eprintln!("Error exporting image: {:?}", e);
-                Err(Error::from(e))
-            }
-        }
+    pub fn reload_proxy(&mut self) {
+        self.proxy = self.scene.get_proxy_scene();
     }
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct Color {
     pub r: f32,
     pub g: f32,
@@ -19,5 +19,11 @@ impl From<[f32; 3]> for Color {
             g: value[1],
             b: value[2],
         }
+    }
+}
+
+impl From<Color> for [f32; 3] {
+    fn from(color: Color) -> Self {
+        [color.r, color.g, color.b]
     }
 }

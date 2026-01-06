@@ -5,9 +5,11 @@ pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
     pub spheres: Change<Vec<Sphere>>,
     pub vertices: Change<Vec<f32>>,
+    pub uvs: Change<Vec<f32>>,
     pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
     pub lights: Change<Vec<PointLight>>,
+    pub textures: Change<Vec<TextureData>>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -68,6 +70,9 @@ impl ValidateInit for RenderConfig {
         if !matches!(self.vertices, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidVertices);
         }
+        if !matches!(self.uvs, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidUVs);
+        }
         if !matches!(self.triangles, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidTriangles);
         }
@@ -76,6 +81,9 @@ impl ValidateInit for RenderConfig {
         }
         if !matches!(self.lights, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidLights);
+        }
+        if !matches!(self.textures, Change::Create(_)) {
+            return Err(RenderConfigBuilderError::InvalidTextures);
         }
         Ok(self)
     }
@@ -128,6 +136,18 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
+        match &self.uvs {
+            Change::Update(uvs) | Change::Create(uvs) => {
+                if uvs.len() % 2 != 0 {
+                    return Err(RenderConfigBuilderError::InvalidUVs);
+                }
+            }
+            Change::Delete => {
+                todo!("Implement UVs Deletion")
+            }
+            Change::Keep => {}
+        }
+
         match &self.triangles {
             Change::Update(triangles) | Change::Create(triangles) => {
                 if triangles.len() % 3 != 0 {
@@ -161,6 +181,16 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
+        match &self.textures {
+            Change::Update(_) | Change::Create(_) => {
+                // TODO: Texture validation
+            }
+            Change::Delete => {
+                todo!("Implement textures Deletion")
+            }
+            Change::Keep => {}
+        }
+
         Ok(self)
     }
 }
@@ -170,9 +200,11 @@ pub struct RenderConfigBuilder {
     pub uniforms: Option<Change<Uniforms>>,
     pub spheres: Option<Change<Vec<Sphere>>>,
     pub vertices: Option<Change<Vec<f32>>>,
+    pub uvs: Option<Change<Vec<f32>>>,
     pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
     pub lights: Option<Change<Vec<PointLight>>>,
+    pub textures: Option<Change<Vec<TextureData>>>,
 }
 
 impl RenderConfigBuilder {
@@ -181,9 +213,11 @@ impl RenderConfigBuilder {
             uniforms: None,
             spheres: None,
             vertices: None,
+            uvs: None,
             triangles: None,
             meshes: None,
             lights: None,
+            textures: None,
         }
     }
 
@@ -247,6 +281,26 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn uvs(mut self, uvs: Vec<f32>) -> Self {
+        self.uvs = Some(Change::Update(uvs));
+        self
+    }
+
+    pub fn uvs_create(mut self, uvs: Vec<f32>) -> Self {
+        self.uvs = Some(Change::Create(uvs));
+        self
+    }
+
+    pub fn uvs_no_change(mut self) -> Self {
+        self.uvs = Some(Change::Keep);
+        self
+    }
+
+    pub fn uvs_delete(mut self) -> Self {
+        self.uvs = Some(Change::Delete);
+        self
+    }
+
     pub fn triangles(mut self, triangles: Vec<u32>) -> Self {
         self.triangles = Some(Change::Update(triangles));
         self
@@ -307,6 +361,26 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn textures(mut self, textures: Vec<TextureData>) -> Self {
+        self.textures = Some(Change::Update(textures));
+        self
+    }
+
+    pub fn textures_create(mut self, textures: Vec<TextureData>) -> Self {
+        self.textures = Some(Change::Create(textures));
+        self
+    }
+
+    pub fn textures_no_change(mut self) -> Self {
+        self.textures = Some(Change::Keep);
+        self
+    }
+
+    pub fn textures_delete(mut self) -> Self {
+        self.textures = Some(Change::Delete);
+        self
+    }
+
     pub fn build(self) -> RenderConfig {
         if self.uniforms.is_none() {
             log::info!("RenderConfigBuilder: uniforms not set, defaulting to NoChange.");
@@ -317,6 +391,9 @@ impl RenderConfigBuilder {
         if self.vertices.is_none() {
             log::info!("RenderConfigBuilder: vertices not set, defaulting to NoChange.");
         }
+        if self.uvs.is_none() {
+            log::info!("RenderConfigBuilder: uvs not set, defaulting to NoChange.");
+        }
         if self.triangles.is_none() {
             log::info!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
         }
@@ -326,14 +403,19 @@ impl RenderConfigBuilder {
         if self.lights.is_none() {
             log::info!("RenderConfigBuilder: lights not set, defaulting to NoChange.");
         }
+        if self.textures.is_none() {
+            log::info!("RenderConfigBuilder: textures not set, defaulting to NoChange.");
+        }
 
         RenderConfig {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
             spheres: self.spheres.unwrap_or(Change::Keep),
             vertices: self.vertices.unwrap_or(Change::Keep),
+            uvs: self.uvs.unwrap_or(Change::Keep),
             triangles: self.triangles.unwrap_or(Change::Keep),
             meshes: self.meshes.unwrap_or(Change::Keep),
             lights: self.lights.unwrap_or(Change::Keep),
+            textures: self.textures.unwrap_or(Change::Keep),
         }
     }
 }
@@ -346,9 +428,11 @@ pub enum RenderConfigBuilderError {
     InvalidUniforms,
     InvalidSpheres,
     InvalidVertices,
+    InvalidUVs,
     InvalidTriangles,
     InvalidMeshes,
     InvalidLights,
+    InvalidTextures,
     CannotDeleteNonexistent,
 }
 
@@ -367,9 +451,11 @@ impl fmt::Display for RenderConfigBuilderError {
             RenderConfigBuilderError::InvalidUniforms => write!(f, "Invalid Uniforms"),
             RenderConfigBuilderError::InvalidSpheres => write!(f, "Invalid Spheres"),
             RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
+            RenderConfigBuilderError::InvalidUVs => write!(f, "Invalid UVs"),
             RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
             RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
             RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),
+            RenderConfigBuilderError::InvalidTextures => write!(f, "Invalid Textures"),
             RenderConfigBuilderError::CannotDeleteNonexistent => {
                 write!(f, "Cannot delete none existent")
             }
