@@ -134,7 +134,7 @@ impl Validate for RenderConfig {
 
         match &self.lights {
             Change::Update(lights) | Change::Create(lights) => {
-                if lights.iter().any(|l| l.luminosity <= 0.0) {
+                if lights.iter().any(|l| l.radius <= 0.0) {
                     return Err(RenderConfigBuilderError::InvalidLights);
                 }
             }
