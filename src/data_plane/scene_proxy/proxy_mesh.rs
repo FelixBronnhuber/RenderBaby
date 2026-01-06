@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use scene_objects::{geometric_object::SceneObject, mesh::Mesh};
 use serde::{Deserialize, Serialize};
 use crate::data_plane::scene_proxy::position::Vec3d;
@@ -6,7 +7,7 @@ use crate::data_plane::scene_proxy::position::Vec3d;
 #[allow(unused)]
 pub(crate) struct ProxyMesh {
     pub name: String,
-    pub path: String,
+    pub path: PathBuf,
     pub scale: Vec3d,
     pub rotation: Vec3d,
     pub translation: Vec3d,
@@ -18,8 +19,8 @@ impl ProxyMesh {
             name: mesh.get_name(),
             path: {
                 match mesh.get_path() {
-                    Some(pa) => pa.to_owned(),
-                    None => "".to_owned(),
+                    Some(pa) => pa,
+                    None => PathBuf::new(),
                 }
             },
             scale: mesh.get_scale().into(),
