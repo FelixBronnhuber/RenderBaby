@@ -41,9 +41,7 @@ impl SceneScreen {
             message_popup_pipe: MessagePopupPipe::new(),
         }
     }
-}
 
-impl SceneScreen {
     fn logs_ui(ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("Log-view")
             .resizable(true)
@@ -105,14 +103,15 @@ impl Screen for SceneScreen {
                 }
 
                 let scene_clone = self.model.scene.clone();
+                let proxy_dirty = self.model.proxy_dirty.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
                 if ui.button("Import Obj").clicked() {
                     self.file_dialog_obj.pick_file(move |res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path.display());
-                            match scene_clone.lock().unwrap().load_object_from_file(path) {
+                            let res = scene_clone.lock().unwrap().load_object_from_file(path);
+                            match res {
                                 Ok(_) => {
-                                    todo!("Update the proxy in model")
+                                    proxy_dirty.store(true, std::sync::atomic::Ordering::SeqCst);
                                 }
                                 Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
                             };
@@ -126,7 +125,6 @@ impl Screen for SceneScreen {
                 if ui.button("Export PNG").clicked() {
                     self.file_dialog_export.save_file(move |res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path.display());
                             match scene_clone.lock().unwrap().export_render_img(path.clone()) {
                                 Ok(_) => message_pipe_clone.push_message(Message::new(
                                     "Export successful.",
@@ -144,7 +142,6 @@ impl Screen for SceneScreen {
                 if ui.button("Save").clicked() {
                     self.file_dialog_save.save_file(move |res| {
                         if let Ok(path) = res {
-                            println!("Selected file: {:?}", path.display());
                             match scene_clone.lock().unwrap().export_scene(path.clone()) {
                                 Ok(_) => {}
                                 Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
@@ -160,23 +157,23 @@ impl Screen for SceneScreen {
             .resizable(true)
             .min_width(220.0)
             .show(ctx, |ui| {
+                self.model.consume_proxy_dirty_and_reload();
+
                 if ui.button("Render").clicked() {
                     self.do_render(ctx);
                 }
 
                 ui.separator();
 
-                self.model
-                    .proxy
+                let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
+
+                proxy_tmp
                     .camera
                     .ui(ui, &mut self.model.scene.lock().unwrap());
 
                 ui.separator();
 
-                self.model
-                    .proxy
-                    .misc
-                    .ui(ui, &mut self.model.scene.lock().unwrap());
+                proxy_tmp.misc.ui(ui, &mut self.model.scene.lock().unwrap());
 
                 ui.separator();
 
@@ -184,7 +181,7 @@ impl Screen for SceneScreen {
                     let mut scene_lock = self.model.scene.lock().unwrap();
                     let real_meshes = scene_lock.get_meshes_mut();
                     ui.label("Objects");
-                    let enum_meshes = self.model.proxy.objects.iter_mut();
+                    let enum_meshes = proxy_tmp.objects.iter_mut();
                     if enum_meshes.len() == 0 {
                         ui.label("No objects in scene.");
                     } else {
@@ -197,7 +194,7 @@ impl Screen for SceneScreen {
 
                             if ui.small_button("remove").clicked() {
                                 real_meshes.remove(i);
-                                self.model.proxy.objects.remove(i);
+                                proxy_tmp.objects.remove(i);
                                 break;
                             }
                         }
@@ -210,7 +207,7 @@ impl Screen for SceneScreen {
                     let mut scene_lock = self.model.scene.lock().unwrap();
                     let real_lights = scene_lock.get_light_sources_mut();
                     ui.label("Lights");
-                    let enum_light = self.model.proxy.lights.iter_mut();
+                    let enum_light = proxy_tmp.lights.iter_mut();
                     if enum_light.len() == 0 {
                         ui.label("No lights in scene.");
                     } else {
@@ -223,7 +220,7 @@ impl Screen for SceneScreen {
 
                             if ui.small_button("remove").clicked() {
                                 real_lights.remove(i);
-                                self.model.proxy.lights.remove(i);
+                                proxy_tmp.lights.remove(i);
                                 break;
                             }
                         }
@@ -236,9 +233,11 @@ impl Screen for SceneScreen {
                             .lock()
                             .unwrap()
                             .add_lightsource(new_light.clone().into());
-                        self.model.proxy.lights.push(new_light);
+                        proxy_tmp.lights.push(new_light);
                     }
                 }
+
+                self.model.proxy = proxy_tmp;
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
