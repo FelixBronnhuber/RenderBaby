@@ -307,12 +307,16 @@ fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
             }
         } else {
             if node.left < uniforms.bvh_node_count {
-                stack[sp] = node.left;
-                sp = sp + 1;
+                if (sp < 256) {
+                    stack[sp] = node.left;
+                    sp = sp + 1;
+                }
             }
             if node.right < uniforms.bvh_node_count {
-                stack[sp] = node.right;
-                sp = sp + 1;
+                if (sp < 256) {
+                    stack[sp] = node.right;
+                    sp = sp + 1;
+                }
             }
         }
     }
