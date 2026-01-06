@@ -520,7 +520,7 @@ fn trace_ray(
         for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
             let sphere = spheres[k];
             let t = intersect_sphere(origin, direction, sphere);
-
+            
             if (t > 0.001 && t < closest_hit.t) {
                 closest_hit.hit = true;
                 closest_hit.t = t;
@@ -531,6 +531,7 @@ fn trace_ray(
             }
         }
 
+        // Sky + exit recursion
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
@@ -631,20 +632,22 @@ fn intersect_aabb(ray_origin: vec3<f32>, ray_dir: vec3<f32>, aabb_min: vec3<f32>
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
-
+    
     if (x >= uniforms.width || y >= uniforms.height) {
         return;
     }
-
+    
     let pixel_index = y * uniforms.width + x;
 
     // Load previous accumulation
     var accumulated_color = accumulation[pixel_index].xyz;
     var total_samples = u32(accumulation[pixel_index].w);
 
+    // Render new samples for this pass
     for (var sample: u32 = 0u; sample < prh.samples_per_pass; sample = sample + 1u) {
         let aspect = f32(uniforms.width) / f32(uniforms.height);
 
+        // Use pass index to ensure different samples each pass
         let sample_offset = prh.current_pass * prh.samples_per_pass + sample;
         var seed = hash(pixel_index + hash(sample_offset));
 
@@ -653,21 +656,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let u = (((f32(x) + offset_x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
         let v = 1.0 - ((f32(y) + offset_y) / f32(uniforms.height - 1u)) * 2.0;
-
+        
         let camera_pos = uniforms.camera.pos;
         let camera_forward = normalize(uniforms.camera.dir);
         let world_up = vec3<f32>(0.0, 1.0, 0.0);
         let camera_right = normalize(cross(world_up, camera_forward));
         let camera_up = cross(camera_forward, camera_right);
-
+        
         let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
         let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
-
+        
         let sample_color = trace_ray(camera_pos, ray_dir, seed);
         accumulated_color = accumulated_color + sample_color;
         total_samples = total_samples + 1u;
     }
 
+    // Store accumulated result
     accumulation[pixel_index] = vec4<f32>(accumulated_color, f32(total_samples));
 
     // Write final color (averaged + reinhard tone mapping)
