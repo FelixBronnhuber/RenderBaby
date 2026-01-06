@@ -198,8 +198,8 @@ impl GeometricObject for Mesh {
 }
 
 impl SceneObject for Mesh {
-    fn get_path(&self) -> Option<&str> {
-        self.path.as_ref().and_then(|p| p.to_str())
+    fn get_path(&self) -> Option<PathBuf> {
+        self.path.clone()
     }
 
     fn get_scale(&self) -> glam::Vec3 {

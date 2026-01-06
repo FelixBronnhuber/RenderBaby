@@ -14,7 +14,11 @@ pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()> {
     sc.get_meshes().iter().for_each(|object| {
         objects.push(ParsingObject {
             name: object.get_name(),
-            path: object.get_path().unwrap_or_default().to_owned(),
+            path: object
+                .get_path()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
             scale: object.get_scale().into(),
             translation: object.get_translation().into(),
             rotation: object.get_rotation().into(),
@@ -73,7 +77,13 @@ pub fn serialize_scene(path: PathBuf, sc: &mut Scene) -> anyhow::Result<()> {
         },
     };
 
-    let output = File::create(path)?;
-    serde_json::to_writer_pretty(output, &final_scene)?;
-    Ok(())
+    let output = File::create(path);
+    match output {
+        Ok(output) => {
+            serde_json::to_writer_pretty(output, &final_scene)
+                .expect("Could not write scene into file");
+            Ok(())
+        }
+        Err(error) => Err(error.into()),
+    }
 }

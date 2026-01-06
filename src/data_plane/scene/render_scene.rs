@@ -1,5 +1,5 @@
-use std::path::{PathBuf};
-use anyhow::{Error};
+use std::path::PathBuf;
+use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
 use glam::Vec3;
 use log::{info, error};
