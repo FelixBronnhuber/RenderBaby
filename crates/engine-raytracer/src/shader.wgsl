@@ -306,17 +306,34 @@ fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
 
                 let tri = bvh_triangles[bvh_tri_idx];
 
-                let t = intersect_triangle(ray_origin, ray_dir, TriangleData(tri.v0, tri.v1, tri.v2, 0u));
-                if t > 0.001 && t < hit.t {
-                    hit.hit = true;
-                    hit.t = t;
-                    hit.pos = ray_origin + t * ray_dir;
-                    hit.normal = normalize(cross(tri.v1 - tri.v0, tri.v2 - tri.v0));
+                let hit_data = intersect_triangle(origin, direction, tri);
+                let t = hit_data.x;
 
-                    if uniforms.color_hash_enabled != 0u {
-                        hit.color = hash_to_color(bvh_tri_idx + 1u);
+                if (t > 0.001 && t < closest_hit.t) {
+                    closest_hit.hit = true;
+                    closest_hit.t = t;
+                    closest_hit.pos = origin + t * direction;
+                    closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
+
+                    let u = hit_data.y;
+                    let v = hit_data.z;
+                    let w = 1.0 - u - v;
+
+                    let uv0 = vec2<f32>(uvs[v0_idx * 2u], uvs[v0_idx * 2u + 1u]);
+                    let uv1 = vec2<f32>(uvs[v1_idx * 2u], uvs[v1_idx * 2u + 1u]);
+                    let uv2 = vec2<f32>(uvs[v2_idx * 2u], uvs[v2_idx * 2u + 1u]);
+
+                    closest_hit.uv = w * uv0 + u * uv1 + v * uv2;
+
+                    if (uniforms.color_hash_enabled != 0u) {
+                        closest_hit.material.diffuse = hash_to_color(k + 1u);
+                        closest_hit.material.ambient = vec3<f32>(0.0);
+                        closest_hit.material.specular = vec3<f32>(0.0);
+                        closest_hit.use_texture = false;
                     } else {
-                        hit.color = vec3<f32>(0.3, 0.3, 0.3);
+                        closest_hit.material = mesh.material;
+                        // Use texture if material has a valid texture index
+                        closest_hit.use_texture = closest_hit.material.texture_index >= 0;
                     }
                 }
             }
@@ -516,60 +533,6 @@ fn trace_ray(
         let bvh_hit = intersect_bvh(origin, direction);
             if bvh_hit.hit && bvh_hit.t < closest_hit.t {
                 closest_hit = bvh_hit;
-        
-        // Triangles
-        for (var mesh_idx = 0u; mesh_idx < arrayLength(&meshes); mesh_idx = mesh_idx + 1u) {
-            let mesh = meshes[mesh_idx];
-            let tri_start = mesh.triangle_index_start;
-            let tri_end = tri_start + mesh.triangle_count;
-            
-            for (var k = tri_start; k < tri_end; k = k + 1u) {
-                let v0_idx = triangles[k * 3u + 0u];
-                let v1_idx = triangles[k * 3u + 1u];
-                let v2_idx = triangles[k * 3u + 2u];
-                
-                let v0 = vec3<f32>(vertices[v0_idx * 3u + 0u],
-                                   vertices[v0_idx * 3u + 1u],
-                                   vertices[v0_idx * 3u + 2u]);
-                let v1 = vec3<f32>(vertices[v1_idx * 3u + 0u],
-                                   vertices[v1_idx * 3u + 1u],
-                                   vertices[v1_idx * 3u + 2u]);
-                let v2 = vec3<f32>(vertices[v2_idx * 3u + 0u],
-                                   vertices[v2_idx * 3u + 1u],
-                                   vertices[v2_idx * 3u + 2u]);
-                
-                let tri = TriangleData(v0, v1, v2, mesh_idx);
-                let hit_data = intersect_triangle(origin, direction, tri);
-                let t = hit_data.x;
-                
-                if (t > 0.001 && t < closest_hit.t) {
-                    closest_hit.hit = true;
-                    closest_hit.t = t;
-                    closest_hit.pos = origin + t * direction;
-                    closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
-                    
-                    let u = hit_data.y;
-                    let v = hit_data.z;
-                    let w = 1.0 - u - v;
-
-                    let uv0 = vec2<f32>(uvs[v0_idx * 2u], uvs[v0_idx * 2u + 1u]);
-                    let uv1 = vec2<f32>(uvs[v1_idx * 2u], uvs[v1_idx * 2u + 1u]);
-                    let uv2 = vec2<f32>(uvs[v2_idx * 2u], uvs[v2_idx * 2u + 1u]);
-
-                    closest_hit.uv = w * uv0 + u * uv1 + v * uv2;
-
-                    if (uniforms.color_hash_enabled != 0u) {
-                        closest_hit.material.diffuse = hash_to_color(k + 1u);
-                        closest_hit.material.ambient = vec3<f32>(0.0);
-                        closest_hit.material.specular = vec3<f32>(0.0);
-                        closest_hit.use_texture = false;
-                    } else {
-                        closest_hit.material = mesh.material;
-                        // Use texture if material has a valid texture index
-                        closest_hit.use_texture = closest_hit.material.texture_index >= 0;
-                    }
-                }
-            }
         }
 
         // Spheres
