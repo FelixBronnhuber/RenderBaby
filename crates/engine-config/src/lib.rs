@@ -1,4 +1,6 @@
 pub mod camera;
+pub mod material;
+pub mod mesh;
 mod point_lights;
 pub mod render_config;
 pub mod render_output;
@@ -17,3 +19,5 @@ pub use camera::Camera;
 pub use point_lights::PointLight;
 pub use render_output::RenderOutput;
 pub use renderer::Renderer;
+pub use material::Material;
+pub use mesh::Mesh;

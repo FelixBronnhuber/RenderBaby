@@ -121,7 +121,7 @@ impl BindGroupLayout {
                 },
                 // UV Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 9,
+                    binding: 10,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -132,7 +132,7 @@ impl BindGroupLayout {
                 },
                 // Texture Data Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 10,
+                    binding: 11,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -143,7 +143,7 @@ impl BindGroupLayout {
                 },
                 // Texture Info Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 11,
+                    binding: 12,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -216,15 +216,15 @@ impl BindGroup {
                     resource: buffers.bvh_triangles.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 9,
+                    binding: 10,
                     resource: buffers.uvs.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 10,
+                    binding: 11,
                     resource: buffers.texture_data.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 11,
+                    binding: 12,
                     resource: buffers.texture_info.as_entire_binding(),
                 },
             ],
