@@ -9,6 +9,8 @@ use engine_config::{RenderConfig, Uniforms};
 use log::info;
 use pipeline::ComputePipeline;
 
+const SAMPLES_PER_PASS: u32 = 1;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct ProgressiveRenderHelper {
@@ -20,12 +22,11 @@ pub struct ProgressiveRenderHelper {
 
 impl ProgressiveRenderHelper {
     pub fn new(total_samples: u32) -> Self {
-        let samples_per_pass = 10;
         Self {
-            total_passes: (total_samples.div_ceil(samples_per_pass)),
+            total_passes: (total_samples.div_ceil(SAMPLES_PER_PASS)),
             current_pass: 0,
             total_samples,
-            samples_per_pass,
+            samples_per_pass: SAMPLES_PER_PASS,
         }
     }
 
@@ -101,6 +102,9 @@ impl GpuWrapper {
             if let Change::Create(vertices) = &new_rc.vertices {
                 self.buffer_wrapper.init_vertices(&self.device, vertices);
             }
+            if let Change::Create(uvs) = &new_rc.uvs {
+                self.buffer_wrapper.init_uvs(&self.device, uvs);
+            }
             if let Change::Create(triangles) = &new_rc.triangles {
                 self.buffer_wrapper.init_triangles(&self.device, triangles);
             }
@@ -109,6 +113,9 @@ impl GpuWrapper {
             }
             if let Change::Create(lights) = &new_rc.lights {
                 self.buffer_wrapper.init_lights(&self.device, lights);
+            }
+            if let Change::Create(textures) = &new_rc.textures {
+                self.buffer_wrapper.init_textures(&self.device, textures);
             }
             // Recreate bind group with new buffers
             self.recreate_bind_group();
@@ -168,6 +175,19 @@ impl GpuWrapper {
                 }
             }
 
+            match &new_rc.uvs {
+                Change::Keep => log::info!("Not updating UVs Buffer."),
+                Change::Update(uvs) => {
+                    self.buffer_wrapper.update_uvs(&self.device, uvs);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_uvs(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for uvs.");
+                }
+            }
+
             match &new_rc.triangles {
                 Change::Keep => log::info!("Not updating Triangles Buffer."),
                 Change::Update(triangles) => {
@@ -204,6 +224,19 @@ impl GpuWrapper {
                 }
                 Change::Create(_) => {
                     log::warn!("Create not allowed after initialization for lights.");
+                }
+            }
+
+            match &new_rc.textures {
+                Change::Keep => log::info!("Not updating Textures Buffer."),
+                Change::Update(textures) => {
+                    self.buffer_wrapper.update_textures(&self.device, textures);
+                }
+                Change::Delete => {
+                    self.buffer_wrapper.delete_textures(&self.device);
+                }
+                Change::Create(_) => {
+                    log::warn!("Create not allowed after initialization for textures.");
                 }
             }
             // Recreate bind group after any buffer updates
@@ -403,6 +436,11 @@ impl GpuWrapper {
             );
         }
 
+        if let Change::Create(uvs) | Change::Update(uvs) = &self.rc.uvs {
+            self.queue
+                .write_buffer(&self.buffer_wrapper.uvs, 0, bytemuck::cast_slice(uvs));
+        }
+
         if let Change::Create(triangles) | Change::Update(triangles) = &self.rc.triangles {
             self.queue.write_buffer(
                 &self.buffer_wrapper.triangles,
@@ -414,6 +452,20 @@ impl GpuWrapper {
         if let Change::Create(lights) | Change::Update(lights) = &self.rc.lights {
             self.queue
                 .write_buffer(&self.buffer_wrapper.lights, 0, bytemuck::cast_slice(lights));
+        }
+
+        if let Change::Create(textures) | Change::Update(textures) = &self.rc.textures {
+            let (tex_data, tex_info) = crate::buffers::GpuBuffers::process_textures(textures);
+            self.queue.write_buffer(
+                &self.buffer_wrapper.texture_data,
+                0,
+                bytemuck::cast_slice(&tex_data),
+            );
+            self.queue.write_buffer(
+                &self.buffer_wrapper.texture_info,
+                0,
+                bytemuck::cast_slice(&tex_info),
+            );
         }
     }
 }

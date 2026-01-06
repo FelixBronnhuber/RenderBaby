@@ -14,6 +14,7 @@ use crate::{
 pub struct Mesh {
     vertices: Vec<f32>,
     tris: Vec<u32>,
+    uvs: Option<Vec<f32>>,
     materials: Option<Vec<Material>>,
     material_index: Option<Vec<usize>>,
     path: Option<String>,
@@ -29,6 +30,7 @@ impl Mesh {
     pub fn new(
         vertices: Vec<f32>,
         tris: Vec<u32>,
+        uvs: Option<Vec<f32>>,
         materials: Option<Vec<Material>>,
         material_index: Option<Vec<usize>>,
         name: Option<String>,
@@ -39,6 +41,7 @@ impl Mesh {
             Ok(c) => Ok(Self {
                 vertices,
                 tris,
+                uvs,
                 materials,
                 material_index,
                 path: None,
@@ -50,6 +53,10 @@ impl Mesh {
             }),
             Err(error) => Err(Error::msg(format!("Failed to create new mesh: {error}"))),
         }
+    }
+
+    pub fn get_materials(&self) -> Option<&Vec<Material>> {
+        self.materials.as_ref()
     }
     fn update_centroid(&mut self) -> Result<(), Error> {
         //! Calculates the centroid based on self.vertices
@@ -103,10 +110,17 @@ impl Mesh {
         //! Reference to Vec<f32>, where three entries define one point in 3d space
         &self.vertices
     }
+    pub fn get_uvs(&self) -> Option<&Vec<f32>> {
+        self.uvs.as_ref()
+    }
     pub fn get_tri_indices(&self) -> &Vec<u32> {
         //! Returns
         //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
         &self.tris
+    }
+
+    pub fn get_material_indices(&self) -> Option<&Vec<usize>> {
+        self.material_index.as_ref()
     }
 }
 
@@ -178,15 +192,15 @@ impl GeometricObject for Mesh {
             let y_translated = self.vertices[i * 3 + 1] - self.centroid.y;
             let z_translated = self.vertices[i * 3 + 2] - self.centroid.z;
             self.vertices[i * 3] = multiplied[0][0] * x_translated
-                + r[0][1] * y_translated
+                + multiplied[0][1] * y_translated
                 + multiplied[0][2] * z_translated
                 + self.centroid.x;
             self.vertices[i * 3 + 1] = multiplied[1][0] * x_translated
-                + r[1][1] * y_translated
+                + multiplied[1][1] * y_translated
                 + multiplied[1][2] * z_translated
                 + self.centroid.x;
             self.vertices[i * 3 + 2] = multiplied[2][0] * x_translated
-                + r[2][1] * y_translated
+                + multiplied[2][1] * y_translated
                 + multiplied[2][2] * z_translated
                 + self.centroid.x;
         }
