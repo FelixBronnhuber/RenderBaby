@@ -29,6 +29,7 @@ fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
     match light.get_light_type() {
         scene_objects::light_source::LightType::Point => Some(RenderLight::new(
             light.get_position().into(),
+            0.5,
             light.get_luminositoy(),
             light.get_color(),
         )),
@@ -43,18 +44,16 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! scene_objects::sphere::Sphere to be converted
     //! ## Returns
     //! engine_config::Sphere based on the given sphere
+    let center = sphere.get_center();
+    let color = sphere.get_color();
+
     RenderSphere::new(
-        {
-            let center = sphere.get_center();
-            engine_config::Vec3::new(center.x, center.y, center.z)
-        },
+        engine_config::Vec3::new(center.x, center.y, center.z),
         sphere.get_radius(),
-        {
-            let color = sphere.get_color();
-            let mut mat = engine_config::Material::default();
-            mat.diffuse = engine_config::Vec3::new(0.0, 0.0, 0.0);
-            mat.specular = [color[0], color[1], color[2]];
-            mat
+        engine_config::Material {
+            diffuse: engine_config::Vec3::new(0.0, 0.0, 0.0),
+            specular: [color[0], color[1], color[2]],
+            ..Default::default()
         },
     )
     .unwrap()
