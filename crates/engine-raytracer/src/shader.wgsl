@@ -112,22 +112,16 @@ struct TextureInfo {
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
 @group(0) @binding(2) var<storage, read> spheres: array<Sphere>;
-@group(0) @binding(3) var<storage, read> vertices: array<f32>;
-@group(0) @binding(4) var<storage, read> triangles: array<u32>;
-@group(0) @binding(5) var<storage, read_write> accumulation: array<vec4<f32>>;
-@group(0) @binding(6) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(7) var<storage, read>  point_lights: array<PointLight>;
-@group(0) @binding(8) var<storage, read> bvh_nodes: array<BVHNode>;
-@group(0) @binding(9) var<storage, read> bvh_indices: array<u32>;
-@group(0) @binding(10) var<storage, read> bvh_triangles: array<GPUTriangle>;
-@group(0) @binding(5) var<storage, read> meshes: array<Mesh>;
-@group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
-@group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
-@group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
-@group(0) @binding(9) var<storage, read> uvs: array<f32>;
-@group(0) @binding(10) var<storage, read> texture_data: array<u32>;
-@group(0) @binding(11) var<storage, read> texture_info: array<TextureInfo>;
-
+@group(0) @binding(3) var<storage, read_write> accumulation: array<vec4<f32>>;
+@group(0) @binding(4) var<uniform> prh: ProgressiveRenderHelper;
+@group(0) @binding(5) var<storage, read> point_lights: array<PointLight>;
+@group(0) @binding(6) var<storage, read> meshes: array<Mesh>;
+@group(0) @binding(7) var<storage, read> bvh_nodes: array<BVHNode>;
+@group(0) @binding(8) var<storage, read> bvh_indices: array<u32>;
+@group(0) @binding(9) var<storage, read> bvh_triangles: array<GPUTriangle>;
+@group(0) @binding(10) var<storage, read> uvs: array<f32>;
+@group(0) @binding(11) var<storage, read> texture_data: array<u32>;
+@group(0) @binding(12) var<storage, read> texture_info: array<TextureInfo>;
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -520,7 +514,7 @@ fn trace_ray(
         for (var k = 0u; k < uniforms.spheres_count; k = k + 1u) {
             let sphere = spheres[k];
             let t = intersect_sphere(origin, direction, sphere);
-            
+
             if (t > 0.001 && t < closest_hit.t) {
                 closest_hit.hit = true;
                 closest_hit.t = t;
@@ -536,6 +530,7 @@ fn trace_ray(
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
             let sky = (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+
             color += attenuation * sky;
             break;
         }
@@ -632,11 +627,11 @@ fn intersect_aabb(ray_origin: vec3<f32>, ray_dir: vec3<f32>, aabb_min: vec3<f32>
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x: u32 = global_id.x;
     let y: u32 = global_id.y;
-    
+
     if (x >= uniforms.width || y >= uniforms.height) {
         return;
     }
-    
+
     let pixel_index = y * uniforms.width + x;
 
     // Load previous accumulation
@@ -656,16 +651,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let u = (((f32(x) + offset_x) / f32(uniforms.width - 1u)) * 2.0 - 1.0) * aspect;
         let v = 1.0 - ((f32(y) + offset_y) / f32(uniforms.height - 1u)) * 2.0;
-        
+
         let camera_pos = uniforms.camera.pos;
         let camera_forward = normalize(uniforms.camera.dir);
         let world_up = vec3<f32>(0.0, 1.0, 0.0);
         let camera_right = normalize(cross(world_up, camera_forward));
         let camera_up = cross(camera_forward, camera_right);
-        
+
         let fov = uniforms.camera.pane_width / (2.0 * uniforms.camera.pane_distance * aspect);
         let ray_dir = normalize(fov * u * camera_right + fov * v * camera_up + camera_forward);
-        
+
         let sample_color = trace_ray(camera_pos, ray_dir, seed);
         accumulated_color = accumulated_color + sample_color;
         total_samples = total_samples + 1u;

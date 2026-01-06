@@ -230,7 +230,7 @@ impl GpuBuffers {
     pub fn init_uvs(&mut self, device: &Device, uvs: &[f32]) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer", uvs);
     }
-    
+
     pub fn init_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
@@ -269,7 +269,7 @@ impl GpuBuffers {
     pub fn update_uvs(&mut self, device: &Device, uvs: &[f32]) {
         self.uvs = Self::create_storage_buffer(device, "UVs Buffer", uvs);
     }
-    
+
     pub fn update_meshes(&mut self, device: &Device, meshes: &[Mesh]) {
         self.meshes = Self::create_storage_buffer(device, "Meshes Buffer", meshes);
     }
