@@ -32,6 +32,14 @@ impl Model {
             if let Err(e) = scene.load_object_from_file(capsule_path) {
                 log::error!("Failed to load capsule fixture: {}", e);
             }
+            // Set up camera for capsule
+            scene
+                .get_camera_mut()
+                .set_position(Vec3::new(0.0, 2.0, 4.0));
+            scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
+            scene
+                .get_camera_mut()
+                .set_resolution(Resolution::new(256, 256));
         } else {
             log::warn!(
                 "Capsule fixture not found at {:?}, falling back to proto_init",
