@@ -279,11 +279,14 @@ impl Scene {
 
     pub fn clear_spheres(&mut self) {
         self.scene_graph.clear_spheres();
-        //self.update_render_config_spheres();
+        self.update_render_config_spheres();
+        self.update_render_config_uniform();
     }
 
     pub fn clear_polygons(&mut self) {
         self.scene_graph.clear_meshes();
+        self.update_render_config_spheres();
+        self.update_render_config_uniform();
     }
     pub fn set_camera(&mut self, camera: Camera) {
         //! sets the scene camera to the passed camera

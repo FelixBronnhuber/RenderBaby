@@ -38,6 +38,7 @@ pub(crate) enum MeshChange {
 }
 
 pub(crate) enum SphereChange {
+    Count,
     Translate(Vec3, usize),
     Scale(f32, usize),
     Color([f32; 3], usize),

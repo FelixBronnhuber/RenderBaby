@@ -8,132 +8,106 @@ use crate::data_plane::scene::{
     scene_change::{CameraChange, LightChange, MeshChange, SceneChange, SphereChange},
 };
 
-pub(crate) struct SceneChangeHandler {
-    pub(crate) scene: Rc<RefCell<Scene>>, // maybe Arc<Mutex<scene>>
-}
+pub(crate) struct SceneChangeHandler {}
 
 impl SceneChangeHandler {
-    pub(crate) fn new(scene: Scene) -> Self {
-        Self {
-            scene: Rc::new(RefCell::new(scene)),
-        }
-    }
-
-    pub(crate) fn handle_scene_change(&mut self, change: SceneChange) -> Result<(), Error> {
+    pub(crate) fn handle_scene_change(
+        &mut self,
+        scene: &mut Scene,
+        change: SceneChange,
+    ) -> Result<(), Error> {
         //! Handles a Change in the scene, takes care of Logging and Errors...
         //! ## Parameter
         //! change: SceneChange to handle
         match change {
             SceneChange::CameraChange(camera_change) => {
-                self.handle_camera_change(camera_change)?;
-                self.scene.borrow_mut().update_render_config_uniform();
+                self.handle_camera_change(scene, camera_change)?;
+                scene.update_render_config_uniform();
             }
             SceneChange::SphereChange(sphere_change) => {
-                self.handle_sphere_change(sphere_change)?;
-                self.scene.borrow_mut().update_render_config_spheres();
+                self.handle_sphere_change(scene, sphere_change)?;
+                scene.update_render_config_spheres();
             }
 
             SceneChange::MeshChange(mesh_change) => {
-                self.handle_mesh_change(mesh_change)?;
+                self.handle_mesh_change(scene, mesh_change)?;
                 // handle_mesh_change decides if render config vertices or tris need to be updated
             }
             SceneChange::LightChange(light_change) => {
-                self.handle_light_change(light_change)?;
-                self.scene.borrow_mut().update_render_config_lights(); // maybe not needed if only rename?
+                self.handle_light_change(scene, light_change)?;
+                scene.update_render_config_lights(); // maybe not needed if only rename?
             }
         }
         Ok(())
     }
 
-    fn handle_camera_change(&mut self, camera_change: CameraChange) -> Result<(), Error> {
+    fn handle_camera_change(
+        &mut self,
+        scene: &mut Scene,
+        camera_change: CameraChange,
+    ) -> Result<(), Error> {
         match camera_change {
             CameraChange::LookAt(look_at) => {
-                info!(
-                    "Change in {}: Setting  camera lookAt to {}",
-                    self.scene.borrow(),
-                    look_at
-                );
-                self.scene
-                    .borrow_mut()
-                    .get_camera_mut()
-                    .set_look_at(look_at);
+                info!("Change in {}: Setting  camera lookAt to {}", scene, look_at);
+                scene.get_camera_mut().set_look_at(look_at);
             }
             CameraChange::Position(position) => {
                 info!(
                     "Change in {}: Setting camera position to {}",
-                    self.scene.borrow(),
-                    position
+                    scene, position
                 );
-                self.scene
-                    .borrow_mut()
-                    .get_camera_mut()
-                    .set_position(position);
+                scene.get_camera_mut().set_position(position);
             }
             CameraChange::Up(up) => {
-                info!(
-                    "Change in {}: Setting camera up to {}",
-                    self.scene.borrow(),
-                    up
-                );
-                self.scene.borrow_mut().get_camera_mut().set_up(up);
+                info!("Change in {}: Setting camera up to {}", scene, up);
+                scene.get_camera_mut().set_up(up);
             }
             CameraChange::PaneDistance(distance) => {
                 //todo err if negative, check vs res?
                 info!(
                     "Change in {}: Setting camera pane distance to {}",
-                    self.scene.borrow(),
-                    distance
+                    scene, distance
                 );
-                self.scene
-                    .borrow_mut()
-                    .get_camera_mut()
-                    .set_pane_distance(distance);
+                scene.get_camera_mut().set_pane_distance(distance);
             }
             CameraChange::PaneWidth(width) => {
                 info!(
                     "Change in {}: Setting camera pane width to {}",
-                    self.scene.borrow(),
-                    width
+                    scene, width
                 );
-                self.scene
-                    .borrow_mut()
-                    .get_camera_mut()
-                    .set_pane_width(width);
+                scene.get_camera_mut().set_pane_width(width);
             }
             CameraChange::Resolution(res) => {
                 //todo check ratio, maybe adjust pane width
                 info!(
                     "Change in {}: Setting camera resolution to {:?}",
-                    self.scene.borrow(),
-                    res
+                    scene, res
                 );
-                self.scene.borrow_mut().get_camera_mut().set_resolution(res);
+                scene.get_camera_mut().set_resolution(res);
             }
             CameraChange::RaySamples(samples) => {
                 //todo: 0 not allowed ...
                 info!(
                     "Change in {}: Setting camera ray samples to {}",
-                    self.scene.borrow(),
-                    samples
+                    scene, samples
                 );
-                self.scene
-                    .borrow_mut()
-                    .get_camera_mut()
-                    .set_ray_samples(samples);
+                scene.get_camera_mut().set_ray_samples(samples);
             }
         }
-        if self.scene.borrow_mut().get_camera_position()
-            == self.scene.borrow_mut().get_camera_look_at()
-        {
+        if scene.get_camera_position() == scene.get_camera_look_at() {
             warn!(
                 "{}: Camera position identical to camera lookAt: {}",
-                self.scene.borrow(),
-                self.scene.borrow().get_camera_look_at()
+                scene,
+                scene.get_camera_look_at()
             )
         }
         Ok(())
     }
-    fn handle_light_change(&mut self, light_change: LightChange) -> Result<(), Error> {
+    fn handle_light_change(
+        &mut self,
+        scene: &mut Scene,
+        light_change: LightChange,
+    ) -> Result<(), Error> {
         match light_change {
             LightChange::Type(light_type, index) => todo!(),
             LightChange::Position(position, index) => todo!(),
@@ -145,7 +119,11 @@ impl SceneChangeHandler {
         todo!()
     }
 
-    fn handle_mesh_change(&mut self, mesh_change: MeshChange) -> Result<(), Error> {
+    fn handle_mesh_change(
+        &mut self,
+        scene: &mut Scene,
+        mesh_change: MeshChange,
+    ) -> Result<(), Error> {
         match mesh_change {
             MeshChange::Translate(translation, index) => todo!(),
             MeshChange::Scale(factor, index) => todo!(),
@@ -156,13 +134,22 @@ impl SceneChangeHandler {
         }
     }
 
-    fn handle_sphere_change(&mut self, sphere_change: SphereChange) -> Result<(), Error> {
+    fn handle_sphere_change(
+        &mut self,
+        scene: &mut Scene,
+        sphere_change: SphereChange,
+    ) -> Result<(), Error> {
         match sphere_change {
             SphereChange::Translate(translation, index) => todo!(),
             SphereChange::Scale(factor, index) => todo!(),
             SphereChange::Color(color, index) => todo!(),
             SphereChange::Material(material, index) => todo!(),
             SphereChange::Name(name, index) => todo!(),
+            SphereChange::Count => {
+                scene.update_render_config_spheres();
+                scene.update_render_config_uniform();
+                Ok(())
+            }
         }
     }
 }
