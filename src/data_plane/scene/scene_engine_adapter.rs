@@ -26,21 +26,19 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! scene_objects::sphere::Sphere to be converted
     //! ## Returns
     //! engine_config::Sphere based on the given sphere
+    let center = sphere.get_center();
+    let color = sphere.get_color();
+
     RenderSphere::new(
-        {
-            let center = sphere.get_center();
-            engine_config::Vec3::new(center.x, center.y, center.z)
-        },
+        engine_config::Vec3::new(center.x, center.y, center.z),
         sphere.get_radius(),
-        {
-            let color = sphere.get_color();
-            let mut mat = engine_config::Material::default();
-            mat.diffuse = engine_config::Vec3::new(0.0, 0.0, 0.0);
-            mat.specular = [color[0], color[1], color[2]];
-            mat
+        engine_config::Material {
+            diffuse: engine_config::Vec3::new(0.0, 0.0, 0.0),
+            specular: [color[0], color[1], color[2]],
+            ..Default::default()
         },
     )
-    .unwrap()
+        .unwrap()
     //todo error handling
 }
 
