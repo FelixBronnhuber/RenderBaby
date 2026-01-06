@@ -89,8 +89,8 @@ impl Screen for SceneScreen {
         egui::Vec2::new(1200.0, 800.0)
     }
 
-    fn on_start(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.do_render(ctx);
+    fn on_start(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // self.do_render(ctx);
     }
 
     fn update(
