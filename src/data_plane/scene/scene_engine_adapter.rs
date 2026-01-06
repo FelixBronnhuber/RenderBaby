@@ -5,6 +5,7 @@ use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
+    light_source::LightSource,
     mesh::Mesh,
     sphere::Sphere,
 };
@@ -14,7 +15,18 @@ type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
-pub type RenderLights = engine_config::PointLight;
+pub type RenderLight = engine_config::PointLight;
+
+fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
+    match light.get_light_type() {
+        scene_objects::light_source::LightType::Ambient => Some(RenderLight::new(
+            light.get_position().into(),
+            light.get_luminositoy(),
+            light.get_color(),
+        )),
+        _ => None,
+    }
+}
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -87,6 +99,15 @@ fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
+    fn get_render_point_lights(&self) -> Vec<RenderLight> {
+        let mut res = vec![];
+        for light in self.get_light_sources() {
+            if let Some(render_light) = light_to_render_point_light(light) {
+                res.push(render_light);
+            }
+        }
+        res
+    }
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
@@ -189,7 +210,7 @@ impl Scene {
                 .vertices_create(all_vertices)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
-                .lights_create([RenderLights::default()].to_vec())
+                .lights_create(self.get_render_point_lights())
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -200,7 +221,7 @@ impl Scene {
                 .vertices(all_vertices)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
-                .lights([RenderLights::default()].to_vec())
+                .lights(self.get_render_point_lights())
                 .build()
         };
 
