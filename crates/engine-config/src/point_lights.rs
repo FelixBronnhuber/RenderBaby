@@ -39,7 +39,8 @@ impl Material {
             ior: 1.0,
             opacity: 1.0,
             illum: 0,
-            _pad2: [0; 2],
+            texture_index: -1,
+            _pad2: 0,
         }
     }
 }

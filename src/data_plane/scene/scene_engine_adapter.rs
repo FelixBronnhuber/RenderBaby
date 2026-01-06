@@ -48,6 +48,7 @@ fn light_to_render_light(light: &scene_objects::light_source::LightSource) -> Re
     let pos = light.get_position();
     RenderLights::new(
         [pos.x, pos.y, pos.z],
+        0.5,
         light.get_luminositoy(),
         light.get_color(),
     )
