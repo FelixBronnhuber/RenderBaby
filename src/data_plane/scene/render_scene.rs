@@ -78,7 +78,10 @@ impl Scene {
                 Err(error)
             }
             _ => {
-                info!("Scene {self}: Successfully exported scene to {}", path.display());
+                info!(
+                    "Scene {self}: Successfully exported scene to {}",
+                    path.display()
+                );
                 Ok(())
             }
         }
@@ -166,13 +169,19 @@ impl Scene {
                     Some(objs.name),
                     Some(used_path),
                 )?;
-                info!("Scene {self}: Successfully loaded object from {}", path.display());
+                info!(
+                    "Scene {self}: Successfully loaded object from {}",
+                    path.display()
+                );
                 self.add_mesh(mesh);
                 Ok(())
             }
 
             Err(error) => {
-                error!("{self}: Parsing obj from {} resulted in error: {error}", path.display());
+                error!(
+                    "{self}: Parsing obj from {} resulted in error: {error}",
+                    path.display()
+                );
                 Err(error.into())
             }
         }
