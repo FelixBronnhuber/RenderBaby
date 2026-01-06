@@ -1,8 +1,6 @@
 const GROUND_Y: f32 = -1.0;
 const GROUND_ENABLED: bool = true;
 const MAX_DEPTH: i32 = 5;
-const SHADOW_SAMPLES: u32 = 8u;
-const SHADOW_EDGE: f32 = 0.2;
 
 struct Camera {
     pane_distance: f32,
@@ -56,7 +54,8 @@ struct Material {
     ior: f32,
     opacity: f32,
     illum: u32,
-    _pad2: vec2<u32>,
+    texture_index: i32,
+    _pad2: u32,
 }
 
 struct HitRecord {
@@ -64,15 +63,23 @@ struct HitRecord {
     t: f32,
     pos: vec3<f32>,
     normal: vec3<f32>,
+    uv: vec2<f32>,
+    use_texture: bool,
     material: Material,
 }
 
 struct PointLight {
-    position: vec3<f32>,
-    intensity: f32,
-    color: vec3<f32>,
-    _pad: f32,
+    center: vec3<f32>,
+    radius: f32,
+    material: Material,
 };
+
+struct TextureInfo {
+    offset: u32,
+    width: u32,
+    height: u32,
+    _pad: u32,
+}
 
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> output: array<u32>;
@@ -83,6 +90,10 @@ struct PointLight {
 @group(0) @binding(6) var<storage, read_write> accumulation: array<vec4<f32>>;
 @group(0) @binding(7) var<uniform> prh: ProgressiveRenderHelper;
 @group(0) @binding(8) var<storage, read>  point_lights: array<PointLight>;
+@group(0) @binding(9) var<storage, read> uvs: array<f32>;
+@group(0) @binding(10) var<storage, read> texture_data: array<u32>;
+@group(0) @binding(11) var<storage, read> texture_info: array<TextureInfo>;
+
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -98,6 +109,41 @@ fn color_map(color: vec3<f32>) -> u32 {
     let a: u32 = 255u;
 
     return (a << 24u) | (b << 16u) | (g << 8u) | r;
+}
+
+fn sample_texture(index: i32, uv: vec2<f32>) -> vec3<f32> {
+    if (index < 0) {
+        // Missing texture pattern (Magenta/Black checkerboard)
+        let n = 10.0;
+        let u2 = i32(floor(uv.x * n));
+        let v2 = i32(floor(uv.y * n));
+        if ((u2 + v2) % 2 == 0) {
+            return vec3<f32>(0.0); // Black
+        } else {
+            return vec3<f32>(1.0, 0.0, 1.0); // Magenta
+        }
+    }
+    let info = texture_info[u32(index)];
+
+    // Wrap UVs (repeat)
+    let u = fract(uv.x);
+    let v = fract(uv.y);
+
+    // Map to pixel coordinates
+    // Flip V because standard UVs have (0,0) at bottom-left, but image data is top-left
+    let x = min(u32(u * f32(info.width)), info.width - 1u);
+    let y = min(u32((1.0 - v) * f32(info.height)), info.height - 1u);
+
+    let pixel_index = info.offset + y * info.width + x;
+    let pixel = texture_data[pixel_index];
+
+    // Unpack RGBA8 (Little Endian: A B G R)
+    let r = f32(pixel & 255u) / 255.0;
+    let g = f32((pixel >> 8u) & 255u) / 255.0;
+    let b = f32((pixel >> 16u) & 255u) / 255.0;
+
+    // Convert sRGB to Linear
+    return vec3<f32>(pow(r, 2.2), pow(g, 2.2), pow(b, 2.2));
 }
 
 fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -> f32 {
@@ -124,6 +170,30 @@ fn intersect_sphere(ray_origin: vec3<f32>, ray_dir: vec3<f32>, sphere: Sphere) -
     return root;
 }
 
+fn intersect_pointlight(ray_origin: vec3<f32>, ray_dir: vec3<f32>, pointlight: PointLight) -> f32 {
+    let oc = ray_origin - pointlight.center;
+    let a = dot(ray_dir, ray_dir);
+    let half_b = dot(oc, ray_dir);
+    let c = dot(oc, oc) - pointlight.radius * pointlight.radius;
+    let discriminant = half_b * half_b - a * c;
+
+    if discriminant < 0.0 {
+        return -1.0;
+    }
+
+    let sqrtd = sqrt(discriminant);
+    var root = (-half_b - sqrtd) / a;
+
+    if root <= 0.001 {
+        root = (-half_b + sqrtd) / a;
+        if root <= 0.001 {
+            return -1.0;
+        }
+    }
+
+    return root;
+}
+
 struct TriangleData {
     v0: vec3<f32>,
     v1: vec3<f32>,
@@ -131,14 +201,15 @@ struct TriangleData {
     _pad: u32,
 };
 
-fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> f32 {
+
+fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> vec3<f32> {
     let edge1 = tri.v1 - tri.v0;
     let edge2 = tri.v2 - tri.v0;
     let h = cross(ray_dir, edge2);
     let a = dot(edge1, h);
 
     if abs(a) < 1e-6 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let f = 1.0 / a;
@@ -146,23 +217,23 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
     let u = f * dot(s, h);
 
     if u < 0.0 || u > 1.0 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let q = cross(s, edge1);
     let v = f * dot(ray_dir, q);
 
     if v < 0.0 || u + v > 1.0 {
-        return -1.0;
+        return vec3<f32>(-1.0, 0.0, 0.0);
     }
 
     let t = f * dot(edge2, q);
 
     if t > 0.0 {
-        return t;
+        return vec3<f32>(t, u, v);
     }
 
-    return -1.0;
+    return vec3<f32>(-1.0, 0.0, 0.0);
 }
 
 fn hash_to_color(n: u32) -> vec3<f32> {
@@ -293,8 +364,8 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         );
 
         let tri = TriangleData(v0, v1, v2, 0u);
-        let t = intersect_triangle(origin, light_dir, tri);
-        if (t > 0.001 && t < max_dist) {
+        let hit_data = intersect_triangle(origin, light_dir, tri);
+        if (hit_data.x > 0.001 && hit_data.x < max_dist) {
             return true;
         }
     }
@@ -306,26 +377,14 @@ fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
         }
     }
 
-    return false;
-}
-
-fn shadow(origin: vec3<f32>, light_pos: vec3<f32>, seed: ptr<function, u32>) -> f32 {
-    var visible_light: f32 = 0.0;
-
-    for (var i = 0u; i < SHADOW_SAMPLES; i = i + 1u) {
-        let rand_jitter = random_unit_vector(seed) * SHADOW_EDGE;
-        let jittered_pos = light_pos + rand_jitter;
-
-        let light_dir = jittered_pos - origin;
-        let distance = length(light_dir);
-        let dir_normalized = light_dir / distance;
-
-        if (!collision(origin, dir_normalized, distance)) {
-            visible_light += 1.0;
+    for (var k = 0u; k < arrayLength(&point_lights); k = k + 1u) {
+            let t = intersect_pointlight(origin, light_dir, point_lights[k]);
+            if (t > 0.001 && t < max_dist) {
+                return true;
+            }
         }
-    }
 
-    return visible_light / f32(SHADOW_SAMPLES);
+    return false;
 }
 
 fn trace_ray(
@@ -346,12 +405,14 @@ fn trace_ray(
             1e20,
             vec3<f32>(0.0),
             vec3<f32>(0.0),
+            vec2<f32>(0.0),
+            false,
             Material(
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
                 vec3<f32>(0.0), 0.0,
-                0.0, 0u, vec2<u32>(0u)
+                0.0, 0u, -1, 0u
             )
         );
         
@@ -366,6 +427,8 @@ fn trace_ray(
                 closest_hit.material.diffuse = vec3<f32>(0.5);
                 closest_hit.material.ambient = vec3<f32>(0.0);
                 closest_hit.material.specular = vec3<f32>(0.0);
+                closest_hit.uv = closest_hit.pos.xz;
+                closest_hit.use_texture = true;
             }
         }
         
@@ -391,7 +454,8 @@ fn trace_ray(
                                    vertices[v2_idx * 3u + 2u]);
                 
                 let tri = TriangleData(v0, v1, v2, mesh_idx);
-                let t = intersect_triangle(origin, direction, tri);
+                let hit_data = intersect_triangle(origin, direction, tri);
+                let t = hit_data.x;
                 
                 if (t > 0.001 && t < closest_hit.t) {
                     closest_hit.hit = true;
@@ -399,12 +463,25 @@ fn trace_ray(
                     closest_hit.pos = origin + t * direction;
                     closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
                     
+                    let u = hit_data.y;
+                    let v = hit_data.z;
+                    let w = 1.0 - u - v;
+
+                    let uv0 = vec2<f32>(uvs[v0_idx * 2u], uvs[v0_idx * 2u + 1u]);
+                    let uv1 = vec2<f32>(uvs[v1_idx * 2u], uvs[v1_idx * 2u + 1u]);
+                    let uv2 = vec2<f32>(uvs[v2_idx * 2u], uvs[v2_idx * 2u + 1u]);
+
+                    closest_hit.uv = w * uv0 + u * uv1 + v * uv2;
+
                     if (uniforms.color_hash_enabled != 0u) {
                         closest_hit.material.diffuse = hash_to_color(k + 1u);
                         closest_hit.material.ambient = vec3<f32>(0.0);
                         closest_hit.material.specular = vec3<f32>(0.0);
+                        closest_hit.use_texture = false;
                     } else {
                         closest_hit.material = mesh.material;
+                        // Use texture if material has a valid texture index
+                        closest_hit.use_texture = closest_hit.material.texture_index >= 0;
                     }
                 }
             }
@@ -421,9 +498,25 @@ fn trace_ray(
                 closest_hit.pos = origin + t * direction;
                 closest_hit.normal = normalize(closest_hit.pos - sphere.center);
                 closest_hit.material = sphere.material;
+            closest_hit.use_texture = closest_hit.material.texture_index >= 0;
             }
         }
-        
+
+        // Point Light
+
+        for (var k = 0u; k < arrayLength(&point_lights); k = k + 1u) {
+            let point_light = point_lights[k];
+            let t = intersect_pointlight(origin, direction, point_light);
+
+            if (t > 0.001 && t < closest_hit.t) {
+                closest_hit.hit = true;
+                closest_hit.t = t;
+                closest_hit.pos = origin + t * direction;
+                closest_hit.normal = normalize(closest_hit.pos - point_light.center);
+                closest_hit.material = point_light.material;
+            }
+        }
+
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
@@ -433,18 +526,28 @@ fn trace_ray(
         }
         
         //has to be reviewed
-        if (depth == 0) {
-            color += closest_hit.material.ambient;
-        }
+        // if (depth == 0) {
+        //     color += closest_hit.material.ambient;
+        // }
         
         let specular_strength = (closest_hit.material.specular.x + 
                                 closest_hit.material.specular.y + 
                                 closest_hit.material.specular.z) / 3.0;
-        
+        let diffuse_strength = (closest_hit.material.diffuse.x +
+                                closest_hit.material.diffuse.y +
+                                closest_hit.material.diffuse.z) / 3.0;
+
+        // Only treat as metal if it has specular but negligible diffuse
+        let is_metal = specular_strength > 0.01 && diffuse_strength < 0.01;
+
+        // Add emitted light
+        color += attenuation * closest_hit.material.emissive;
+
+        // Scatter
         var scattered: vec3<f32>;
         var albedo: vec3<f32>;
         
-        if (specular_strength > 0.01) {
+        if (is_metal) {
             // Metal material with glossy reflections
             // Map Ns (0-1000) to fuzz (1.0-0.0)
             // Higher Ns = sharper reflections (less fuzz)
@@ -460,42 +563,17 @@ fn trace_ray(
         } else {
             scattered = scatter_lambertian(closest_hit.normal, &seed);
             albedo = closest_hit.material.diffuse;
-        }
-
-        let shadow_origin = closest_hit.pos + 0.001 * closest_hit.normal;
-        var light_total = vec3<f32>(0.0);
-
-        for (var i = 0u; i < arrayLength(&point_lights); i = i + 1u) {
-            let light = point_lights[i];
-
-            let light_dir = light.position - shadow_origin;
-            let dist_pow2 = max(dot(light_dir, light_dir), 0.05);
-            let dir_normalized = normalize(light_dir);
-
-            //Lambert cosine term
-            let dot = max(dot(closest_hit.normal, dir_normalized), 0.0);
-            if (dot <= 0.0) {
-                continue;
+            // Apply texture
+            if (closest_hit.use_texture) {
+                albedo = albedo * sample_texture(closest_hit.material.texture_index, closest_hit.uv);
             }
-
-            let visibility = shadow(
-                shadow_origin,
-                light.position,
-                &seed
-            );
-
-            light_total += visibility * dot * light.color * (light.intensity / dist_pow2);
         }
 
-        if (specular_strength <= 0.01) {
-            color += attenuation * light_total * albedo;
-            attenuation *= albedo * 0.5;
-        } else {
-            attenuation *= albedo;
-        }
+        // Update attenuation
+        attenuation *= albedo;
 
-        // Move ray update HERE (after all lighting/attenuation)
-        origin = closest_hit.pos + 0.001 * normalize(scattered);
+        // Next ray
+        origin = closest_hit.pos + 0.001 * closest_hit.normal;
         direction = normalize(scattered);
     }
     return color;

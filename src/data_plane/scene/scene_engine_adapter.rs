@@ -1,4 +1,5 @@
 /// Serves as an adpter between the scene plane and the render engine.
+use std::collections::HashMap;
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
 use glam::Vec3;
@@ -15,6 +16,8 @@ type RenderUniforms = engine_config::Uniforms;
 type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
 pub type RenderLights = engine_config::PointLight;
+type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
+type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -23,21 +26,32 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! scene_objects::sphere::Sphere to be converted
     //! ## Returns
     //! engine_config::Sphere based on the given sphere
+    let center = sphere.get_center();
+    let color = sphere.get_color();
+
     RenderSphere::new(
-        {
-            let center = sphere.get_center();
-            engine_config::Vec3::new(center.x, center.y, center.z)
-        },
+        engine_config::Vec3::new(center.x, center.y, center.z),
         sphere.get_radius(),
-        {
-            let color = sphere.get_color();
-            let diffuse = engine_config::Vec3::new(color[0], color[1], color[2]);
-            engine_config::Material::new_temp(diffuse).unwrap()
+        engine_config::Material {
+            diffuse: engine_config::Vec3::new(0.0, 0.0, 0.0),
+            specular: [color[0], color[1], color[2]],
+            ..Default::default()
         },
     )
     .unwrap()
     //todo error handling
 }
+
+fn light_to_render_light(light: &scene_objects::light_source::LightSource) -> RenderLights {
+    let pos = light.get_position();
+    RenderLights::new(
+        [pos.x, pos.y, pos.z],
+        0.5,
+        light.get_luminositoy(),
+        light.get_color(),
+    )
+}
+
 fn vec3_to_array(vec: Vec3) -> [f32; 3] {
     [vec.x, vec.y, vec.z]
 }
@@ -77,12 +91,166 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-fn mesh_to_render_data(mesh: &Mesh) -> (Vec<f32>, Vec<u32>) {
+fn material_to_render_material(
+    mat: &scene_objects::material::Material,
+    texture_map: &HashMap<String, i32>,
+) -> engine_config::Material {
+    let ambient = [
+        mat.ambient_reflectivity[0] as f32,
+        mat.ambient_reflectivity[1] as f32,
+        mat.ambient_reflectivity[2] as f32,
+    ];
+    let diffuse = engine_config::Vec3::new(
+        mat.diffuse_reflectivity[0] as f32,
+        mat.diffuse_reflectivity[1] as f32,
+        mat.diffuse_reflectivity[2] as f32,
+    );
+    let specular = [
+        mat.specular_reflectivity[0] as f32,
+        mat.specular_reflectivity[1] as f32,
+        mat.specular_reflectivity[2] as f32,
+    ];
+
+    let texture_index = if let Some(path) = &mat.texture_path {
+        *texture_map.get(path).unwrap_or(&-1)
+    } else {
+        -1
+    };
+
+    engine_config::Material::new(
+        ambient,
+        diffuse,
+        specular,
+        mat.shininess as f32,
+        [0.0, 0.0, 0.0],               // emissive
+        1.0,                           // ior
+        1.0 - mat.transparency as f32, // opacity
+        2,                             // illum (default to specular)
+        texture_index,
+    )
+    .unwrap_or_default()
+}
+
+fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
     //! Extracts vertices and point references from the given mesh
     //! ## Parameter
     //! 'mesh': Mesh from scene_objects crate that is to be converted
-    //! Returns: touple of: Vec<f32> where 3 entries define one point in 3d space, and Vec<u32> referencing which points make up a triangle
-    (mesh.get_vertices().clone(), mesh.get_tri_indices().clone())
+    //! Returns: Vector of tuples: (vertices, indices, uvs, material)
+
+    let original_vertices = mesh.get_vertices();
+    let original_indices = mesh.get_tri_indices();
+    let original_uvs = mesh.get_uvs();
+
+    let materials = mesh.get_materials();
+    let material_indices = mesh.get_material_indices();
+
+    if let (Some(mats), Some(mat_indices)) = (materials, material_indices)
+        && !mats.is_empty()
+        && !mat_indices.is_empty()
+    {
+        let mut sub_meshes: HashMap<usize, SubMeshGeometry> = HashMap::new();
+
+        let num_triangles = original_indices.len() / 3;
+
+        for i in 0..num_triangles {
+            let mat_idx = if i < mat_indices.len() {
+                mat_indices[i]
+            } else {
+                0
+            };
+
+            let entry = sub_meshes
+                .entry(mat_idx)
+                .or_insert((Vec::new(), Vec::new(), Vec::new()));
+            let (verts, inds, uvs) = entry;
+
+            let current_v_count = (verts.len() / 3) as u32;
+
+            let idx0 = original_indices[i * 3] as usize;
+            let idx1 = original_indices[i * 3 + 1] as usize;
+            let idx2 = original_indices[i * 3 + 2] as usize;
+
+            // Add vertices
+            verts.push(original_vertices[idx0 * 3]);
+            verts.push(original_vertices[idx0 * 3 + 1]);
+            verts.push(original_vertices[idx0 * 3 + 2]);
+
+            verts.push(original_vertices[idx1 * 3]);
+            verts.push(original_vertices[idx1 * 3 + 1]);
+            verts.push(original_vertices[idx1 * 3 + 2]);
+
+            verts.push(original_vertices[idx2 * 3]);
+            verts.push(original_vertices[idx2 * 3 + 1]);
+            verts.push(original_vertices[idx2 * 3 + 2]);
+
+            // Add UVs
+            if let Some(orig_uvs) = original_uvs {
+                if idx0 * 2 + 1 < orig_uvs.len() {
+                    uvs.push(orig_uvs[idx0 * 2]);
+                    uvs.push(orig_uvs[idx0 * 2 + 1]);
+                } else {
+                    uvs.push(0.0);
+                    uvs.push(0.0);
+                }
+
+                if idx1 * 2 + 1 < orig_uvs.len() {
+                    uvs.push(orig_uvs[idx1 * 2]);
+                    uvs.push(orig_uvs[idx1 * 2 + 1]);
+                } else {
+                    uvs.push(0.0);
+                    uvs.push(0.0);
+                }
+
+                if idx2 * 2 + 1 < orig_uvs.len() {
+                    uvs.push(orig_uvs[idx2 * 2]);
+                    uvs.push(orig_uvs[idx2 * 2 + 1]);
+                } else {
+                    uvs.push(0.0);
+                    uvs.push(0.0);
+                }
+            } else {
+                for _ in 0..6 {
+                    uvs.push(0.0);
+                }
+            }
+
+            // Add indices
+            inds.push(current_v_count);
+            inds.push(current_v_count + 1);
+            inds.push(current_v_count + 2);
+        }
+
+        let mut result = Vec::new();
+        for (mat_idx, (verts, inds, uvs)) in sub_meshes {
+            let material = if mat_idx < mats.len() {
+                material_to_render_material(&mats[mat_idx], texture_map)
+            } else {
+                engine_config::Material::default()
+            };
+            result.push((verts, inds, uvs, material));
+        }
+        return result;
+    }
+
+    let vertices = original_vertices.clone();
+    let indices = original_indices.clone();
+    let uvs = if let Some(uvs) = original_uvs {
+        uvs.clone()
+    } else {
+        vec![0.0; (vertices.len() / 3) * 2]
+    };
+
+    let material = if let Some(mats) = materials {
+        if !mats.is_empty() {
+            material_to_render_material(&mats[0], texture_map)
+        } else {
+            engine_config::Material::default()
+        }
+    } else {
+        engine_config::Material::default()
+    };
+
+    vec![(vertices, indices, uvs, material)]
 }
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
@@ -111,10 +279,13 @@ impl Scene {
         .unwrap()
     }
 
-    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
+    fn get_render_tris(&self, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        self.get_meshes().iter().map(mesh_to_render_data).collect()
+        self.get_meshes()
+            .iter()
+            .flat_map(|m| mesh_to_render_data(m, texture_map))
+            .collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
@@ -124,38 +295,45 @@ impl Scene {
         info!("{self}: Render has been called. Collecting render parameters");
 
         let render_spheres = self.get_render_spheres();
-        let render_tris = self.get_render_tris();
+
+        // Collect textures
+        let mut texture_list = Vec::new();
+        let mut texture_map = HashMap::new();
+
+        for (path, data) in &self.textures {
+            texture_map.insert(path.clone(), texture_list.len() as i32);
+            texture_list.push(data.clone());
+        }
+
+        let render_tris = self.get_render_tris(&texture_map);
         debug!("Scene mesh data: {:?}", self.get_meshes());
         debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
             .iter()
-            .map(|(_, tri)| tri.len() as u32 / 3)
+            .map(|(_, tri, _, _)| tri.len() as u32 / 3)
             .sum();
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
         // Collect all vertices, triangles, and mesh into flat vectors
-        let (all_vertices, all_triangles, all_meshes) = if render_tris.is_empty() {
-            (vec![], vec![], vec![])
+        let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
+            (vec![], vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut all_uvs = vec![];
             let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
             let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris.iter() {
+            for (verts, tris, uvs, material) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
                 let triangle_count = (tris.len() / 3) as u32;
 
                 // Add mesh metadata
-                mesh_infos.push(RenderMesh::new(
-                    triangle_offset,
-                    triangle_count,
-                    engine_config::Material::default(), //replace with Material from mtl
-                ));
+                mesh_infos.push(RenderMesh::new(triangle_offset, triangle_count, *material));
 
                 // Add triangles with vertex offset
                 for tri_idx in tris {
@@ -165,20 +343,32 @@ impl Scene {
                 // Add vertices
                 all_verts.extend(verts);
 
+                // Add UVs
+                all_uvs.extend(uvs);
+
                 vertex_offset += vertex_count;
                 triangle_offset += triangle_count;
             }
 
-            (all_verts, all_tris, mesh_infos)
+            (all_verts, all_tris, mesh_infos, all_uvs)
         };
-        info!("Collected vertices: {:?}", all_vertices);
-        info!("Collected tris: {:?}", all_triangles);
+        info!("Collected vertices count: {}", all_vertices.len());
+        info!("Collected tris count: {}", all_triangles.len());
         info!(
             "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
             render_spheres.len(),
             triangles_count,
             all_vertices.len() / 3
         );
+
+        let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
+            [RenderLights::default()].to_vec()
+        } else {
+            self.get_light_sources()
+                .iter()
+                .map(light_to_render_light)
+                .collect()
+        };
 
         let rc = if self.get_first_render() {
             self.set_first_render(false);
@@ -187,9 +377,11 @@ impl Scene {
                 .uniforms_create(uniforms)
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
+                .uvs_create(all_uvs)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
-                .lights_create([RenderLights::default()].to_vec())
+                .lights_create(lights)
+                .textures_create(texture_list)
                 .build()
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
@@ -198,9 +390,11 @@ impl Scene {
                 .uniforms(uniforms)
                 .spheres(render_spheres)
                 .vertices(all_vertices)
+                .uvs(all_uvs)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
-                .lights([RenderLights::default()].to_vec())
+                .lights(lights)
+                .textures(texture_list)
                 .build()
         };
 
