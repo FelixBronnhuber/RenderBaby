@@ -2,6 +2,9 @@ use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
 use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
+use std::time::{SystemTime, UNIX_EPOCH};
 use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
@@ -43,10 +46,25 @@ impl Default for Scene {
 impl Scene {
     /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
-        let mut directory_path = path.clone();
-        directory_path.pop();
         info!("Scene: Loading new scene from {}", path.display());
-        let scene_and_path = parse_scene(path.clone());
+        let randomized_temp_name = format!(
+            "render{}",
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .subsec_nanos()
+        );
+        let temp_dir = std::env::temp_dir().join(PathBuf::from(randomized_temp_name));
+        let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
+        archive.extract(temp_dir.clone());
+        info!("using temporary directory {:?}", temp_dir);
+        let mut temp_directory_path = PathBuf::with_capacity(50);
+        if let Some(temp_directory_prefix) = path.file_prefix() {
+            temp_directory_path = temp_dir.join(temp_directory_prefix);
+        } else {
+            return Err(anyhow::Error::msg("Scene: invalid rscn prefix"));
+        }
+        let scene_and_path = parse_scene(temp_directory_path.join("scene.json"));
         match scene_and_path {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
@@ -54,16 +72,18 @@ impl Scene {
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|path| pathbuf.push(directory_path.join(path)));
+                    .for_each(|path| pathbuf.push(temp_directory_path.join(path)));
                 for (i, v) in pathbuf.iter().enumerate() {
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
                     )?;
                 }
+                fs::remove_dir_all(temp_dir);
                 Ok(scene)
             }
             Err(error) => {
+                fs::remove_dir_all(temp_dir);
                 error!("Scene: Importing Scene resulted in error: {error}");
                 Err(error)
             }
