@@ -494,7 +494,7 @@ impl Scene {
         //! RenderConfig build from self.render_config_builder
         self.render_config_builder.clone().build()
     }
-    fn update_render_config(&mut self) {
+    pub(super) fn update_render_config(&mut self) {
         //! updates the field render_context_builder
         info!("{self}: Updating render config builder");
         let render_spheres = self.get_render_spheres();
