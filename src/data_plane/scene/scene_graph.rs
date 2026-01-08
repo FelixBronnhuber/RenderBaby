@@ -57,6 +57,11 @@ impl SceneGraph {
         //! all Meshes objects as a reference to a vector of Mesh
         &self.meshes
     }
+    pub(crate) fn get_meshes_mut(&mut self) -> &mut Vec<Mesh> {
+        //! ## Returns
+        //! all Meshes objects as a reference to a vector of Mesh
+        &mut self.meshes
+    }
     pub(crate) fn get_light_sources(&self) -> &Vec<LightSource> {
         //! ## Returns
         //! all light sources as a reference to a vector of LightSource
