@@ -8,7 +8,6 @@ pub(crate) enum SceneChange {
     SphereChange(SphereChange),
     General,
 }
-//todo: what about adding, deleting
 
 pub(crate) enum CameraChange {
     Position(Vec3),

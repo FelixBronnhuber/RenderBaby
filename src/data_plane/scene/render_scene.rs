@@ -15,6 +15,7 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::{
+            scene_change::{CameraChange, SceneChange},
             scene_change_handler::SceneChangeHandler,
             scene_engine_adapter::{
                 camera_to_render_uniforms, mesh_to_render_data, sphere_to_render_sphere,
@@ -673,15 +674,13 @@ impl Scene {
         //! sets the position of the camera
         //! ## Parameter
         //! 'position': glam::Vec3 of the new position
-        self.get_camera_mut().set_position(position);
-        self.update_render_config_uniform();
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::Position(position)));
     }
     pub(crate) fn set_camera_look_at(&mut self, look_at: Vec3) {
         //! sets the direction of the camera
         //! ## Parameter
         //! 'look_at': glam::Vec3 of the new direction
-        self.get_camera_mut().set_look_at(look_at);
-        self.update_render_config_uniform();
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::LookAt(look_at)));
     }
     pub(crate) fn get_camera_position(&self) -> Vec3 {
         //! ## Returns
@@ -702,8 +701,7 @@ impl Scene {
         //! Sets the up vector of the camera to the given value
         //! ## Parameter
         //! 'up': glam::Vec3 for the new vector
-        self.get_camera_mut().set_up(up);
-        self.update_render_config_uniform();
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::Up(up)));
     }
     pub(crate) fn get_camera_fov(&self) -> f32 {
         //! ## Returns
@@ -715,11 +713,9 @@ impl Scene {
         //! Set the camera pane distance
         //! ## Parameter
         //! distance: New value for pane_distance
-        if distance > 0.0 {
-            info!("{self}: Setting pane distance to {distance}");
-            self.get_camera_mut().set_pane_distance(distance);
-            self.update_render_config_uniform();
-        }
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::PaneDistance(
+            distance,
+        )));
     }
     pub(crate) fn get_camera_pane_distance(&self) -> f32 {
         //! ## Returns
@@ -730,11 +726,7 @@ impl Scene {
         //! Set the camera pane width
         //! ## Parameter
         //! width: New value for pane_distance
-        if width > 0.0 {
-            info!("{self}: Setting pane width to {width}");
-            self.get_camera_mut().set_pane_width(width);
-            self.update_render_config_uniform();
-        }
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::PaneWidth(width)));
     }
     pub(crate) fn get_camera_pane_width(&self) -> f32 {
         //! ## Returns
@@ -750,16 +742,21 @@ impl Scene {
         //! Sets the camera resolution
         //! ## Parameter
         //! 'resolution': New resolution as array of u32
-        self.get_camera_mut().set_resolution(resolution);
-        self.update_render_config_uniform();
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::Resolution(
+            resolution,
+        )));
     }
+
     pub(crate) fn get_camera_ray_samples(&self) -> u32 {
+        //! ## Returns
+        //! Scene camera ray samples
         self.get_camera().get_ray_samples()
     }
     pub(crate) fn set_camera_ray_samples(&mut self, samples: u32) {
-        self.get_camera_mut().set_ray_samples(samples);
-        // here could be a check for values [1, 100] or so
-        self.update_render_config_uniform();
+        //! Sets the scene camera ray samples to the given value
+        //! ## Parameter
+        //! 'samples': new ray sample count
+        self.handle_scene_change(SceneChange::CameraChange(CameraChange::RaySamples(samples)));
     }
 
     // sphere stuff
