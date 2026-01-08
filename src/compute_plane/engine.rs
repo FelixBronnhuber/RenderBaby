@@ -5,13 +5,13 @@ use engine_config::{RenderOutput, Renderer};
 use crate::compute_plane::render_engine::RenderEngine;
 
 pub struct Engine {
-    renderer: Box<dyn Renderer>,
+    renderer: Box<dyn Renderer + Sync>,
     engine_type: RenderEngine,
 }
 
 impl Engine {
     pub fn new(rc: RenderConfig, engine_type: RenderEngine) -> Self {
-        let renderer: Box<dyn Renderer> = match engine_type {
+        let renderer: Box<dyn Renderer + Sync> = match engine_type {
             RenderEngine::Raytracer => Box::new(engine_raytracer::Engine::new(rc)),
             RenderEngine::Pathtracer => Box::new(engine_pathtracer::Engine::new(rc)),
         };
