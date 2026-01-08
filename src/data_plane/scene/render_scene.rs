@@ -302,7 +302,7 @@ impl Scene {
 
         self.scene_graph.get_spheres()
     }
-    pub fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
+    pub(in crate::data_plane) fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
         //! ##  Returns
         //! a reference to a vector of all spheres
 
@@ -313,6 +313,12 @@ impl Scene {
         //! a reference to a vector of all Meshes
 
         self.scene_graph.get_meshes()
+    }
+    pub(in crate::data_plane) fn get_meshes_mut(&mut self) -> &mut Vec<Mesh> {
+        //! ##  Returns
+        //! a reference to a vector of all Meshes
+
+        self.scene_graph.get_meshes_mut()
     }
 
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
@@ -762,7 +768,7 @@ impl Scene {
         //! ## Parameter
         //! 'index': Index at which the sphere is stored
         //! ## Returns
-        //! Result of either the spere or an error if the index is out of bound
+        //! Result of either the sphere or an error if the index is out of bound
         match self.get_spheres().get(index) {
             Some(sphere) => Ok(sphere),
             None => Err(anyhow!("Index out of bound")),
@@ -773,7 +779,7 @@ impl Scene {
         //! ## Parameter
         //! 'index': Index at which the sphere is stored
         //! ## Returns
-        //! Result of either the spere or an error if the index is out of bound
+        //! Result of either the sphere or an error if the index is out of bound
         match self.get_spheres_mut().get_mut(index) {
             Some(sphere) => Ok(sphere),
             None => Err(anyhow!("Index out of bound")),
@@ -879,6 +885,69 @@ impl Scene {
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
         self.get_sphere_mut_at(index)?.translate(vec);
+        Ok(())
+    }
+
+    // mesh stuff
+    fn get_mesh_at(&self, index: usize) -> Result<&Mesh, Error> {
+        //! private helper fn to get the mesh stored at the given index
+        //! ## Parameter
+        //! 'index': Index at which the mesh is stored
+        //! ## Returns
+        //! Result of either the mesh or an error if the index is out of bound
+        match self.get_meshes().get(index) {
+            Some(mesh) => Ok(mesh),
+            None => Err(anyhow!("Index out of bound")),
+        }
+    }
+    fn get_mesh_mut_at(&mut self, index: usize) -> Result<&mut Mesh, Error> {
+        //! private helper fn to get the mutable mesh stored at the given index
+        //! ## Parameter
+        //! 'index': Index at which the mesh is stored
+        //! ## Returns
+        //! Result of either the mesh or an error if the index is out of bound
+        match self.get_meshes_mut().get_mut(index) {
+            Some(mesh) => Ok(mesh),
+            None => Err(anyhow!("Index out of bound")),
+        }
+    }
+
+    pub(crate) fn get_mesh_path(&self, index: usize) -> Result<Option<&str>, Error> {
+        // todo: maybe remove the option?
+        //! ## Returns
+        //! Path of the reference file. Does a mesh need one?
+        Ok(self.get_mesh_at(index)?.get_path())
+    }
+
+    pub(crate) fn get_mesh_scale(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Scale in relation to the reference
+        Ok(self.get_mesh_at(index)?.get_scale())
+    }
+
+    pub(crate) fn get_mesh_translation(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Translation in relation to the reference as glam::Vec3
+        Ok(self.get_mesh_at(index)?.get_translation())
+    }
+
+    pub(crate) fn get_mesh_rotation(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Rotation in relation
+        Ok(self.get_mesh_at(index)?.get_rotation())
+    }
+    pub(crate) fn scale_mesh(&mut self, factor: f32, index: usize) -> Result<(), Error> {
+        //! scales the radius of the mesh
+        //! ## Parameter
+        //! 'factor': scale factor
+        self.get_mesh_mut_at(index)?.scale(factor);
+        Ok(())
+    }
+    pub(crate) fn translate_mesh(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
+        //! Moves the center of the mesh
+        //! ## Parameter
+        //! 'vec': Translation vector as glam::Vec3
+        self.get_mesh_mut_at(index)?.translate(vec);
         Ok(())
     }
 }
