@@ -6,6 +6,7 @@ pub(crate) enum SceneChange {
     LightChange(LightChange),
     MeshChange(MeshChange),
     SphereChange(SphereChange),
+    General,
 }
 //todo: what about adding, deleting
 

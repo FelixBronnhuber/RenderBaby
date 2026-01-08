@@ -28,7 +28,6 @@ impl SceneChangeHandler {
                 self.handle_sphere_change(scene, sphere_change)?;
                 scene.update_render_config_spheres();
             }
-
             SceneChange::MeshChange(mesh_change) => {
                 self.handle_mesh_change(scene, mesh_change)?;
                 // handle_mesh_change decides if render config vertices or tris need to be updated
@@ -37,6 +36,7 @@ impl SceneChangeHandler {
                 self.handle_light_change(scene, light_change)?;
                 scene.update_render_config_lights(); // maybe not needed if only rename?
             }
+            SceneChange::General => scene.update_render_config(),
         }
         Ok(())
     }
