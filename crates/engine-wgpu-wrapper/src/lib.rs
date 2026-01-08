@@ -1,6 +1,6 @@
 mod bind_group;
 mod buffers;
-mod gpu_device;
+pub mod gpu_device;
 mod gpu_wrapper;
 mod pipeline;
 

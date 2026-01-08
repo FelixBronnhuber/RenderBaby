@@ -1,10 +1,12 @@
-use std::path::{PathBuf};
-use anyhow::{Error};
-use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput};
+use std::path::PathBuf;
+use anyhow::Error;
+use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
+use std::collections::HashMap;
 use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
     camera::{Camera, Resolution},
+    geometric_object::GeometricObject,
     light_source::{LightSource, LightType},
     material::Material,
     mesh::Mesh,
@@ -19,7 +21,7 @@ use crate::{
         },
     },
 };
-use crate::data_plane::scene_io::mtl_parser;
+use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -30,6 +32,7 @@ pub struct Scene {
     first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
+    pub textures: HashMap<String, TextureData>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -42,8 +45,7 @@ impl Scene {
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
-        let path_str = path.to_str().unwrap();
-        info!("Scene: Loading new scene from {path_str}");
+        info!("Scene: Loading new scene from {}", path.display());
         let scene_and_path = parse_scene(path.clone());
         match scene_and_path {
             Ok(scene_and_path) => {
@@ -52,9 +54,12 @@ impl Scene {
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
-                for i in pathbuf {
-                    scene.load_object_from_file(i)?;
+                    .for_each(|path| pathbuf.push(directory_path.join(path)));
+                for (i, v) in pathbuf.iter().enumerate() {
+                    scene.load_object_from_file_relative(
+                        v.clone(),
+                        PathBuf::from(paths[i].clone()),
+                    )?;
                 }
                 Ok(scene)
             }
@@ -64,14 +69,39 @@ impl Scene {
             }
         }
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+    pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
+        info!("Scene {self}: Exporting scene");
+        let result = scene_exporter::serialize_scene(path.clone(), self);
+        match result {
+            Err(error) => {
+                error!(
+                    "{self}: exporting scene to {:?} resulted in error: {error}",
+                    path
+                );
+                Err(error)
+            }
+            _ => {
+                info!(
+                    "Scene {self}: Successfully exported scene to {}",
+                    path.display()
+                );
+                Ok(())
+            }
+        }
+    }
+
+    pub fn parse_obj_to_mesh(
+        &mut self,
+        path: PathBuf,
+        relative_path: Option<PathBuf>,
+    ) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let path_str = path.to_str().unwrap();
-        info!("Scene {self}: Loading object from {path_str}");
+        let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
+        info!("Scene {self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -81,9 +111,38 @@ impl Scene {
 
                 if let Some(obj) = objs.material_path {
                     for i in obj {
-                        let parsed = mtl_parser::MTLParser::parse(i.as_str());
+                        let mtl_path = parent_dir.join(&i);
+                        let parsed = mtl_parser::MTLParser::parse(mtl_path.to_str().unwrap_or(&i));
                         match parsed {
                             Ok(parsed) => parsed.iter().for_each(|mat| {
+                                // Load texture if present
+                                if let Some(tex_name) = &mat.map_kd {
+                                    let tex_path = parent_dir.join(tex_name);
+                                    let tex_key = tex_path.to_string_lossy().to_string();
+
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        self.textures.entry(tex_key)
+                                    {
+                                        info!("Loading texture from {:?}", tex_path);
+                                        match image::open(&tex_path) {
+                                            Ok(img) => {
+                                                let img = img.to_rgba8();
+                                                let (width, height) = img.dimensions();
+                                                let data: Vec<u32> = img
+                                                    .pixels()
+                                                    .map(|p| u32::from_le_bytes(p.0))
+                                                    .collect();
+
+                                                e.insert(TextureData::new(width, height, data));
+                                            }
+                                            Err(e) => error!(
+                                                "Failed to load texture {:?}: {}",
+                                                tex_path, e
+                                            ),
+                                        }
+                                    }
+                                }
+
                                 material_list.push(Material::new(
                                     mat.name.clone(),
                                     mat.ka.iter().map(|a| *a as f64).collect(),
@@ -91,6 +150,9 @@ impl Scene {
                                     mat.ks.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
+                                    mat.map_kd.clone().map(|name| {
+                                        parent_dir.join(name).to_string_lossy().to_string()
+                                    }),
                                 ))
                             }),
                             Err(error) => {
@@ -104,15 +166,64 @@ impl Scene {
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
 
-                let mut tris = Vec::with_capacity(100);
-                let mut material_index = Vec::with_capacity(10);
+                let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
+                let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
+                let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
+                let mut material_index = Vec::with_capacity(objs.faces.len());
+
+                let mut vertex_count = 0;
+
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        tris.push(vs.0 as u32 - 1);
-                        tris.push(vs.1 as u32 - 1);
-                        tris.push(vs.2 as u32 - 1);
+                        // Get indices for the triangle (0, i, i+1)
+                        let v_indices = [0, i, i + 1];
+
+                        for &idx in &v_indices {
+                            // Position
+                            let v_idx = face.v[idx] as usize - 1;
+                            if v_idx * 3 + 2 < objs.vertices.len() {
+                                new_vertices.push(objs.vertices[v_idx * 3]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 1]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 2]);
+                            } else {
+                                // Fallback if index is out of bounds (shouldn't happen with valid OBJ)
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                            }
+
+                            // UV
+                            if !face.vt.is_empty() && idx < face.vt.len() {
+                                let vt_val = face.vt[idx] as usize;
+                                if vt_val > 0 {
+                                    let vt_idx = vt_val - 1;
+                                    if let Some(tex_coords) = &objs.texture_coordinate {
+                                        if vt_idx * 2 + 1 < tex_coords.len() {
+                                            new_uvs.push(tex_coords[vt_idx * 2]);
+                                            new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                                        } else {
+                                            new_uvs.push(0.0);
+                                            new_uvs.push(0.0);
+                                        }
+                                    } else {
+                                        new_uvs.push(0.0);
+                                        new_uvs.push(0.0);
+                                    }
+                                } else {
+                                    new_uvs.push(0.0);
+                                    new_uvs.push(0.0);
+                                }
+                            } else {
+                                new_uvs.push(0.0);
+                                new_uvs.push(0.0);
+                            }
+
+                            // Index
+                            new_tris.push(vertex_count);
+                            vertex_count += 1;
+                        }
+
                         if let Some(m) = material_list
                             .iter()
                             .position(|x| x.name == face.material_name.clone())
@@ -121,24 +232,70 @@ impl Scene {
                         }
                     }
                 }
+                let mut used_path: PathBuf = if let Some(relative_path) = relative_path {
+                    relative_path
+                } else {
+                    path.clone()
+                };
                 let mesh = Mesh::new(
-                    objs.vertices,
-                    tris,
+                    new_vertices,
+                    new_tris,
+                    if !new_uvs.is_empty() {
+                        Some(new_uvs)
+                    } else {
+                        None
+                    },
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(path.to_string_lossy().to_string()),
+                    Some(used_path),
                 )?;
-                info!("Scene {self}: Successfully loaded object from {path_str}");
-                self.add_mesh(mesh);
-                Ok(())
+                info!(
+                    "Scene {self}: Successfully loaded object from {}",
+                    path.display()
+                );
+                Ok(mesh)
             }
 
             Err(error) => {
-                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                error!(
+                    "{self}: Parsing obj from {} resulted in error: {error}",
+                    path.display()
+                );
                 Err(error.into())
             }
         }
+    }
+
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path, None)?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    fn load_object_from_file_relative(
+        &mut self,
+        path: PathBuf,
+        relative_path: PathBuf,
+    ) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    pub fn load_object_from_file_transformed(
+        &mut self,
+        path: PathBuf,
+        translation: Vec3,
+        rotation: Vec3,
+        scale: f32,
+    ) -> Result<(), Error> {
+        let mut mesh = self.parse_obj_to_mesh(path, None)?;
+        mesh.scale(scale);
+        mesh.rotate(rotation);
+        mesh.translate(translation);
+        self.add_mesh(mesh);
+        Ok(())
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
@@ -218,14 +375,18 @@ impl Scene {
                     ))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
+                    .uvs_create(vec![])
                     .triangles_create(vec![])
+                    .meshes_create(vec![])
                     .lights_create(vec![])
+                    .textures_create(vec![])
                     .build(),
                 RenderEngine::Raytracer,
             )),
             first_render: true,
             last_render: None,
             color_hash_enabled: true,
+            textures: HashMap::new(),
         }
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
@@ -239,7 +400,7 @@ impl Scene {
         //! adds an object to the scene
         //! ## Arguments
         //! 'mesh': GeometricObject that is to be added to the scene
-        info!("{self}: adding {:?}", mesh);
+        info!("{self}: adding {:?}", mesh.get_name());
         self.scene_graph.add_mesh(mesh);
     }
 
@@ -272,6 +433,14 @@ impl Scene {
 
         self.scene_graph.get_spheres()
     }
+
+    pub fn get_spheres_mut(&mut self) -> &mut Vec<Sphere> {
+        //! ##  Returns
+        //! a reference to a vector of all spheres
+
+        self.scene_graph.get_spheres_mut()
+    }
+
     pub fn get_meshes(&self) -> &Vec<Mesh> {
         //! ##  Returns
         //! a reference to a vector of all Meshes
@@ -279,10 +448,23 @@ impl Scene {
         self.scene_graph.get_meshes()
     }
 
+    pub fn get_meshes_mut(&mut self) -> &mut Vec<Mesh> {
+        //! ##  Returns
+        //! a reference to a vector of all Meshes
+
+        self.scene_graph.get_meshes_mut()
+    }
+
     pub fn get_light_sources(&self) -> &Vec<LightSource> {
         //! ## Returns
         //! Reference to a vector that holds all LightSources of the scene
         self.scene_graph.get_light_sources()
+    }
+
+    pub fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
+        //! ## Returns
+        //! Reference to a vector that holds all LightSources of the scene
+        self.scene_graph.get_light_sources_mut()
     }
 
     pub fn get_render_engine(&self) -> &Engine {
@@ -366,15 +548,16 @@ impl Scene {
         self.first_render
     }
 
-    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
+    pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
             ))
         })?;
 
-        info!("{self}: Saved image to {:?}", path);
-        export_img_png(path, render)
+        info!("{self}: Saved image to {:?}", path.clone());
+        export_img_png(path, render)?;
+        Ok(())
     }
 }
 
