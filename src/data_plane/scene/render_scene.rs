@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-use std::path::{PathBuf};
-use anyhow::{Error};
+use std::path::PathBuf;
+use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
+use std::collections::HashMap;
 use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
@@ -21,7 +21,7 @@ use crate::{
         },
     },
 };
-use crate::data_plane::scene_io::mtl_parser;
+use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -45,8 +45,7 @@ impl Scene {
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
-        let path_str = path.to_str().unwrap();
-        info!("Scene: Loading new scene from {path_str}");
+        info!("Scene: Loading new scene from {}", path.display());
         let scene_and_path = parse_scene(path.clone());
         match scene_and_path {
             Ok(scene_and_path) => {
@@ -55,9 +54,12 @@ impl Scene {
                 let mut pathbuf = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|mut path| pathbuf.push(directory_path.join(path)));
-                for i in pathbuf {
-                    scene.load_object_from_file(i)?;
+                    .for_each(|path| pathbuf.push(directory_path.join(path)));
+                for (i, v) in pathbuf.iter().enumerate() {
+                    scene.load_object_from_file_relative(
+                        v.clone(),
+                        PathBuf::from(paths[i].clone()),
+                    )?;
                 }
                 Ok(scene)
             }
@@ -67,15 +69,39 @@ impl Scene {
             }
         }
     }
-    fn parse_obj_to_mesh(&mut self, path: PathBuf) -> Result<Mesh, Error> {
+    pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
+        info!("Scene {self}: Exporting scene");
+        let result = scene_exporter::serialize_scene(path.clone(), self);
+        match result {
+            Err(error) => {
+                error!(
+                    "{self}: exporting scene to {:?} resulted in error: {error}",
+                    path
+                );
+                Err(error)
+            }
+            _ => {
+                info!(
+                    "Scene {self}: Successfully exported scene to {}",
+                    path.display()
+                );
+                Ok(())
+            }
+        }
+    }
+
+    pub fn parse_obj_to_mesh(
+        &mut self,
+        path: PathBuf,
+        relative_path: Option<PathBuf>,
+    ) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let path_str = path.to_str().unwrap();
         let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
-        info!("Scene {self}: Loading object from {path_str}");
+        info!("Scene {self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -206,6 +232,11 @@ impl Scene {
                         }
                     }
                 }
+                let mut used_path: PathBuf = if let Some(relative_path) = relative_path {
+                    relative_path
+                } else {
+                    path.clone()
+                };
                 let mesh = Mesh::new(
                     new_vertices,
                     new_tris,
@@ -217,21 +248,37 @@ impl Scene {
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(path.to_string_lossy().to_string()),
+                    Some(used_path),
                 )?;
-                info!("Scene {self}: Successfully loaded object from {path_str}");
+                info!(
+                    "Scene {self}: Successfully loaded object from {}",
+                    path.display()
+                );
                 Ok(mesh)
             }
 
             Err(error) => {
-                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                error!(
+                    "{self}: Parsing obj from {} resulted in error: {error}",
+                    path.display()
+                );
                 Err(error.into())
             }
         }
     }
 
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path)?;
+        let mesh = self.parse_obj_to_mesh(path, None)?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    fn load_object_from_file_relative(
+        &mut self,
+        path: PathBuf,
+        relative_path: PathBuf,
+    ) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
         self.add_mesh(mesh);
         Ok(())
     }
@@ -243,7 +290,7 @@ impl Scene {
         rotation: Vec3,
         scale: f32,
     ) -> Result<(), Error> {
-        let mut mesh = self.parse_obj_to_mesh(path)?;
+        let mut mesh = self.parse_obj_to_mesh(path, None)?;
         mesh.scale(scale);
         mesh.rotate(rotation);
         mesh.translate(translation);
@@ -510,15 +557,16 @@ impl Scene {
         self.first_render
     }
 
-    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
+    pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
             ))
         })?;
 
-        info!("{self}: Saved image to {:?}", path);
-        export_img_png(path, render)
+        info!("{self}: Saved image to {:?}", path.clone());
+        export_img_png(path, render)?;
+        Ok(())
     }
 }
 

@@ -1,5 +1,5 @@
 use std::fmt::Display;
-
+use std::path::PathBuf;
 use glam::Vec3;
 use anyhow::Error;
 
@@ -17,7 +17,7 @@ pub struct Mesh {
     uvs: Option<Vec<f32>>,
     materials: Option<Vec<Material>>,
     material_index: Option<Vec<usize>>,
-    path: Option<String>,
+    path: Option<PathBuf>,
     name: String,
     scale: Vec3,
     translation: Vec3,
@@ -34,7 +34,7 @@ impl Mesh {
         materials: Option<Vec<Material>>,
         material_index: Option<Vec<usize>>,
         name: Option<String>,
-        _path: Option<String>,
+        _path: Option<PathBuf>,
     ) -> Result<Self, Error> {
         //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
@@ -44,7 +44,7 @@ impl Mesh {
                 uvs,
                 materials,
                 material_index,
-                path: None,
+                path: _path,
                 name: name.unwrap_or("unnamed mesh".to_owned()),
                 scale: Vec3::new(1.0, 1.0, 1.0),
                 rotation: Vec3::default(),
@@ -117,6 +117,9 @@ impl Mesh {
         //! Returns
         //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
         &self.tris
+    }
+    pub fn set_path(&mut self, path: PathBuf) {
+        self.path = Some(path);
     }
 
     pub fn get_material_indices(&self) -> Option<&Vec<usize>> {
@@ -209,8 +212,8 @@ impl GeometricObject for Mesh {
 }
 
 impl SceneObject for Mesh {
-    fn get_path(&self) -> Option<&str> {
-        self.path.as_deref()
+    fn get_path(&self) -> Option<PathBuf> {
+        self.path.clone()
     }
 
     fn get_scale(&self) -> glam::Vec3 {

@@ -59,24 +59,24 @@ fn color_ui(ui: &mut Ui, color: &mut Color) -> bool {
         changed |= ui
             .add(
                 egui::DragValue::new(&mut color.r)
-                    .speed(1)
-                    .range(0.0..=255.0),
+                    .speed(0.01)
+                    .range(0.0..=1.0),
             )
             .changed();
         ui.label("G:");
         changed |= ui
             .add(
                 egui::DragValue::new(&mut color.g)
-                    .speed(1)
-                    .range(0.0..=255.0),
+                    .speed(0.01)
+                    .range(0.0..=1.0),
             )
             .changed();
         ui.label("B:");
         changed |= ui
             .add(
                 egui::DragValue::new(&mut color.b)
-                    .speed(1)
-                    .range(0.0..=255.0),
+                    .speed(0.01)
+                    .range(0.0..=1.0),
             )
             .changed();
     });
