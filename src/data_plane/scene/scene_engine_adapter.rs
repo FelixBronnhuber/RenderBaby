@@ -13,6 +13,7 @@ use scene_objects::{
 use crate::data_plane::scene::{render_scene::Scene};
 use engine_bvh::triangle::GPUTriangle;
 use engine_bvh::bvh::BVH;
+use std::time::Instant;
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
@@ -354,6 +355,7 @@ impl Scene {
         //! ## Returns
         //! Result of either the RenderOutput or a error
         info!("{self}: Render has been called. Collecting render parameters");
+        let start = Instant::now();
 
         let render_spheres = self.get_render_spheres();
 
@@ -479,6 +481,8 @@ impl Scene {
         let engine = self.get_render_engine_mut();
 
         let output = engine.render(rc);
+        let duration = start.elapsed();
+        info!("Dauer: {:?}", duration);
         match output {
             Ok(res) => match res.validate() {
                 Ok(_) => {
