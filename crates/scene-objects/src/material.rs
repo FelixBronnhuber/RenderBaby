@@ -4,7 +4,7 @@ pub struct Material {
     pub ambient_reflectivity: Vec<f64>,  //Ka
     pub diffuse_reflectivity: Vec<f64>,  //Kd
     pub specular_reflectivity: Vec<f64>, //Ks
-    pub emissive: Vec<f64>,
+    pub emissive: Vec<f64>,              //Ke
     pub shininess: f64,                  //Ns
     pub transparency: f64,               //d
     pub texture_path: Option<String>,    //map_Kd
@@ -32,7 +32,6 @@ impl Material {
             texture_path,
         }
     }
-
 }
 impl Clone for Material {
     fn clone(&self) -> Material {
@@ -48,7 +47,6 @@ impl Clone for Material {
         }
     }
 }
-
 
 impl Default for Material {
     fn default() -> Self {
