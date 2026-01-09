@@ -95,6 +95,10 @@ fn camera_to_render_uniforms(
         camera.get_ray_samples(), //samples: ray per pixel
         spheres_count,
         triangles_count,
+        RenderUniforms::default().ground_height, //Replace with correct values from GUI
+        RenderUniforms::default().ground_enabled,
+        RenderUniforms::default().sky_color,
+        RenderUniforms::default().max_depth,
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
