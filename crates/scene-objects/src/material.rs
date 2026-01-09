@@ -11,6 +11,7 @@ pub struct Material {
 }
 #[allow(dead_code)]
 impl Material {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: String,
         ambient_reflectivity: Vec<f64>,
