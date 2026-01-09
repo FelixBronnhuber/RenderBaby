@@ -6,6 +6,7 @@ use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
+    light_source::LightSource,
     mesh::Mesh,
     sphere::Sphere,
 };
@@ -15,9 +16,26 @@ type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
-pub type RenderLights = engine_config::PointLight;
+type RenderLight = engine_config::PointLight;
 type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
 type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
+
+fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
+    //! Converts the given LightSource to a engine_config::PointLight if has the type Point
+    //! ## Parameter:
+    //! 'light': LightSource that is to be converted
+    //! ## Returns
+    //! Options of engine_config::PointLight: Some if light has Type Point
+    match light.get_light_type() {
+        scene_objects::light_source::LightType::Point => Some(RenderLight::new(
+            light.get_position().into(),
+            0.5,
+            light.get_luminositoy(),
+            light.get_color(),
+        )),
+        _ => None,
+    }
+}
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -40,16 +58,6 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     )
     .unwrap()
     //todo error handling
-}
-
-fn light_to_render_light(light: &scene_objects::light_source::LightSource) -> RenderLights {
-    let pos = light.get_position();
-    RenderLights::new(
-        [pos.x, pos.y, pos.z],
-        0.5,
-        light.get_luminositoy(),
-        light.get_color(),
-    )
 }
 
 fn vec3_to_array(vec: Vec3) -> [f32; 3] {
@@ -264,6 +272,17 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
+    fn get_render_point_lights(&self) -> Vec<RenderLight> {
+        //! ## Returns
+        //! A vector with all engine_config::PointLight from self
+        let mut res = vec![];
+        for light in self.get_light_sources() {
+            if let Some(render_light) = light_to_render_point_light(light) {
+                res.push(render_light);
+            }
+        }
+        res
+    }
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
@@ -370,14 +389,7 @@ impl Scene {
             all_vertices.len() / 3
         );
 
-        let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
-            [RenderLights::default()].to_vec()
-        } else {
-            self.get_light_sources()
-                .iter()
-                .map(light_to_render_light)
-                .collect()
-        };
+        let point_lights = self.get_render_point_lights();
 
         let rc = if self.get_first_render() {
             self.set_first_render(false);
@@ -389,7 +401,7 @@ impl Scene {
                 .uvs_create(all_uvs)
                 .triangles_create(all_triangles)
                 .meshes_create(all_meshes)
-                .lights_create(lights)
+                .lights_create(point_lights)
                 .textures_create(texture_list)
                 .build()
         } else {
@@ -402,7 +414,7 @@ impl Scene {
                 .uvs(all_uvs)
                 .triangles(all_triangles)
                 .meshes(all_meshes)
-                .lights(lights)
+                .lights(point_lights)
                 .textures(texture_list)
                 .build()
         };

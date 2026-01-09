@@ -315,13 +315,21 @@ impl Scene {
         let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
 
         let cam = Camera::default();
-        let light = LightSource::new(
+        let ambient_light = LightSource::new(
             Vec3::new(0.0, 0.0, 3.0),
             0.0,
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
             Vec3::default(),
             LightType::Ambient,
+        );
+        let point_light = LightSource::new(
+            Vec3::new(2.0, 4.0, 1.0),
+            20.0,
+            [1.0, 0.9, 0.8],
+            "point_light".to_owned(),
+            Vec3::default(),
+            LightType::Point,
         );
         self.add_sphere(sphere0);
         self.add_sphere(sphere1);
@@ -330,7 +338,8 @@ impl Scene {
         self.add_sphere(sphere4);
 
         self.set_camera(cam);
-        self.add_lightsource(light);
+        self.add_lightsource(ambient_light);
+        self.add_lightsource(point_light);
     }
 
     pub fn get_camera_mut(&mut self) -> &mut Camera {
