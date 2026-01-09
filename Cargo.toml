@@ -36,5 +36,5 @@ members = [
     "crates/command-stack",
     "crates/log-buffer",
     "crates/scene-objects",
-    "crates/eframe-elements", "crates/engine-bvh",
+    "crates/eframe-elements", "crates/engine-bvh", "crates/frame-buffer",
 ]

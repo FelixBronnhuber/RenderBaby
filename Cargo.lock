@@ -1561,6 +1561,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-buffer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+]
+
+[[package]]
 name = "futures-channel"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
