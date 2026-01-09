@@ -9,7 +9,7 @@ use crate::data_plane::scene::render_scene::Scene;
     name = "cli args",
     about = "Specify command line arguments for the application."
 )]
-pub struct Args {
+struct Args {
     #[arg(long, required = true, help = "Path to the scene json file.")]
     pub scene: PathBuf,
 

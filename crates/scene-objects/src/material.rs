@@ -6,6 +6,7 @@ pub struct Material {
     pub specular_reflectivity: Vec<f64>, //Ks
     pub shininess: f64,                  //Ns
     pub transparency: f64,               //d
+    pub texture_path: Option<String>,    //map_Kd
 }
 #[allow(dead_code)]
 impl Material {
@@ -16,6 +17,7 @@ impl Material {
         specular_reflectivity: Vec<f64>,
         shininess: f64,
         transparency: f64,
+        texture_path: Option<String>,
     ) -> Self {
         //! Constructor for new material
         Material {
@@ -25,6 +27,7 @@ impl Material {
             specular_reflectivity,
             shininess,
             transparency,
+            texture_path,
         }
     }
 }
@@ -37,6 +40,7 @@ impl Clone for Material {
             specular_reflectivity: self.specular_reflectivity.clone(),
             shininess: self.shininess,
             transparency: self.transparency,
+            texture_path: self.texture_path.clone(),
         }
     }
 }
@@ -50,6 +54,7 @@ impl Default for Material {
             specular_reflectivity: vec![0.0, 0.0, 0.0],
             shininess: 0.0,
             transparency: 0.0,
+            texture_path: None,
         }
     }
 }

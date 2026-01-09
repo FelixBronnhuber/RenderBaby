@@ -4,10 +4,10 @@ use glam::Vec3;
 pub struct LightSource {
     position: Vec3,
     luminosity: f32,
-    name: String,
-    color: [f32; 3],
-    rotation: Vec3,
-    light_type: LightType,
+    pub name: String,
+    pub color: [f32; 3],
+    pub rotation: Vec3,
+    pub light_type: LightType,
 }
 impl LightSource {
     pub fn get_position(&self) -> Vec3 {
@@ -54,6 +54,12 @@ impl LightSource {
         //! LightSource LightType Enum
         &self.light_type
     }
+    pub fn set_light_type(&mut self, light_type: LightType) {
+        //! Sets the LightSource LightType
+        //! ## Parameter
+        //! 'light_type': New LightType Enum
+        self.light_type = light_type;
+    }
     pub fn get_color(&self) -> [f32; 3] {
         //! ## Returns
         //! LightSource color as rgb array of f32, values in \[0, 1]
@@ -76,6 +82,7 @@ impl LightSource {
         //! 'name': new name
         self.name = name;
     }
+
     // todo LightSource should also be a FileObject!
     pub fn new(
         position: Vec3,
@@ -110,7 +117,7 @@ impl std::fmt::Display for LightSource {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 /// Light can be either Ambient, Point or Directional
 pub enum LightType {
     Ambient,
@@ -118,12 +125,24 @@ pub enum LightType {
     Directional,
 }
 
-impl LightType {
-    pub fn as_string(&self) -> String {
-        match self {
-            LightType::Ambient => "ambient".to_owned(),
-            LightType::Point => "point".to_owned(),
-            LightType::Directional => "directional".to_owned(),
+impl From<LightType> for String {
+    fn from(lt: LightType) -> Self {
+        match lt {
+            LightType::Ambient => "ambient".to_string(),
+            LightType::Point => "point".to_string(),
+            LightType::Directional => "directional".to_string(),
+        }
+    }
+}
+
+impl From<String> for LightType {
+    fn from(s: String) -> Self {
+        let s = s.to_lowercase();
+        match s.as_str() {
+            "ambient" => LightType::Ambient,
+            "point" => LightType::Point,
+            "directional" => LightType::Directional,
+            _ => panic!("Invalid LightType"),
         }
     }
 }

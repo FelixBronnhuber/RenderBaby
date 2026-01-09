@@ -3,6 +3,7 @@ use crate::{
     geometric_object::{GeometricObject, SceneObject},
     material::Material,
 };
+use std::path::PathBuf;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -13,7 +14,7 @@ pub struct Sphere {
     material: Material,
     color: [f32; 3],
     name: String,
-    path: Option<String>,
+    path: Option<PathBuf>,
     scale: Vec3,
     translation: Vec3,
     rotation: Vec3,
@@ -91,10 +92,10 @@ impl Sphere {
 }
 
 impl SceneObject for Sphere {
-    fn get_path(&self) -> Option<&str> {
+    fn get_path(&self) -> Option<PathBuf> {
         //! ## Returns
         //! Path of the reference file. Does a sphere need one?
-        self.path.as_deref()
+        self.path.clone()
     }
 
     fn get_scale(&self) -> Vec3 {

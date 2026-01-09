@@ -1,6 +1,7 @@
 use std::path::{PathBuf};
 use anyhow::{anyhow, Error};
-use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, Uniforms};
+use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, TextureData, Uniforms};
+use std::collections::HashMap;
 use glam::Vec3;
 use log::{debug, error, info};
 use scene_objects::{
@@ -18,7 +19,8 @@ use crate::{
             scene_change::{CameraChange, SceneChange},
             scene_change_handler::SceneChangeHandler,
             scene_engine_adapter::{
-                camera_to_render_uniforms, mesh_to_render_data, sphere_to_render_sphere,
+                camera_to_render_uniforms, light_to_render_point_light, mesh_to_render_data,
+                sphere_to_render_sphere,
             },
             scene_graph::SceneGraph,
         },
@@ -27,12 +29,15 @@ use crate::{
         },
     },
 };
-use crate::data_plane::scene_io::mtl_parser;
+use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
-type RenderCamera = engine_config::Camera;
-type RenderLights = engine_config::PointLight;
+type RenderMesh = engine_config::Mesh;
+pub type RenderCamera = engine_config::Camera;
+type RenderLight = engine_config::PointLight;
+type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
+type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -45,6 +50,7 @@ pub struct Scene {
     first_render: bool,
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
+    pub textures: HashMap<String, TextureData>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -57,8 +63,7 @@ impl Scene {
     pub(crate) fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
-        let path_str = path.to_str().unwrap();
-        info!("Scene: Loading new scene from {path_str}");
+        info!("Scene: Loading new scene from {}", path.display());
         let scene_and_path = parse_scene(path.clone());
         match scene_and_path {
             Ok(scene_and_path) => {
@@ -68,8 +73,11 @@ impl Scene {
                 paths
                     .iter()
                     .for_each(|path| pathbuf.push(directory_path.join(path)));
-                for i in pathbuf {
-                    scene.load_object_from_file(i)?;
+                for (i, v) in pathbuf.iter().enumerate() {
+                    scene.load_object_from_file_relative(
+                        v.clone(),
+                        PathBuf::from(paths[i].clone()),
+                    )?;
                 }
                 Ok(scene)
             }
@@ -79,14 +87,39 @@ impl Scene {
             }
         }
     }
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+    pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
+        info!("Scene {self}: Exporting scene");
+        let result = scene_exporter::serialize_scene(path.clone(), self);
+        match result {
+            Err(error) => {
+                error!(
+                    "{self}: exporting scene to {:?} resulted in error: {error}",
+                    path
+                );
+                Err(error)
+            }
+            _ => {
+                info!(
+                    "Scene {self}: Successfully exported scene to {}",
+                    path.display()
+                );
+                Ok(())
+            }
+        }
+    }
+
+    pub fn parse_obj_to_mesh(
+        &mut self,
+        path: PathBuf,
+        relative_path: Option<PathBuf>,
+    ) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let path_str = path.to_str().unwrap();
-        info!("Scene {self}: Loading object from {path_str}");
+        let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
+        info!("Scene {self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -96,9 +129,38 @@ impl Scene {
 
                 if let Some(obj) = objs.material_path {
                     for i in obj {
-                        let parsed = mtl_parser::MTLParser::parse(i.as_str());
+                        let mtl_path = parent_dir.join(&i);
+                        let parsed = mtl_parser::MTLParser::parse(mtl_path.to_str().unwrap_or(&i));
                         match parsed {
                             Ok(parsed) => parsed.iter().for_each(|mat| {
+                                // Load texture if present
+                                if let Some(tex_name) = &mat.map_kd {
+                                    let tex_path = parent_dir.join(tex_name);
+                                    let tex_key = tex_path.to_string_lossy().to_string();
+
+                                    if let std::collections::hash_map::Entry::Vacant(e) =
+                                        self.textures.entry(tex_key)
+                                    {
+                                        info!("Loading texture from {:?}", tex_path);
+                                        match image::open(&tex_path) {
+                                            Ok(img) => {
+                                                let img = img.to_rgba8();
+                                                let (width, height) = img.dimensions();
+                                                let data: Vec<u32> = img
+                                                    .pixels()
+                                                    .map(|p| u32::from_le_bytes(p.0))
+                                                    .collect();
+
+                                                e.insert(TextureData::new(width, height, data));
+                                            }
+                                            Err(e) => error!(
+                                                "Failed to load texture {:?}: {}",
+                                                tex_path, e
+                                            ),
+                                        }
+                                    }
+                                }
+
                                 material_list.push(Material::new(
                                     mat.name.clone(),
                                     mat.ka.iter().map(|a| *a as f64).collect(),
@@ -106,6 +168,9 @@ impl Scene {
                                     mat.ks.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
+                                    mat.map_kd.clone().map(|name| {
+                                        parent_dir.join(name).to_string_lossy().to_string()
+                                    }),
                                 ))
                             }),
                             Err(error) => {
@@ -119,15 +184,64 @@ impl Scene {
                         .for_each(|mat| material_name_list.push(mat.name.clone()));
                 }
 
-                let mut tris = Vec::with_capacity(100);
-                let mut material_index = Vec::with_capacity(10);
+                let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
+                let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
+                let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
+                let mut material_index = Vec::with_capacity(objs.faces.len());
+
+                let mut vertex_count = 0;
+
                 for face in objs.faces {
                     let leng = face.v.len();
                     for i in 1..(leng - 1) {
-                        let vs = (face.v[0], face.v[i], face.v[i + 1]);
-                        tris.push(vs.0 as u32 - 1);
-                        tris.push(vs.1 as u32 - 1);
-                        tris.push(vs.2 as u32 - 1);
+                        // Get indices for the triangle (0, i, i+1)
+                        let v_indices = [0, i, i + 1];
+
+                        for &idx in &v_indices {
+                            // Position
+                            let v_idx = face.v[idx] as usize - 1;
+                            if v_idx * 3 + 2 < objs.vertices.len() {
+                                new_vertices.push(objs.vertices[v_idx * 3]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 1]);
+                                new_vertices.push(objs.vertices[v_idx * 3 + 2]);
+                            } else {
+                                // Fallback if index is out of bounds (shouldn't happen with valid OBJ)
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                                new_vertices.push(0.0);
+                            }
+
+                            // UV
+                            if !face.vt.is_empty() && idx < face.vt.len() {
+                                let vt_val = face.vt[idx] as usize;
+                                if vt_val > 0 {
+                                    let vt_idx = vt_val - 1;
+                                    if let Some(tex_coords) = &objs.texture_coordinate {
+                                        if vt_idx * 2 + 1 < tex_coords.len() {
+                                            new_uvs.push(tex_coords[vt_idx * 2]);
+                                            new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                                        } else {
+                                            new_uvs.push(0.0);
+                                            new_uvs.push(0.0);
+                                        }
+                                    } else {
+                                        new_uvs.push(0.0);
+                                        new_uvs.push(0.0);
+                                    }
+                                } else {
+                                    new_uvs.push(0.0);
+                                    new_uvs.push(0.0);
+                                }
+                            } else {
+                                new_uvs.push(0.0);
+                                new_uvs.push(0.0);
+                            }
+
+                            // Index
+                            new_tris.push(vertex_count);
+                            vertex_count += 1;
+                        }
+
                         if let Some(m) = material_list
                             .iter()
                             .position(|x| x.name == face.material_name.clone())
@@ -136,24 +250,134 @@ impl Scene {
                         }
                     }
                 }
+                let used_path: PathBuf = if let Some(relative_path) = relative_path {
+                    relative_path
+                } else {
+                    path.clone()
+                };
                 let mesh = Mesh::new(
-                    objs.vertices,
-                    tris,
+                    new_vertices,
+                    new_tris,
+                    if !new_uvs.is_empty() {
+                        Some(new_uvs)
+                    } else {
+                        None
+                    },
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(path.to_string_lossy().to_string()),
+                    Some(used_path),
                 )?;
-                info!("Scene {self}: Successfully loaded object from {path_str}");
-                self.add_mesh(mesh);
-                Ok(())
+                info!(
+                    "Scene {self}: Successfully loaded object from {}",
+                    path.display()
+                );
+                Ok(mesh)
             }
 
             Err(error) => {
-                error!("{self}: Parsing obj from {path_str} resulted in error: {error}");
+                error!(
+                    "{self}: Parsing obj from {} resulted in error: {error}",
+                    path.display()
+                );
                 Err(error.into())
             }
         }
+    }
+
+    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path, None)?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    fn load_object_from_file_relative(
+        &mut self,
+        path: PathBuf,
+        relative_path: PathBuf,
+    ) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    pub fn load_object_from_file_transformed(
+        &mut self,
+        path: PathBuf,
+        translation: Vec3,
+        rotation: Vec3,
+        scale: f32,
+    ) -> Result<(), Error> {
+        let mut mesh = self.parse_obj_to_mesh(path, None)?;
+        mesh.scale(scale);
+        mesh.rotate(rotation);
+        mesh.translate(translation);
+        self.add_mesh(mesh);
+        Ok(())
+    }
+
+    pub(in crate::data_plane) fn get_camera_mut(&mut self) -> &mut Camera {
+        //! ## Returns
+        //! a mutable reference to the camera
+        self.scene_graph.get_camera_mut()
+    }
+    pub fn get_camera(&self) -> &Camera {
+        //! ## Returns
+        //!  a reference to the camera
+        self.scene_graph.get_camera()
+    }
+
+    pub fn new() -> Self {
+        //! ## Returns
+        //! A new scene with default values
+        let cam = Camera::default();
+        let Resolution { width, height } = cam.get_resolution();
+        let position = cam.get_position();
+        let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
+        let pane_width = RenderCamera::default().pane_width;
+        let render_camera = RenderCamera::new(
+            cam.get_pane_distance(),
+            pane_width,
+            [position.x, position.y, position.z],
+            rotation,
+        );
+        let mut res = Self {
+            scene_graph: SceneGraph::new(),
+            name: "scene".to_owned(),
+            change_handler: SceneChangeHandler {},
+            background_color: [1.0, 1.0, 1.0],
+            render_engine: None,
+            render_config_builder: RenderConfigBuilder::new(),
+            first_render: true,
+            last_render: None,
+            color_hash_enabled: true,
+            textures: HashMap::new(),
+        };
+        res.render_config_builder = RenderConfigBuilder::new()
+            .uniforms_create(Uniforms::new(
+                *width,
+                *height,
+                render_camera,
+                cam.get_ray_samples(),
+                0,
+                0,
+            ))
+            .spheres_create(vec![])
+            .vertices_create(vec![])
+            .uvs_create(vec![])
+            .triangles_create(vec![])
+            .meshes_create(vec![])
+            .lights_create(vec![])
+            .textures_create(vec![]);
+        res.set_render_engine(Engine::new(
+            res.build_render_config(),
+            RenderEngine::Raytracer,
+        ));
+        res.update_render_config();
+        let _ = res.render();
+        res.update_render_config(); // 2nd time so that nothing is set to create. Maybe find a better way for this
+
+        res
     }
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
@@ -193,66 +417,6 @@ impl Scene {
         let _ = self.render(); */
     }
 
-    pub(in crate::data_plane) fn get_camera_mut(&mut self) -> &mut Camera {
-        //! ## Returns
-        //! a mutable reference to the camera
-        self.scene_graph.get_camera_mut()
-    }
-    pub fn get_camera(&self) -> &Camera {
-        //! ## Returns
-        //!  a reference to the camera
-        self.scene_graph.get_camera()
-    }
-
-    pub fn new() -> Self {
-        //! ## Returns
-        //! A new scene with default values
-        let cam = Camera::default();
-        let Resolution { width, height } = cam.get_resolution();
-        let position = cam.get_position();
-        let rotation = RenderCamera::default().dir; //Engine uses currently a direction vector
-        let pane_width = RenderCamera::default().pane_width;
-        let render_camera = RenderCamera::new(
-            cam.get_pane_distance(),
-            pane_width,
-            [position.x, position.y, position.z],
-            rotation,
-        );
-        let mut res = Self {
-            scene_graph: SceneGraph::new(),
-            name: "scene".to_owned(),
-            change_handler: SceneChangeHandler {},
-            background_color: [1.0, 1.0, 1.0],
-            render_engine: None,
-            render_config_builder: RenderConfigBuilder::new(),
-            first_render: true,
-            last_render: None,
-            color_hash_enabled: true,
-        };
-        res.render_config_builder = RenderConfigBuilder::new()
-            .uniforms_create(Uniforms::new(
-                *width,
-                *height,
-                render_camera,
-                cam.get_ray_samples(),
-                0,
-                0,
-            ))
-            .spheres_create(vec![])
-            .vertices_create(vec![])
-            .triangles_create(vec![])
-            .lights_create(vec![]);
-
-        res.set_render_engine(Engine::new(
-            res.build_render_config(),
-            RenderEngine::Raytracer,
-        ));
-        res.update_render_config();
-        let _ = res.render();
-        res.update_render_config(); // 2nd time so that nothing is set to create. Maybe find a better way for this
-
-        res
-    }
     pub fn add_sphere(&mut self, sphere: Sphere) {
         //! adds an object to the scene
         //! ## Arguments
@@ -265,7 +429,7 @@ impl Scene {
         //! adds an object to the scene
         //! ## Arguments
         //! 'mesh': GeometricObject that is to be added to the scene
-        info!("{self}: adding {:?}", mesh);
+        info!("{self}: adding {:?}", mesh.get_name());
         self.scene_graph.add_mesh(mesh);
         self.update_render_config_triangles();
     }
@@ -326,6 +490,12 @@ impl Scene {
         //! ## Returns
         //! Reference to a vector that holds all LightSources of the scene
         self.scene_graph.get_light_sources()
+    }
+
+    pub fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
+        //! ## Returns
+        //! Reference to a vector that holds all LightSources of the scene
+        self.scene_graph.get_light_sources_mut()
     }
 
     pub fn get_render_engine(&self) -> &Engine {
@@ -392,6 +562,19 @@ impl Scene {
         );
     }
 
+    // render stuff
+    fn get_render_point_lights(&self) -> Vec<RenderLight> {
+        //! ## Returns
+        //! A vector with all engine_config::PointLight from self
+        let mut res = vec![];
+        for light in self.get_light_sources() {
+            if let Some(render_light) = light_to_render_point_light(light) {
+                res.push(render_light);
+            }
+        }
+        res
+    }
+
     fn set_last_render(&mut self, render: RenderOutput) {
         //! Sets the last render field to the given Renderoutput
         //! ## Parameter
@@ -413,18 +596,16 @@ impl Scene {
         self.first_render
     }
 
-    pub fn export_render_img(&self, path: PathBuf) -> image::ImageResult<()> {
-        //! Saves the last render result to the given path
-        //! ## Parameter
-        //! 'path': std::path::Pathbuf for the target path
+    pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
         let render = self.last_render.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
             ))
         })?;
 
-        info!("{self}: Saved image to {:?}", path);
-        export_img_png(path, render)
+        info!("{self}: Saved image to {:?}", path.clone());
+        export_img_png(path, render)?;
+        Ok(())
     }
 
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
@@ -447,10 +628,13 @@ impl Scene {
         .unwrap()
     }
 
-    fn get_render_tris(&self) -> Vec<(Vec<f32>, Vec<u32>)> {
+    fn get_render_tris(&self, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
         //! ## Returns
         //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
-        self.get_meshes().iter().map(mesh_to_render_data).collect()
+        self.get_meshes()
+            .iter()
+            .flat_map(|m| mesh_to_render_data(m, texture_map))
+            .collect()
     }
 
     pub fn render(&mut self) -> Result<RenderOutput, Error> {
@@ -464,10 +648,6 @@ impl Scene {
             );
             self.update_render_config();
         }
-        //self.update_render_config();
-        //self.update_render_config_uniform();
-        //self.update_render_config_spheres();
-        // maybe always update uniforms, in case the sphere count, vertices count or tri count has changed
 
         let rc = self.build_render_config();
         let output = self.get_render_engine_mut().render(rc);
@@ -499,38 +679,59 @@ impl Scene {
         //! updates the field render_context_builder
         info!("{self}: Updating render config builder");
         let render_spheres = self.get_render_spheres();
-        let render_tris = self.get_render_tris();
+        let mut texture_list = Vec::new();
+        let mut texture_map = HashMap::new();
+
+        for (path, data) in &self.textures {
+            texture_map.insert(path.clone(), texture_list.len() as i32);
+            texture_list.push(data.clone());
+        }
+        let render_tris = self.get_render_tris(&texture_map);
         debug!("Scene mesh data: {:?}", self.get_meshes());
         debug!("Collected mesh data: {:?}", render_tris);
 
         let spheres_count = render_spheres.len() as u32;
         let triangles_count = render_tris
             .iter()
-            .map(|(_, tri)| tri.len() as u32 / 3)
+            .map(|(_, tri, _, _)| tri.len() as u32 / 3)
             .sum();
 
         let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
 
         // Collect all vertices and triangles into flat vectors
-        let (all_vertices, all_triangles) = if render_tris.is_empty() {
-            (vec![], vec![])
+        let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
+            (vec![], vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut all_uvs = vec![];
+            let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
+            let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris {
+            for (verts, tris, uvs, material) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
+                let triangle_count = (tris.len() / 3) as u32;
 
+                // Add mesh metadata
+                mesh_infos.push(RenderMesh::new(triangle_offset, triangle_count, *material));
+
+                // Add triangles with vertex offset
                 for tri_idx in tris {
                     all_tris.push(tri_idx + vertex_offset);
                 }
 
+                // Add vertices
                 all_verts.extend(verts);
 
+                // Add UVs
+                all_uvs.extend(uvs);
+
                 vertex_offset += vertex_count;
+                triangle_offset += triangle_count;
             }
-            (all_verts, all_tris)
+
+            (all_verts, all_tris, mesh_infos, all_uvs)
         };
         debug!("Collected vertices: {:?}", all_vertices);
         debug!("Collected tris: {:?}", all_triangles);
@@ -540,6 +741,7 @@ impl Scene {
             triangles_count,
             all_vertices.len() / 3
         );
+        let point_lights = self.get_render_point_lights();
 
         self.render_config_builder = if self.get_first_render() {
             self.set_first_render(false);
@@ -548,8 +750,11 @@ impl Scene {
                 .uniforms_create(uniforms)
                 .spheres_create(render_spheres)
                 .vertices_create(all_vertices)
+                .uvs_create(all_uvs)
                 .triangles_create(all_triangles)
-                .lights_create([RenderLights::default()].to_vec())
+                .meshes_create(all_meshes)
+                .lights_create(point_lights)
+                .textures_create(texture_list)
         } else {
             // NOTE: * otherwise the values are updated with the new value an the unchanged fields
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
@@ -557,8 +762,11 @@ impl Scene {
                 .uniforms(uniforms)
                 .spheres(render_spheres)
                 .vertices(all_vertices)
+                .uvs(all_uvs)
                 .triangles(all_triangles)
-                .lights([RenderLights::default()].to_vec())
+                .meshes(all_meshes)
+                .lights(point_lights)
+                .textures(texture_list)
         };
     }
     //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
@@ -593,7 +801,14 @@ impl Scene {
     pub(super) fn update_render_config_vertices(&mut self) {
         //! updates the vertices on field render_config_builder
         info!("{self}: Updating vertices on render config builder");
-        let render_tris = self.get_render_tris();
+        let mut texture_list = Vec::new();
+        let mut texture_map = HashMap::new();
+
+        for (path, data) in &self.textures {
+            texture_map.insert(path.clone(), texture_list.len() as i32);
+            texture_list.push(data.clone());
+        }
+        let render_tris = self.get_render_tris(&texture_map);
         debug!("Collected mesh data: {:?}", render_tris);
 
         // Collect all vertices and triangles into flat vectors
@@ -602,7 +817,7 @@ impl Scene {
         } else {
             let mut all_verts = vec![];
 
-            for (verts, _) in render_tris {
+            for (verts, _, _, _) in render_tris {
                 all_verts.extend(verts);
             }
             all_verts
@@ -617,55 +832,73 @@ impl Scene {
     pub(super) fn update_render_config_triangles(&mut self) {
         //! updates the triangles on field render_config_builder (also updates the vertices?)
         info!("{self}: Updating triangles on render config builder");
-        let render_tris = self.get_render_tris();
+
+        let mut texture_list = Vec::new();
+        let mut texture_map = HashMap::new();
+
+        for (path, data) in &self.textures {
+            texture_map.insert(path.clone(), texture_list.len() as i32);
+            texture_list.push(data.clone());
+        }
+        let render_tris = self.get_render_tris(&texture_map);
         debug!("Collected mesh data: {:?}", render_tris);
 
-        let triangles_count: u32 = render_tris
-            .iter()
-            .map(|(_, tri)| tri.len() as u32 / 3)
-            .sum();
         // Collect all vertices and triangles into flat vectors
-        let (all_vertices, all_triangles) = if render_tris.is_empty() {
-            (vec![], vec![])
+        let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
+            (vec![], vec![], vec![], vec![])
         } else {
             let mut all_verts = vec![];
             let mut all_tris = vec![];
+            let mut all_uvs = vec![];
+            let mut mesh_infos = vec![];
             let mut vertex_offset = 0u32;
+            let mut triangle_offset = 0u32;
 
-            for (verts, tris) in render_tris {
+            for (verts, tris, uvs, material) in render_tris.iter() {
                 let vertex_count = (verts.len() / 3) as u32;
+                let triangle_count = (tris.len() / 3) as u32;
 
+                // Add mesh metadata
+                mesh_infos.push(RenderMesh::new(triangle_offset, triangle_count, *material));
+
+                // Add triangles with vertex offset
                 for tri_idx in tris {
                     all_tris.push(tri_idx + vertex_offset);
                 }
 
+                // Add vertices
                 all_verts.extend(verts);
 
+                // Add UVs
+                all_uvs.extend(uvs);
+
                 vertex_offset += vertex_count;
+                triangle_offset += triangle_count;
             }
-            (all_verts, all_tris)
+
+            (all_verts, all_tris, mesh_infos, all_uvs)
         };
         debug!("Collected vertices: {:?}", all_vertices);
         debug!("Collected tris: {:?}", all_triangles);
         info!(
-            "{self}: Collected render parameter: {} triangles consisting of {} vertices. Updating render config vertices and triangles",
-            triangles_count,
+            "{self}: Collected render parameter: {} vertices. Updating render config vertices and triangles",
             all_vertices.len() / 3
         );
         self.render_config_builder = self
             .render_config_builder
             .clone()
-            .vertices(all_vertices)
-            .triangles(all_triangles);
+            .vertices_create(all_vertices)
+            .uvs_create(all_uvs)
+            .triangles_create(all_triangles)
+            .meshes_create(all_meshes)
+            .textures_create(texture_list)
     }
 
     pub(super) fn update_render_config_lights(&mut self) {
         //! updates the lights on field render_config_builder
         info!("{self}: Updating lights on render config builder");
-        self.render_config_builder = self
-            .render_config_builder
-            .clone()
-            .lights([RenderLights::default()].to_vec());
+        let point_lights = self.get_render_point_lights();
+        self.render_config_builder = self.render_config_builder.clone().lights(point_lights);
         todo!("Update with lights from scene is not implemented yet (using default values)")
     }
 
@@ -846,7 +1079,7 @@ impl Scene {
         self.get_sphere_mut_at(index)?.set_material(material);
         Ok(())
     }
-    pub(crate) fn get_sphere_path(&self, index: usize) -> Result<Option<&str>, Error> {
+    pub(crate) fn get_sphere_path(&self, index: usize) -> Result<Option<PathBuf>, Error> {
         // todo: maybe remove the option?
         //! ## Returns
         //! Path of the reference file. Does a sphere need one?
@@ -909,7 +1142,7 @@ impl Scene {
         }
     }
 
-    pub(crate) fn get_mesh_path(&self, index: usize) -> Result<Option<&str>, Error> {
+    pub(crate) fn get_mesh_path(&self, index: usize) -> Result<Option<PathBuf>, Error> {
         // todo: maybe remove the option?
         //! ## Returns
         //! Path of the reference file. Does a mesh need one?

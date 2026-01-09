@@ -1,9 +1,10 @@
+use engine_wgpu_wrapper::GpuDevice;
 use view_wrappers::ViewWrapper;
 use crate::control_plane::app::App;
+use crate::control_plane::modes::is_debug_mode;
 
-pub mod controller;
 pub mod model;
-pub mod pipeline;
+mod screens;
 pub mod view;
 
 pub struct GuiApp {
@@ -12,12 +13,10 @@ pub struct GuiApp {
 
 impl App for GuiApp {
     fn new() -> Self {
-        let pipeline = pipeline::Pipeline::new();
-        let mut controller = controller::Controller::new(model::Model::new(), pipeline.clone());
+        // fixes device creation bug on Windows AMD:
+        let _ = GpuDevice::new();
 
-        let handler = Box::new(move |event| controller.handle_event(event));
-
-        let view = view::View::new(pipeline, handler);
+        let view = view::View::new();
 
         GuiApp { view }
     }

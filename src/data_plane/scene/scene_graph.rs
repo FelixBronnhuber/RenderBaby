@@ -67,6 +67,11 @@ impl SceneGraph {
         //! all light sources as a reference to a vector of LightSource
         &self.light_sources
     }
+    pub(crate) fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
+        //! ## Returns
+        //! all light sources as a reference to a vector of LightSource
+        &mut self.light_sources
+    }
     pub(crate) fn get_camera_mut(&mut self) -> &mut Camera {
         //! ## Returns
         //! Mutable reference to the camera

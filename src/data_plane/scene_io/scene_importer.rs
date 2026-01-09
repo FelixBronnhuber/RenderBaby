@@ -7,77 +7,9 @@ use scene_objects::{
     camera::Camera,
     light_source::{LightSource, LightType},
 };
-use serde::{Deserialize, Serialize};
-
+use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
-#[allow(dead_code)]
-#[derive(Serialize, Deserialize, Debug)]
-struct SceneFile {
-    scene_name: String,
-    objects: Vec<ParsingObject>,
-    lights: Vec<FileLightSource>,
-    camera: FileCamera,
-    background_color: FileColor,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ParsingObject {
-    name: String,
-    pub path: String,
-    scale: Vec3d,
-    translation: Vec3d,
-    rotation: Vec3d, //x = roll, y = pitch, z = yaw
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileLightSource {
-    name: String,
-    r#type: String,
-    position: Vec3d,
-    luminosity: f32,
-    color: FileColor,
-    rotation: Option<Vec3d>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileCamera {
-    position: Vec3d,
-    look_at: Vec3d,
-    up: Vec3d, //roll
-    pane_distance: f32,
-    pane_width: f32,
-    resolution: Resolution,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct FileColor {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: Option<f32>, //ungenutzt
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Vec3d {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct Resolution {
-    x: u32,
-    y: u32,
-}
-
-impl From<Vec3> for Vec3d {
-    fn from(v: Vec3) -> Vec3d {
-        Vec3d {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
+use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
 fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
     let mut scene = Scene::new();
@@ -155,8 +87,164 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
         )));
     }
     let _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
-    let read = serde_json::from_str::<SceneFile>(&_json_content).context("invalid JSON")?;
-    let res = transform_to_scene(read)
-        .context("JSON content could not be properly transformed into scene")?;
-    Result::Ok(res)
+
+    let schema = json!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "required": [
+        "scene_name",
+        "objects",
+        "background_color",
+        "camera",
+        "lights"
+        ],
+        "additionalProperties": false,
+
+        "properties": {
+            "scene_name": {
+                "type": "string",
+                "minLength": 0
+            },
+
+            "objects": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/object" }
+            },
+
+            "background_color": {
+                "$ref": "#/$defs/color"
+            },
+
+            "camera": {
+                "$ref": "#/$defs/camera"
+            },
+
+            "lights": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/$defs/light" }
+            }
+        },
+
+        "$defs": {
+            "vec3": {
+                "type": "object",
+                "required": ["x", "y", "z"],
+                "additionalProperties": false,
+                "properties": {
+                    "x": { "type": "number" },
+                    "y": { "type": "number" },
+                    "z": { "type": "number" }
+                }
+            },
+
+            "color": {
+                "type": "object",
+                "required": ["r", "g", "b"],
+                "additionalProperties": {"a":{"type":  "number", "minimum": 0.0, "maximum":  1.0}},
+                "properties": {
+                    "r": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+                    "g": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+                    "b": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+                }
+            },
+
+            "object": {
+                "type": "object",
+                "required": [
+                "name",
+                "path",
+                "scale",
+                "rotation",
+                "translation"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "name": { "type": "string" },
+                    "path": { "type": "string" },
+                    "scale": { "$ref": "#/$defs/vec3" },
+                    "rotation": { "$ref": "#/$defs/vec3" },
+                    "translation": { "$ref": "#/$defs/vec3" }
+                }
+            },
+
+            "camera": {
+                "type": "object",
+                "required": [
+                "position",
+                "look_at",
+                "up",
+                "pane_distance",
+                "pane_width",
+                "resolution"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "position": { "$ref": "#/$defs/vec3" },
+                    "look_at": { "$ref": "#/$defs/vec3" },
+                    "up": { "$ref": "#/$defs/vec3" },
+
+                    "pane_distance": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                    },
+
+                    "pane_width": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                    },
+
+                    "resolution": {
+                        "type": "object",
+                        "required": ["x", "y"],
+                        "additionalProperties": false,
+                        "properties": {
+                            "x": { "type": "integer", "minimum": 1 },
+                            "y": { "type": "integer", "minimum": 1 }
+                        }
+                    }
+                }
+            },
+
+            "light": {
+                "type": "object",
+                "required": [
+                "name",
+                "type",
+                "luminosity",
+                "position",
+                "color"
+                ],
+                "additionalProperties": {"rotation": {"$ref": "#/$defs/vec3"}},
+                "properties": {
+                    "name": { "type": "string" },
+
+                    "type": {
+                        "type": "string",
+                        "enum": ["ambient", "point", "directional"]
+                    },
+
+                    "luminosity": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                    },
+
+                    "position": { "$ref": "#/$defs/vec3" },
+
+                    "color": { "$ref": "#/$defs/color" }
+                }
+            }
+        }
+    });
+    let json_value = serde_json::from_str(_json_content.clone().as_str())?;
+    if jsonschema::is_valid(&schema, &json_value) {
+        let read = serde_json::from_str::<SceneFile>(&_json_content)?;
+        let res = transform_to_scene(read)?;
+        Result::Ok(res)
+    } else {
+        Err(anyhow::Error::msg(
+            "JSON does not comply with Schema".to_string(),
+        ))
+    }
 }
