@@ -110,11 +110,15 @@ fn material_to_render_material(
         mat.specular_reflectivity[1] as f32,
         mat.specular_reflectivity[2] as f32,
     ];
-    let emissive = [
-        mat.emissive[0] as f32,
-        mat.emissive[1] as f32,
-        mat.emissive[2] as f32,
-    ];
+    let emissive = if mat.emissive.len() == 3 {
+        [
+            mat.emissive[0] as f32,
+            mat.emissive[1] as f32,
+            mat.emissive[2] as f32,
+        ]
+    } else {
+        [0.0, 0.0, 0.0]
+    };
 
     let texture_index = if let Some(path) = &mat.texture_path {
         *texture_map.get(path).unwrap_or(&-1)
