@@ -118,9 +118,9 @@ fn material_to_render_material(
         mat.diffuse_reflectivity[2] as f32,
     );
     let specular = [
-        mat.specular_reflectivity[0] as f32,
-        mat.specular_reflectivity[1] as f32,
-        mat.specular_reflectivity[2] as f32,
+        mat.specular_reflectivity.first().copied().unwrap_or(0.0) as f32,
+        mat.specular_reflectivity.get(1).copied().unwrap_or(0.0) as f32,
+        mat.specular_reflectivity.get(2).copied().unwrap_or(0.0) as f32,
     ];
 
     let texture_index = if let Some(path) = &mat.texture_path {
