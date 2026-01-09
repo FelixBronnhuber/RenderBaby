@@ -81,10 +81,14 @@ struct PointLight {
 
 struct GPUTriangle {
     v0: vec3<f32>,
-    _pad0: u32,
+    v0_index: u32,
     v1: vec3<f32>,
-    _pad1: u32,
+    v1_index: u32,
     v2: vec3<f32>,
+    v2_index: u32,
+    mesh_index: u32,
+    _pad0: u32,
+    _pad1: u32,
     _pad2: u32,
 };
 
@@ -226,7 +230,7 @@ struct TriangleData {
     _pad: u32,
 };
 
-fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> f32 {
+fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleData) -> vec3<f32> {
     let edge1 = tri.v1 - tri.v0;
     let edge2 = tri.v2 - tri.v0;
     let h = cross(ray_dir, edge2);
@@ -261,9 +265,23 @@ fn intersect_triangle(ray_origin: vec3<f32>, ray_dir: vec3<f32>, tri: TriangleDa
 }
 
 fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
-    var hit = HitRecord(false, 1e20, vec3<f32>(0.0), vec3<f32>(0.0), vec3<f32>(0.0));
+    var hit = HitRecord(
+                        false,
+                        1e20,
+                        vec3<f32>(0.0),
+                        vec3<f32>(0.0),
+                        vec2<f32>(0.0),
+                        false,
+                        Material(
+                            vec3<f32>(0.0), 0.0,
+                            vec3<f32>(0.0), 0.0,
+                            vec3<f32>(0.0), 0.0,
+                            vec3<f32>(0.0), 0.0,
+                            0.0, 0u, -1, 0u
+                        )
+                    );
 
-    var stack: array<u32, 256>;     //very large, might be too big for bad GPUs, might have to make this variable
+    var stack: array<u32, 1024>;  //very large, might be too big for bad GPUs, might have to make this variable
     var sp: i32 = 0;
 
     if (uniforms.bvh_node_count == 0u) {
@@ -292,60 +310,62 @@ fn intersect_bvh(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> HitRecord {
 
         if node.primitive_count > 0u {
             for (var i: u32 = 0u; i < node.primitive_count; i = i + 1u) {
-                let tri_idx = node.first_primitive + i;
+                let index_count = arrayLength(&bvh_indices);
 
-                if (tri_idx >= uniforms.bvh_triangle_count || tri_idx >= arrayLength(&bvh_indices)) {
+                let tri_idx = node.first_primitive + i;
+                if (tri_idx >= index_count) {
                     continue;
                 }
 
                 let bvh_tri_idx = bvh_indices[tri_idx];
-
                 if (bvh_tri_idx >= uniforms.bvh_triangle_count) {
                     continue;
                 }
 
                 let tri = bvh_triangles[bvh_tri_idx];
 
-                let hit_data = intersect_triangle(origin, direction, tri);
+                let triangle_data = TriangleData(tri.v0, tri.v1, tri.v2, 0u);
+
+                let hit_data = intersect_triangle(ray_origin, ray_dir, triangle_data);
                 let t = hit_data.x;
 
-                if (t > 0.001 && t < closest_hit.t) {
-                    closest_hit.hit = true;
-                    closest_hit.t = t;
-                    closest_hit.pos = origin + t * direction;
-                    closest_hit.normal = normalize(cross(v1 - v0, v2 - v0));
+                if (t > 0.001 && t < hit.t) {
+                    hit.hit = true;
+                    hit.t = t;
+                    hit.pos = ray_origin + t * ray_dir;
+                    hit.normal = normalize(cross(tri.v1 - tri.v0, tri.v2 - tri.v0));
 
                     let u = hit_data.y;
                     let v = hit_data.z;
                     let w = 1.0 - u - v;
 
-                    let uv0 = vec2<f32>(uvs[v0_idx * 2u], uvs[v0_idx * 2u + 1u]);
-                    let uv1 = vec2<f32>(uvs[v1_idx * 2u], uvs[v1_idx * 2u + 1u]);
-                    let uv2 = vec2<f32>(uvs[v2_idx * 2u], uvs[v2_idx * 2u + 1u]);
+                    let uv0 = vec2<f32>(uvs[tri.v0_index * 2u], uvs[tri.v0_index * 2u + 1u]);
+                    let uv1 = vec2<f32>(uvs[tri.v1_index * 2u], uvs[tri.v1_index * 2u + 1u]);
+                    let uv2 = vec2<f32>(uvs[tri.v2_index * 2u], uvs[tri.v2_index * 2u + 1u]);
 
-                    closest_hit.uv = w * uv0 + u * uv1 + v * uv2;
+                    hit.uv = w * uv0 + u * uv1 + v * uv2;
 
                     if (uniforms.color_hash_enabled != 0u) {
-                        closest_hit.material.diffuse = hash_to_color(k + 1u);
-                        closest_hit.material.ambient = vec3<f32>(0.0);
-                        closest_hit.material.specular = vec3<f32>(0.0);
-                        closest_hit.use_texture = false;
+                        hit.material.diffuse = hash_to_color(bvh_tri_idx + 1u);
+                        hit.material.ambient = vec3<f32>(0.0);
+                        hit.material.specular = vec3<f32>(0.0);
+                        hit.use_texture = false;
                     } else {
-                        closest_hit.material = mesh.material;
+                        hit.material = meshes[tri.mesh_index].material;
                         // Use texture if material has a valid texture index
-                        closest_hit.use_texture = closest_hit.material.texture_index >= 0;
+                        hit.use_texture = hit.material.texture_index >= 0;
                     }
                 }
             }
         } else {
             if node.left < uniforms.bvh_node_count {
-                if (sp < 256) {
+                if (sp < 1024) {
                     stack[sp] = node.left;
                     sp = sp + 1;
                 }
             }
             if node.right < uniforms.bvh_node_count {
-                if (sp < 256) {
+                if (sp < 1024) {
                     stack[sp] = node.right;
                     sp = sp + 1;
                 }

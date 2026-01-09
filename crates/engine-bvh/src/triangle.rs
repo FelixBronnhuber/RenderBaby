@@ -5,9 +5,13 @@ use bytemuck::{Pod, Zeroable};
 #[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct GPUTriangle {
     pub v0: Vec3,
-    pub _pad0: u32,
+    pub v0_index: u32,
     pub v1: Vec3,
-    pub _pad1: u32,
+    pub v1_index: u32,
     pub v2: Vec3,
+    pub v2_index: u32,
+    pub mesh_index: u32,
+    pub _pad0: u32,
+    pub _pad1: u32,
     pub _pad2: u32,
 }

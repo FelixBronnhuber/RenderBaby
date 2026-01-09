@@ -2,24 +2,42 @@
 use std::collections::HashMap;
 use anyhow::{Error, Result};
 use engine_config::{RenderConfigBuilder, RenderOutput};
-use engine_bvh::triangle::GPUTriangle;
-use engine_bvh::bvh::BVH;
 use glam::Vec3;
-use log::{error, info};
+use log::{debug, error, info};
 use scene_objects::{
     camera::{Camera, Resolution},
+    light_source::LightSource,
     mesh::Mesh,
     sphere::Sphere,
 };
 use crate::data_plane::scene::{render_scene::Scene};
+use engine_bvh::triangle::GPUTriangle;
+use engine_bvh::bvh::BVH;
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
 type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
-pub type RenderLights = engine_config::PointLight;
+type RenderLight = engine_config::PointLight;
 type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
 type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
+
+fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
+    //! Converts the given LightSource to a engine_config::PointLight if has the type Point
+    //! ## Parameter:
+    //! 'light': LightSource that is to be converted
+    //! ## Returns
+    //! Options of engine_config::PointLight: Some if light has Type Point
+    match light.get_light_type() {
+        scene_objects::light_source::LightType::Point => Some(RenderLight::new(
+            light.get_position().into(),
+            0.5,
+            light.get_luminositoy(),
+            light.get_color(),
+        )),
+        _ => None,
+    }
+}
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
@@ -40,18 +58,8 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
             ..Default::default()
         },
     )
-    .unwrap()
+        .unwrap()
     //todo error handling
-}
-
-fn light_to_render_light(light: &scene_objects::light_source::LightSource) -> RenderLights {
-    let pos = light.get_position();
-    RenderLights::new(
-        [pos.x, pos.y, pos.z],
-        0.5,
-        light.get_luminositoy(),
-        light.get_color(),
-    )
 }
 
 fn vec3_to_array(vec: Vec3) -> [f32; 3] {
@@ -72,7 +80,7 @@ fn camera_to_render_uniforms(
     //! 'triangles_count': Number of triangles to be rendered <br>
     //! 'color_hash_enabled': Whether color hash is enabled
     //! ## Returns
-    //! render_config::Uniforms for the given parameters
+    //! render_config::Unfiforms for the given parameters
     let position = camera.get_position();
     let dir = camera.get_look_at() - camera.get_position(); //Engine uses currently a direction vector
     let render_camera = RenderCamera::new(
@@ -92,7 +100,7 @@ fn camera_to_render_uniforms(
         bvh_node_count,
         bvh_triangle_count,
     )
-    .with_color_hash(color_hash_enabled);
+        .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
 fn material_to_render_material(
@@ -132,7 +140,7 @@ fn material_to_render_material(
         2,                             // illum (default to specular)
         texture_index,
     )
-    .unwrap_or_default()
+        .unwrap_or_default()
 }
 
 fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
@@ -257,16 +265,20 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
     vec![(vertices, indices, uvs, material)]
 }
 
-fn mesh_to_gpu_triangles(mesh: &Mesh) -> Vec<GPUTriangle> {
-    let verts = mesh.get_vertices(); // Vec<f32>
-    let indices = mesh.get_tri_indices(); // Vec<u32>
-
+fn mesh_to_gpu_triangles(mesh: &RenderMesh, verts: &Vec<f32>, indices: &Vec<u32>, mesh_index: u32) -> Vec<GPUTriangle> {
     let mut tris = Vec::with_capacity(indices.len() / 3);
 
-    for i in (0..indices.len()).step_by(3) {
-        let i0 = indices[i] as usize * 3;
-        let i1 = indices[i + 1] as usize * 3;
-        let i2 = indices[i + 2] as usize * 3;
+    let start = mesh.triangle_index_start as usize;
+    let end   = mesh.triangle_count as usize;
+
+    for i in (start..end).step_by(3) {
+        let v0i = indices[i] as usize;
+        let v1i = indices[i + 1] as usize;
+        let v2i = indices[i + 2] as usize;
+
+        let i0 = v0i * 3;
+        let i1 = v1i * 3;
+        let i2 = v2i * 3;
 
         let v0 = Vec3::new(verts[i0], verts[i0 + 1], verts[i0 + 2]);
         let v1 = Vec3::new(verts[i1], verts[i1 + 1], verts[i1 + 2]);
@@ -274,10 +286,14 @@ fn mesh_to_gpu_triangles(mesh: &Mesh) -> Vec<GPUTriangle> {
 
         tris.push(GPUTriangle {
             v0,
-            _pad0: 0,
+            v0_index: v0i as u32,
             v1,
-            _pad1: 0,
+            v1_index: v1i as u32,   // 🔥 FIX
             v2,
+            v2_index: v2i as u32,   // 🔥 FIX
+            mesh_index,
+            _pad0: 0,
+            _pad1: 0,
             _pad2: 0,
         });
     }
@@ -287,6 +303,17 @@ fn mesh_to_gpu_triangles(mesh: &Mesh) -> Vec<GPUTriangle> {
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
+    fn get_render_point_lights(&self) -> Vec<RenderLight> {
+        //! ## Returns
+        //! A vector with all engine_config::PointLight from self
+        let mut res = vec![];
+        for light in self.get_light_sources() {
+            if let Some(render_light) = light_to_render_point_light(light) {
+                res.push(render_light);
+            }
+        }
+        res
+    }
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
         //! ## Returns
         //! a Vec that contains all Scene spheres as engine_config::Sphere
@@ -302,7 +329,7 @@ impl Scene {
         bvh_triangle_count: u32,
     ) -> RenderUniforms {
         //! ## Returns
-        //! RenderUniform for the camera of the scene
+        //! RenderUnfiform for the camera of the scene
         camera_to_render_uniforms(
             self.get_camera(),
             spheres_count,
@@ -310,7 +337,7 @@ impl Scene {
             bvh_node_count,
             bvh_triangle_count,
         )
-        .unwrap()
+            .unwrap()
     }
 
     fn get_render_tris(&self, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
@@ -345,29 +372,10 @@ impl Scene {
 
         let spheres_count = render_spheres.len() as u32;
 
-        let mut gpu_triangles: Vec<GPUTriangle> = Vec::new();
-
-        for mesh in self.get_meshes() {
-            gpu_triangles.extend(mesh_to_gpu_triangles(mesh));
-        }
-
-        let triangles_count = gpu_triangles.len() as u32;
-        let triangles_count = render_tris
-            .iter()
-            .map(|(_, tri, _, _)| tri.len() as u32 / 3)
-            .sum();
-
-        let uniforms = self.get_render_uniforms(spheres_count, triangles_count);
-
-        let (bvh_nodes, bvh_indices) = if gpu_triangles.is_empty() {
-            (vec![], vec![])
         // Collect all vertices, triangles, and mesh into flat vectors
         let (all_vertices, all_triangles, all_meshes, all_uvs) = if render_tris.is_empty() {
             (vec![], vec![], vec![], vec![])
         } else {
-            let bvh = BVH::new(&gpu_triangles);
-            (bvh.nodes, bvh.indices)
-        };
             let mut all_verts = vec![];
             let mut all_tris = vec![];
             let mut all_uvs = vec![];
@@ -390,9 +398,6 @@ impl Scene {
                 // Add vertices
                 all_verts.extend(verts);
 
-        let bvh_node_count = bvh_nodes.len() as u32;
-        let bvh_triangle_count = gpu_triangles.len() as u32;
-        let bvh_triangles = gpu_triangles.clone();
                 // Add UVs
                 all_uvs.extend(uvs);
 
@@ -402,25 +407,35 @@ impl Scene {
 
             (all_verts, all_tris, mesh_infos, all_uvs)
         };
+
+        let mut gpu_triangles: Vec<GPUTriangle> = Vec::new();
+
+        for i in (0..all_meshes.len()) {
+            gpu_triangles.extend(mesh_to_gpu_triangles(&all_meshes[i], &all_vertices, &all_triangles, i as u32));
+        }
+
+        let (bvh_nodes, bvh_indices) = if gpu_triangles.is_empty() {
+            (vec![], vec![])
+            } else {
+                let bvh = BVH::new(&gpu_triangles);
+                (bvh.nodes, bvh.indices)
+            };
+
+        let bvh_node_count = bvh_nodes.len();
+        let bvh_triangle_count = gpu_triangles.len();
+
+        let uniforms = self.get_render_uniforms(spheres_count, bvh_node_count as u32, bvh_triangle_count as u32);
+
         info!("Collected vertices count: {}", all_vertices.len());
         info!("Collected tris count: {}", all_triangles.len());
         info!(
-            "{self}: BVH built: {} nodes, {} indices, {} triangles",
-            bvh_node_count,
-            bvh_indices.len(),
-            bvh_triangle_count
+            "{self}: Collected render parameter: {} spheres, {} triangles consisting of {} vertices. Building render config",
+            render_spheres.len(),
+            bvh_triangle_count,
+            all_vertices.len() / 3
         );
 
-        let uniforms = self.get_render_uniforms(spheres_count, bvh_node_count, bvh_triangle_count);
-
-        let lights: Vec<RenderLights> = if self.get_light_sources().is_empty() {
-            [RenderLights::default()].to_vec()
-        } else {
-            self.get_light_sources()
-                .iter()
-                .map(light_to_render_light)
-                .collect()
-        };
+        let point_lights = self.get_render_point_lights();
 
         let rc = if self.get_first_render() {
             self.set_first_render(false);
@@ -433,7 +448,7 @@ impl Scene {
                 .bvh_nodes_create(bvh_nodes)
                 .bvh_indices_create(bvh_indices)
                 .bvh_triangles_create(gpu_triangles)
-                .lights_create(lights)
+                .lights_create(point_lights)
                 .textures_create(texture_list)
                 .build()
         } else {
@@ -443,12 +458,12 @@ impl Scene {
                 .uniforms(uniforms)
                 .spheres(render_spheres)
                 .uvs(all_uvs)
+                .meshes(all_meshes)
                 .bvh_nodes_create(bvh_nodes)
                 .bvh_indices_create(bvh_indices)
-                .meshes(all_meshes)
-                .lights(lights)
-                .textures(texture_list)
                 .bvh_triangles_create(gpu_triangles)
+                .lights(point_lights)
+                .textures(texture_list)
                 .build()
         };
 
