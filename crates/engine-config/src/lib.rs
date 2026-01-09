@@ -1,7 +1,7 @@
 pub mod camera;
 pub mod material;
 pub mod mesh;
-mod point_lights;
+pub mod point_lights;
 pub mod render_config;
 pub mod render_output;
 pub mod renderer;

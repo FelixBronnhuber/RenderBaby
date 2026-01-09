@@ -482,7 +482,7 @@ impl Scene {
 
         let output = engine.render(rc);
         let duration = start.elapsed();
-        info!("Dauer: {:?}", duration);
+        info!("Execution Time: {:?}", duration);
         match output {
             Ok(res) => match res.validate() {
                 Ok(_) => {
