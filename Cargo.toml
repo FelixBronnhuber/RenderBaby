@@ -24,6 +24,7 @@ scene-objects = { path = "crates/scene-objects"}
 image = "0.25.9"
 eframe-elements = { path = "crates/eframe-elements" }
 include_dir = "0.7.4"
+jsonschema = "0.37.4"
 
 [workspace]
 members = [
