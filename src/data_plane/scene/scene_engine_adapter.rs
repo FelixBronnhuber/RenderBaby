@@ -58,7 +58,7 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
             ..Default::default()
         },
     )
-        .unwrap()
+    .unwrap()
     //todo error handling
 }
 
@@ -100,7 +100,7 @@ fn camera_to_render_uniforms(
         bvh_node_count,
         bvh_triangle_count,
     )
-        .with_color_hash(color_hash_enabled);
+    .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
 fn material_to_render_material(
@@ -140,7 +140,7 @@ fn material_to_render_material(
         2,                             // illum (default to specular)
         texture_index,
     )
-        .unwrap_or_default()
+    .unwrap_or_default()
 }
 
 fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
@@ -265,11 +265,16 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
     vec![(vertices, indices, uvs, material)]
 }
 
-fn mesh_to_gpu_triangles(mesh: &RenderMesh, verts: &Vec<f32>, indices: &Vec<u32>, mesh_index: u32) -> Vec<GPUTriangle> {
-    let mut tris = Vec::with_capacity(indices.len() / 3);
+fn mesh_to_gpu_triangles(
+    mesh: &RenderMesh,
+    verts: &[f32],
+    indices: &[u32],
+    mesh_index: u32,
+) -> Vec<GPUTriangle> {
+    let start = (mesh.triangle_index_start * 3) as usize;
+    let end = ((mesh.triangle_index_start + mesh.triangle_count) * 3) as usize;
 
-    let start = mesh.triangle_index_start as usize;
-    let end   = mesh.triangle_count as usize;
+    let mut tris = Vec::with_capacity(mesh.triangle_count as usize);
 
     for i in (start..end).step_by(3) {
         let v0i = indices[i] as usize;
@@ -280,24 +285,19 @@ fn mesh_to_gpu_triangles(mesh: &RenderMesh, verts: &Vec<f32>, indices: &Vec<u32>
         let i1 = v1i * 3;
         let i2 = v2i * 3;
 
-        let v0 = Vec3::new(verts[i0], verts[i0 + 1], verts[i0 + 2]);
-        let v1 = Vec3::new(verts[i1], verts[i1 + 1], verts[i1 + 2]);
-        let v2 = Vec3::new(verts[i2], verts[i2 + 1], verts[i2 + 2]);
-
         tris.push(GPUTriangle {
-            v0,
+            v0: Vec3::new(verts[i0], verts[i0 + 1], verts[i0 + 2]),
+            v1: Vec3::new(verts[i1], verts[i1 + 1], verts[i1 + 2]),
+            v2: Vec3::new(verts[i2], verts[i2 + 1], verts[i2 + 2]),
             v0_index: v0i as u32,
-            v1,
-            v1_index: v1i as u32,   // 🔥 FIX
-            v2,
-            v2_index: v2i as u32,   // 🔥 FIX
+            v1_index: v1i as u32,
+            v2_index: v2i as u32,
             mesh_index,
             _pad0: 0,
             _pad1: 0,
             _pad2: 0,
         });
     }
-
     tris
 }
 
@@ -337,7 +337,7 @@ impl Scene {
             bvh_node_count,
             bvh_triangle_count,
         )
-            .unwrap()
+        .unwrap()
     }
 
     fn get_render_tris(&self, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
@@ -410,21 +410,30 @@ impl Scene {
 
         let mut gpu_triangles: Vec<GPUTriangle> = Vec::new();
 
-        for i in (0..all_meshes.len()) {
-            gpu_triangles.extend(mesh_to_gpu_triangles(&all_meshes[i], &all_vertices, &all_triangles, i as u32));
+        for (i, mesh) in all_meshes.iter().enumerate() {
+            gpu_triangles.extend(mesh_to_gpu_triangles(
+                mesh,
+                &all_vertices,
+                &all_triangles,
+                i as u32,
+            ));
         }
 
         let (bvh_nodes, bvh_indices) = if gpu_triangles.is_empty() {
             (vec![], vec![])
-            } else {
-                let bvh = BVH::new(&gpu_triangles);
-                (bvh.nodes, bvh.indices)
-            };
+        } else {
+            let bvh = BVH::new(&gpu_triangles);
+            (bvh.nodes, bvh.indices)
+        };
 
         let bvh_node_count = bvh_nodes.len();
         let bvh_triangle_count = gpu_triangles.len();
 
-        let uniforms = self.get_render_uniforms(spheres_count, bvh_node_count as u32, bvh_triangle_count as u32);
+        let uniforms = self.get_render_uniforms(
+            spheres_count,
+            bvh_node_count as u32,
+            bvh_triangle_count as u32,
+        );
 
         info!("Collected vertices count: {}", all_vertices.len());
         info!("Collected tris count: {}", all_triangles.len());
