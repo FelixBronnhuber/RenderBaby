@@ -190,6 +190,7 @@ impl Scene {
                                     mat.ka.iter().map(|a| *a as f64).collect(),
                                     mat.kd.iter().map(|a| *a as f64).collect(),
                                     mat.ks.iter().map(|a| *a as f64).collect(),
+                                    mat.ke.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
                                     mat.map_kd.clone().map(|name| {
