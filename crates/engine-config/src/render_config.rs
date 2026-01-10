@@ -1,6 +1,7 @@
 use crate::*;
 use core::fmt;
 
+#[derive(Clone)]
 pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
     pub spheres: Change<Vec<Sphere>>,

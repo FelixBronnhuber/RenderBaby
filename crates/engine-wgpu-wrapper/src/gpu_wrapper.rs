@@ -288,6 +288,21 @@ impl GpuWrapper {
     pub fn get_pipeline(&self) -> &wgpu::ComputePipeline {
         &self.pipeline_wrapper.pipeline
     }
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn buffer_wrapper(&self) -> &GpuBuffers {
+        &self.buffer_wrapper
+    }
+
+    pub fn prh(&self) -> &ProgressiveRenderHelper {
+        &self.prh
+    }
+
+    pub fn prh_mut(&mut self) -> &mut ProgressiveRenderHelper {
+        &mut self.prh
+    }
 
     pub fn dispatch_compute_progressive(&self, pass_index: u32, total_passes: u32) -> Result<()> {
         let mut encoder = self
