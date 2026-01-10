@@ -13,14 +13,22 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     if let Some(directory) = path.parent() {
         //objects
         sc.get_meshes().iter().for_each(|object| {
-            println!("{:?}",object.get_path());
-            let written_path ;
+            println!("{:?}", object.get_path());
+            let written_path;
 
-            ///if path is absolute (obj_import) or path is relative (scene_import)
-            if let Ok(relative_path) = object.get_path().unwrap_or_default().strip_prefix(directory) {
+            //if path is absolute (obj_import) or path is relative (scene_import)
+            if let Ok(relative_path) = object
+                .get_path()
+                .unwrap_or_default()
+                .strip_prefix(directory)
+            {
                 written_path = relative_path.to_string_lossy().to_string();
             } else {
-                    written_path = object.get_path().unwrap_or_default().to_string_lossy().to_string();
+                written_path = object
+                    .get_path()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
             }
             objects.push(ParsingObject {
                 name: object.get_name(),
@@ -92,8 +100,7 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
             }
             Err(error) => Err(error.into()),
         }
-    }
-    else {
+    } else {
         Err(anyhow::Error::msg("Path has no parent"))
     }
 }

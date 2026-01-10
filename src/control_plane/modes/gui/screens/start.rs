@@ -30,7 +30,8 @@ impl StartScreen {
             ),
             templates,
             message_popup_pipe: MessagePopupPipe::new(),
-            file_dialog_scene: FileDialog::new().add_filter("Scene", &["rscn","json"]),        }
+            file_dialog_scene: FileDialog::new().add_filter("Scene", &["rscn", "json"]),
+        }
     }
 }
 

@@ -48,11 +48,12 @@ impl Scene {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
-        let mut scene_and_path : Result<(Scene,Vec<String>), Error>= Err(anyhow::Error::msg("uninitialized scene and obj path used"));
+        let mut scene_and_path: Result<(Scene, Vec<String>), Error> =
+            Err(anyhow::Error::msg("uninitialized scene and obj path used"));
         let mut temp_dir = PathBuf::with_capacity(50);
         if let Some(extension) = path.extension().unwrap_or_default().to_str() {
-            match  extension {
-                "rscn"  => {
+            match extension {
+                "rscn" => {
                     let randomized_temp_name = format!(
                         "render{}",
                         SystemTime::now()
@@ -112,12 +113,6 @@ impl Scene {
                 Err(error)
             }
         }
-
-
-
-
-
-
     }
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
         info!("{self}: Exporting scene");
@@ -131,10 +126,7 @@ impl Scene {
                 Err(error)
             }
             _ => {
-                info!(
-                    "{self}: Successfully exported scene to {}",
-                    path.display()
-                );
+                info!("{self}: Successfully exported scene to {}", path.display());
                 Ok(())
             }
         }
