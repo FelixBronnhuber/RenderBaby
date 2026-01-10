@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex};
 use egui::{CollapsingHeader, Ui};
 use scene_objects::camera::Resolution;
 use scene_objects::geometric_object::GeometricObject;
@@ -84,18 +85,20 @@ fn color_ui(ui: &mut Ui, color: &mut Color) -> bool {
 }
 
 impl Viewable for ProxyCamera {
-    type RealSceneObject = Scene;
+    type RealSceneObject = Arc<Mutex<Scene>>;
 
-    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene) {
-        ui.label("Camera");
-
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
         // TODO: Get the fov limits from somewhere central as consts.
         if ui
             .add(egui::Slider::new(&mut self.pane_width, 0.1..=100.0).text("Pane Width"))
             .changed()
         {
             // TODO MICHAEL:
-            scene.get_camera_mut().set_pane_width(self.pane_width);
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_pane_width(self.pane_width);
         }
 
         if ui
@@ -103,7 +106,11 @@ impl Viewable for ProxyCamera {
             .changed()
         {
             // TODO MICHAEL:
-            scene.get_camera_mut().set_pane_distance(self.pane_distance);
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_pane_distance(self.pane_distance);
         }
 
         ui.horizontal(|ui| {
@@ -115,10 +122,14 @@ impl Viewable for ProxyCamera {
                 .changed()
             {
                 // TODO MICHAEL:
-                scene.get_camera_mut().set_resolution(Resolution {
-                    width: self.resolution[0],
-                    height: self.resolution[1],
-                });
+                scene
+                    .lock()
+                    .unwrap()
+                    .get_camera_mut()
+                    .set_resolution(Resolution {
+                        width: self.resolution[0],
+                        height: self.resolution[1],
+                    });
             }
         });
 
@@ -131,10 +142,14 @@ impl Viewable for ProxyCamera {
                 .changed()
             {
                 // TODO MICHAEL:
-                scene.get_camera_mut().set_resolution(Resolution {
-                    width: self.resolution[0],
-                    height: self.resolution[1],
-                })
+                scene
+                    .lock()
+                    .unwrap()
+                    .get_camera_mut()
+                    .set_resolution(Resolution {
+                        width: self.resolution[0],
+                        height: self.resolution[1],
+                    })
             }
         });
         ui.separator();
@@ -143,6 +158,8 @@ impl Viewable for ProxyCamera {
         if vec3_ui(ui, &mut self.position) {
             // TODO MICHAEL:
             scene
+                .lock()
+                .unwrap()
                 .get_camera_mut()
                 .set_position(self.position.clone().into());
         }
@@ -151,8 +168,37 @@ impl Viewable for ProxyCamera {
         if vec3_ui(ui, &mut self.look_at) {
             // TODO MICHAEL:
             scene
+                .lock()
+                .unwrap()
                 .get_camera_mut()
                 .set_look_at(self.look_at.clone().into());
+        }
+    }
+}
+
+impl Viewable for Vec<ProxyMesh> {
+    type RealSceneObject = Arc<Mutex<Scene>>;
+
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
+        let mut scene_lock = scene.lock().unwrap();
+        let real_meshes = scene_lock.get_meshes_mut();
+        let enum_meshes = self.iter_mut();
+        if enum_meshes.len() == 0 {
+            ui.label("No objects in scene.");
+        } else {
+            for (i, proxy_mesh) in enum_meshes.enumerate() {
+                CollapsingHeader::new(format!("Object {}", i))
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        proxy_mesh.ui(ui, &mut real_meshes[i]);
+                    });
+
+                if ui.small_button("remove").clicked() {
+                    real_meshes.remove(i);
+                    self.remove(i);
+                    break;
+                }
+            }
         }
     }
 }
@@ -176,6 +222,36 @@ impl Viewable for ProxyMesh {
         ui.label("Translation:");
         if vec3_ui(ui, &mut self.translation) {
             mesh.translate(self.translation.clone().into());
+        }
+    }
+}
+
+impl Viewable for Vec<ProxySphere> {
+    type RealSceneObject = Arc<Mutex<Scene>>;
+
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
+        for (i, proxy_sphere) in self.iter_mut().enumerate() {
+            CollapsingHeader::new(format!("Sphere {}", i))
+                .default_open(false)
+                .show(ui, |ui| {
+                    proxy_sphere.ui(ui, &mut scene.lock().unwrap().get_spheres_mut()[i]);
+                });
+
+            if ui.small_button("remove").clicked() {
+                scene.lock().unwrap().get_spheres_mut().remove(i);
+                self.remove(i);
+                break;
+            }
+        }
+        if ui.small_button("+").clicked() {
+            let new_sphere = ProxySphere::default();
+            scene.lock().unwrap().add_sphere(Sphere::new(
+                new_sphere.center.clone().into(),
+                new_sphere.radius,
+                Material::default(),
+                new_sphere.color.clone().into(),
+            ));
+            self.push(new_sphere);
         }
     }
 }
@@ -205,51 +281,69 @@ impl Viewable for ProxySphere {
 }
 
 impl Viewable for Misc {
-    type RealSceneObject = Scene;
+    type RealSceneObject = Arc<Mutex<Scene>>;
 
-    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene) {
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
         if ui
             .checkbox(&mut self.color_hash_enabled, "Enable Color Hash")
             .changed()
         {
             // TODO MICHAEL: die Methode wird zwar aufgerufen ändert aber tatsächlich nichts - schau das bitte an, kann aber auch sein, dass das bereits gefixt wurde.
-            scene.set_color_hash_enabled(self.color_hash_enabled);
+            scene
+                .lock()
+                .unwrap()
+                .set_color_hash_enabled(self.color_hash_enabled);
         }
 
         if ui
             .add(egui::Slider::new(&mut self.ray_samples, 1..=2000).text("Samples"))
             .changed()
         {
-            scene.get_camera_mut().set_ray_samples(self.ray_samples);
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_ray_samples(self.ray_samples);
         }
 
         ui.vertical(|ui| {
-            let real_spheres = scene.get_spheres_mut();
             ui.label("Spheres");
-            for (i, proxy_sphere) in self.spheres.iter_mut().enumerate() {
-                CollapsingHeader::new(format!("Sphere {}", i))
+            self.spheres.ui(ui, scene);
+        });
+    }
+}
+
+impl Viewable for Vec<ProxyLight> {
+    type RealSceneObject = Arc<Mutex<Scene>>;
+
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
+        let enum_light = self.iter_mut();
+        if enum_light.len() == 0 {
+            ui.label("No lights in scene.");
+        } else {
+            for (i, proxy_light) in enum_light.enumerate() {
+                CollapsingHeader::new(format!("Light {}", i))
                     .default_open(false)
                     .show(ui, |ui| {
-                        proxy_sphere.ui(ui, &mut real_spheres[i]);
+                        proxy_light.ui(ui, &mut scene.lock().unwrap().get_light_sources_mut()[i]);
                     });
 
                 if ui.small_button("remove").clicked() {
-                    real_spheres.remove(i);
-                    self.spheres.remove(i);
+                    scene.lock().unwrap().get_light_sources_mut().remove(i);
+                    self.remove(i);
                     break;
                 }
             }
-            if ui.small_button("+").clicked() {
-                let new_sphere = ProxySphere::default();
-                scene.add_sphere(Sphere::new(
-                    new_sphere.center.clone().into(),
-                    new_sphere.radius,
-                    Material::default(),
-                    new_sphere.color.clone().into(),
-                ));
-                self.spheres.push(new_sphere);
-            }
-        });
+        }
+
+        if ui.small_button("+").clicked() {
+            let new_light = ProxyLight::default();
+            scene
+                .lock()
+                .unwrap()
+                .add_lightsource(new_light.clone().into());
+            self.push(new_light);
+        }
     }
 }
 
@@ -271,17 +365,13 @@ impl Viewable for ProxyLight {
         }
 
         if ui
-            .add(egui::Slider::new(&mut self.luminosity, 0.1..=100.0).text("Luminosity"))
+            .add(egui::Slider::new(&mut self.luminosity, 0.1..=500.0).text("Luminosity"))
             .changed()
         {
             light.set_luminosity(self.luminosity);
         }
 
-        let light_types: [String; 3] = [
-            LightType::Ambient.into(),
-            LightType::Directional.into(),
-            LightType::Point.into(),
-        ];
+        let light_types: [String; 2] = [LightType::Ambient.into(), LightType::Point.into()];
 
         egui::ComboBox::from_label("Type")
             .selected_text(&self.light_type)
