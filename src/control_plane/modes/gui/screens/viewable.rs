@@ -1,9 +1,7 @@
 use egui::{CollapsingHeader, Ui};
 use scene_objects::camera::Resolution;
-use scene_objects::geometric_object::GeometricObject;
-use scene_objects::light_source::{LightSource, LightType};
+use scene_objects::light_source::{LightType};
 use scene_objects::material::Material;
-use scene_objects::mesh::Mesh;
 use scene_objects::sphere::Sphere;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::color::Color;
@@ -15,8 +13,7 @@ use crate::data_plane::scene_proxy::proxy_mesh::ProxyMesh;
 use crate::data_plane::scene_proxy::proxy_sphere::ProxySphere;
 
 pub trait Viewable {
-    type RealSceneObject;
-    fn ui(&mut self, ui: &mut Ui, object: &mut Self::RealSceneObject);
+    fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize);
 }
 
 fn vec3_ui(ui: &mut Ui, vec: &mut Vec3d) -> bool {
@@ -84,9 +81,7 @@ fn color_ui(ui: &mut Ui, color: &mut Color) -> bool {
 }
 
 impl Viewable for ProxyCamera {
-    type RealSceneObject = Scene;
-
-    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene) {
+    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene, _: usize) {
         ui.label("Camera");
 
         // TODO: Get the fov limits from somewhere central as consts.
@@ -148,91 +143,83 @@ impl Viewable for ProxyCamera {
 }
 
 impl Viewable for ProxyMesh {
-    type RealSceneObject = Mesh;
-
-    fn ui(&mut self, ui: &mut Ui, mesh: &mut Mesh) {
+    fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize) {
         // TODO MICHAEL: Hier weiß ich nicht, wie dein neues interface genau sein soll. Falls die meshes hinter einer private reference liegen und irgendwie über indizes geändert werden, müssen wir uns hier etwas neues überlegen.
 
         ui.label("Rotation:");
         if vec3_ui(ui, &mut self.rotation) {
-            mesh.rotate(self.rotation.clone().into()); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
+            let _ = model.rotate_mesh(self.rotation.clone().into(), index); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
         }
 
         ui.label("Scale:");
         if vec3_ui(ui, &mut self.scale) {
-            mesh.scale(self.scale.x);
+            let _ = model.scale_mesh(self.scale.x, index);
         }
 
         ui.label("Translation:");
         if vec3_ui(ui, &mut self.translation) {
-            mesh.translate(self.translation.clone().into());
+            let _ = model.translate_mesh(self.translation.clone().into(), index);
         }
     }
 }
 
 impl Viewable for ProxySphere {
-    type RealSceneObject = Sphere;
-
-    fn ui(&mut self, ui: &mut Ui, sphere: &mut Sphere) {
+    fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize) {
         ui.label("Radius:");
         if ui
             .add(egui::DragValue::new(&mut self.radius).speed(0.1))
             .changed()
         {
-            sphere.set_radius(self.radius);
+            let _ = model.set_sphere_radius(self.radius, index);
         }
 
         ui.label("Center:");
         if vec3_ui(ui, &mut self.center) {
-            sphere.set_center(self.center.clone().into());
+            let _ = model.set_sphere_center(self.center.into(), index);
         }
 
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
-            sphere.set_color(self.color.clone().into());
+            let _ = model.set_sphere_color(self.color.into(), index);
         }
     }
 }
 
 impl Viewable for Misc {
-    type RealSceneObject = Scene;
-
-    fn ui(&mut self, ui: &mut Ui, scene: &mut Scene) {
+    fn ui(&mut self, ui: &mut Ui, mut model: &mut Scene, _: usize) {
         if ui
             .checkbox(&mut self.color_hash_enabled, "Enable Color Hash")
             .changed()
         {
             // TODO MICHAEL: die Methode wird zwar aufgerufen ändert aber tatsächlich nichts - schau das bitte an, kann aber auch sein, dass das bereits gefixt wurde.
-            scene.set_color_hash_enabled(self.color_hash_enabled);
+            model.set_color_hash_enabled(self.color_hash_enabled);
         }
 
         if ui
             .add(egui::Slider::new(&mut self.ray_samples, 1..=2000).text("Samples"))
             .changed()
         {
-            scene.set_camera_ray_samples(self.ray_samples);
+            model.set_camera_ray_samples(self.ray_samples);
         }
 
         ui.vertical(|ui| {
-            let real_spheres = scene.get_spheres();
-            let mut real_spheres = real_spheres.clone();
             ui.label("Spheres");
             for (i, proxy_sphere) in self.spheres.iter_mut().enumerate() {
                 CollapsingHeader::new(format!("Sphere {}", i))
                     .default_open(false)
                     .show(ui, |ui| {
-                        proxy_sphere.ui(ui, &mut real_spheres[i]);
+                        proxy_sphere.ui(ui, &mut model, i);
                     });
 
                 if ui.small_button("remove").clicked() {
-                    real_spheres.remove(i);
-                    self.spheres.remove(i);
+                    // todo offer pub (crate) remove sphere
+                    todo!("Delete not implemented yet");
                     break;
                 }
             }
             if ui.small_button("+").clicked() {
                 let new_sphere = ProxySphere::default();
-                scene.add_sphere(Sphere::new(
+                model.add_sphere(Sphere::new(
                     new_sphere.center.clone().into(),
                     new_sphere.radius,
                     Material::default(),
@@ -245,27 +232,23 @@ impl Viewable for Misc {
 }
 
 impl Viewable for ProxyLight {
-    type RealSceneObject = LightSource;
-
-    fn ui(&mut self, ui: &mut Ui, light: &mut LightSource) {
+    fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize) {
         ui.label("Position:");
         if vec3_ui(ui, &mut self.position) {
-            light.set_position(self.position.clone().into());
+            let _ = model.set_light_position(self.position.into(), index);
         }
-        ui.label("Rotation:");
-        if vec3_ui(ui, &mut self.rotation) {
-            light.rotate(self.rotation.clone().into()); // TODO: this is probably wrong!
-        }
+        // lets skip rotation, since we do not support directional lights
+
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
-            light.set_color(self.color.clone().into());
+            let _ = model.set_light_color(self.color.into(), index);
         }
 
         if ui
             .add(egui::Slider::new(&mut self.luminosity, 0.1..=100.0).text("Luminosity"))
             .changed()
         {
-            light.set_luminosity(self.luminosity);
+            let _ = model.set_light_luminosity(self.luminosity, index);
         }
 
         let light_types: [String; 3] = [
@@ -282,7 +265,7 @@ impl Viewable for ProxyLight {
                         .selectable_value(&mut self.light_type, m.clone(), format!("{:?}", m))
                         .changed()
                     {
-                        light.set_light_type(self.light_type.clone().into());
+                        let _ = model.set_light_type(self.light_type.clone().into(), index);
                     }
                 }
             });

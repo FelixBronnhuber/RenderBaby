@@ -169,17 +169,18 @@ impl Screen for SceneScreen {
 
                 proxy_tmp
                     .camera
-                    .ui(ui, &mut self.model.scene.lock().unwrap());
+                    .ui(ui, &mut self.model.scene.lock().unwrap(), 0);
 
                 ui.separator();
 
-                proxy_tmp.misc.ui(ui, &mut self.model.scene.lock().unwrap());
+                proxy_tmp
+                    .misc
+                    .ui(ui, &mut self.model.scene.lock().unwrap(), 0);
 
                 ui.separator();
 
                 {
                     let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_meshes = scene_lock.get_meshes_mut();
                     ui.label("Objects");
                     let enum_meshes = proxy_tmp.objects.iter_mut();
                     if enum_meshes.len() == 0 {
@@ -189,11 +190,11 @@ impl Screen for SceneScreen {
                             CollapsingHeader::new(format!("Object {}", i))
                                 .default_open(false)
                                 .show(ui, |ui| {
-                                    proxy_mesh.ui(ui, &mut real_meshes[i]);
+                                    proxy_mesh.ui(ui, &mut scene_lock, i);
                                 });
 
                             if ui.small_button("remove").clicked() {
-                                real_meshes.remove(i);
+                                todo!("Remove mesh not implemented");
                                 proxy_tmp.objects.remove(i);
                                 break;
                             }
@@ -205,7 +206,6 @@ impl Screen for SceneScreen {
 
                 {
                     let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_lights = scene_lock.get_light_sources_mut();
                     ui.label("Lights");
                     let enum_light = proxy_tmp.lights.iter_mut();
                     if enum_light.len() == 0 {
@@ -215,11 +215,11 @@ impl Screen for SceneScreen {
                             CollapsingHeader::new(format!("Light {}", i))
                                 .default_open(false)
                                 .show(ui, |ui| {
-                                    proxy_light.ui(ui, &mut real_lights[i]);
+                                    proxy_light.ui(ui, &mut scene_lock, i);
                                 });
 
                             if ui.small_button("remove").clicked() {
-                                real_lights.remove(i);
+                                todo!("Remove lights not yet implemented");
                                 proxy_tmp.lights.remove(i);
                                 break;
                             }

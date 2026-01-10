@@ -37,14 +37,12 @@ type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
 type RenderLight = engine_config::PointLight;
 type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
-type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
-    change_handler: SceneChangeHandler,
     render_engine: Option<Engine>,
     render_config_builder: RenderConfigBuilder,
     first_render: bool,
@@ -344,7 +342,6 @@ impl Scene {
         let mut res = Self {
             scene_graph: SceneGraph::new(),
             name: "scene".to_owned(),
-            change_handler: SceneChangeHandler {},
             background_color: [1.0, 1.0, 1.0],
             render_engine: None,
             render_config_builder: RenderConfigBuilder::new(),
@@ -492,7 +489,7 @@ impl Scene {
         self.scene_graph.get_light_sources()
     }
 
-    pub fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
+    pub(in crate::data_plane) fn get_light_sources_mut(&mut self) -> &mut Vec<LightSource> {
         //! ## Returns
         //! Reference to a vector that holds all LightSources of the scene
         self.scene_graph.get_light_sources_mut()
@@ -769,11 +766,7 @@ impl Scene {
                 .textures(texture_list)
         };
     }
-    //todo: make sure that the updates work seperately (sphere count and tri count in uniforms!)
-    //todo: add fns for mesh and lights, instead of offering get_lights, get_meshes
     //todo: check if assignment on self.render_config_builder can be replaced by self.render_config_builder.spheres(...)
-    //todo: pass lights from scene
-    //todo: do uniforms and lights also need check with first_render?
     pub(super) fn update_render_config_uniform(&mut self) {
         //! updates the uniforms on field render_config_builder
 
@@ -1189,7 +1182,71 @@ impl Scene {
         Ok(())
     }
 
-    // light stuff
+    // light stuff: position, luminosity, color, type
+    fn get_light_at(&self, index: usize) -> Result<&LightSource, Error> {
+        //! ## Returns
+        //! Reference to Light at the given index, or Error if index is out of bounds
+        match self.get_light_sources().get(index) {
+            Some(light_source) => Ok(light_source),
+            None => Err(anyhow!("IndexOutOfBound")),
+        }
+    }
+    fn get_light_mut_at(&mut self, index: usize) -> Result<&mut LightSource, Error> {
+        //! ## Returns
+        //! Mutable Reference to Light at the given index, or Error if index is out of bounds
+        match self.get_light_sources_mut().get_mut(index) {
+            Some(light_source) => Ok(light_source),
+            None => Err(anyhow!("IndexOutOfBound")),
+        }
+    }
+    pub(crate) fn get_light_position(&self, index: usize) -> Result<Vec3, Error> {
+        //! ## Returns
+        //! Position of light at given index as glam::Vec3
+        Ok(self.get_light_at(index)?.get_position())
+    }
+    pub(crate) fn set_light_position(&mut self, position: Vec3, index: usize) -> Result<(), Error> {
+        //!
+        self.get_light_mut_at(index)?.set_position(position);
+        Ok(())
+    }
+    pub(crate) fn get_light_luminosity(&self, index: usize) -> Result<f32, Error> {
+        //! ## Returns
+        //! Luminosity of light at given index
+        Ok(self.get_light_at(index)?.get_luminositoy())
+    }
+    pub(crate) fn set_light_luminosity(
+        &mut self,
+        luminosity: f32,
+        index: usize,
+    ) -> Result<(), Error> {
+        //!
+        self.get_light_mut_at(index)?.set_luminosity(luminosity);
+        Ok(())
+    }
+    pub(crate) fn get_light_color(&self, index: usize) -> Result<[f32; 3], Error> {
+        //! ## Returns
+        //! Color of light at given index as [f32; 3]
+        Ok(self.get_light_at(index)?.get_color())
+    }
+    pub(crate) fn set_light_color(&mut self, color: [f32; 3], index: usize) -> Result<(), Error> {
+        //!
+        self.get_light_mut_at(index)?.set_color(color);
+        Ok(())
+    }
+    pub(crate) fn get_light_type(&self, index: usize) -> Result<&LightType, Error> {
+        //! ## Returns
+        //! Type of light at given index as glam::Vec3
+        Ok(self.get_light_at(index)?.get_light_type())
+    }
+    pub(crate) fn set_light_type(
+        &mut self,
+        light_type: LightType,
+        index: usize,
+    ) -> Result<(), Error> {
+        //!
+        self.get_light_mut_at(index)?.set_light_type(light_type);
+        Ok(())
+    }
 }
 
 impl std::fmt::Display for Scene {

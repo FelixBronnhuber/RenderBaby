@@ -11,7 +11,6 @@ use scene_objects::{
 
 type RenderSphere = engine_config::Sphere;
 type RenderUniforms = engine_config::Uniforms;
-type RenderMesh = engine_config::Mesh;
 pub type RenderCamera = engine_config::Camera;
 type RenderLight = engine_config::PointLight;
 type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
