@@ -13,7 +13,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     if let Some(directory) = path.parent() {
         //objects
         sc.get_meshes().iter().for_each(|object| {
-            println!("{:?}", object.get_path());
             let written_path;
 
             //if path is absolute (obj_import) or else path is relative (scene_import)
@@ -90,7 +89,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 a: None,
             },
         };
-        println!("final_scene_export: {:?}", final_scene);
         let output = File::create(path);
         match output {
             Ok(output) => {
