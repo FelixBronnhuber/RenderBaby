@@ -1180,6 +1180,16 @@ impl Scene {
         self.get_mesh_mut_at(index)?.translate(vec);
         Ok(())
     }
+
+    pub(crate) fn rotate_mesh(&mut self, rotation: Vec3, index: usize) -> Result<(), Error> {
+        //! Rotates the mesh around its centroid
+        //! ## Parameter
+        //! 'vec': rotation vector as glam::Vec3, euler angles
+        self.get_mesh_mut_at(index)?.translate(rotation);
+        Ok(())
+    }
+
+    // light stuff
 }
 
 impl std::fmt::Display for Scene {
