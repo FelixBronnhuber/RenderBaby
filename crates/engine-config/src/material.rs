@@ -52,6 +52,48 @@ impl Material {
     pub const DEFAULT_CENTER: Vec3 = Vec3::ZERO;
     pub const DEFAULT_RADIUS: f32 = 1.0;
     pub const DEFAULT_COLOR: Vec3 = Vec3::COLOR_RED;
+    pub const MATERIAL_REFLECTIVE: Self = Self {
+        ambient: [0.0, 0.0, 0.0],
+        _pad0: 0.0,
+        diffuse: Vec3::ZERO,
+        _pad1: 0.0,
+        specular: [1.0, 1.0, 1.0],
+        shininess: 1000.0,
+        emissive: [0.0, 0.0, 0.0],
+        ior: 1.0,
+        opacity: 1.0,
+        illum: 1,
+        texture_index: -1,
+        _pad2: 0,
+    };
+    pub const MATERIAL_BRONZE: Self = Self {
+        ambient: [0.0, 0.0, 0.0],
+        _pad0: 0.0,
+        diffuse: Vec3::ZERO,
+        _pad1: 0.0,
+        specular: [1.0, 0.5, 0.3],
+        shininess: 1000.0,
+        emissive: [0.0, 0.0, 0.0],
+        ior: 1.0,
+        opacity: 1.0,
+        illum: 1,
+        texture_index: -1,
+        _pad2: 0,
+    };
+    pub const MATERIAL_RED: Self = Self {
+        ambient: [0.0, 0.0, 0.0],
+        _pad0: 0.0,
+        diffuse: Vec3::COLOR_RED,
+        _pad1: 0.0,
+        specular: [0.0, 0.0, 0.0],
+        shininess: 1000.0,
+        emissive: [0.0, 0.0, 0.0],
+        ior: 1.0,
+        opacity: 1.0,
+        illum: 1,
+        texture_index: -1,
+        _pad2: 0,
+    };
 
     pub fn new_temp(diffuse: Vec3) -> Result<Material, MaterialError> {
         match diffuse.is_valid_color() {
