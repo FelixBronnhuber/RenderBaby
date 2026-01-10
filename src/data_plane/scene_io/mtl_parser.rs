@@ -39,7 +39,8 @@ pub struct MTLParser {
     pub ka: Vec<f32>,
     pub kd: Vec<f32>,
     pub ks: Vec<f32>,
-    pub d: f32, //transparency
+    pub ke: Vec<f32>,
+    pub d: f32,
     pub ns: f32,
     pub illum: u32,
     pub map_kd: Option<String>,
@@ -57,6 +58,7 @@ impl MTLParser {
         let mut ka: Vec<f32> = Vec::with_capacity(10);
         let mut kd: Vec<f32> = Vec::with_capacity(10);
         let mut ks: Vec<f32> = Vec::with_capacity(10);
+        let mut ke: Vec<f32> = Vec::with_capacity(10);
         let mut d: f32 = 0.0;
         let mut ns: f32 = 0.0;
         let mut illum: u32 = 0;
@@ -75,6 +77,7 @@ impl MTLParser {
                                 ka: ka.clone(),
                                 kd: kd.clone(),
                                 ks: ks.clone(),
+                                ke: ke.clone(),
                                 d,
                                 ns,
                                 illum,
@@ -87,6 +90,7 @@ impl MTLParser {
                     ka.clear();
                     kd.clear();
                     ks.clear();
+                    ke.clear();
                     d = 0.0;
                     illum = 0;
                     ns = 0.0;
@@ -113,6 +117,13 @@ impl MTLParser {
                     let temp = temp.split_whitespace().collect::<Vec<&str>>();
                     for i in temp {
                         ks.push(i.parse::<f32>()?);
+                    }
+                }
+                if line.starts_with("Ke") {
+                    let temp = line.replace("Ke", "").trim().to_string();
+                    let temp = temp.split_whitespace().collect::<Vec<&str>>();
+                    for i in temp {
+                        ke.push(i.parse::<f32>()?);
                     }
                 }
                 if line.starts_with("d") {
@@ -158,6 +169,7 @@ impl MTLParser {
                 ka: ka.clone(),
                 kd: kd.clone(),
                 ks: ks.clone(),
+                ke: ke.clone(),
                 d,
                 ns,
                 illum,
