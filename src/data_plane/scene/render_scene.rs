@@ -45,17 +45,17 @@ impl Scene {
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         let mut directory_path = path.clone();
         directory_path.pop();
-        info!("Scene: Loading new scene from {}", path.display());
+        info!("Loading new scene from {}", path.display());
         let scene_and_path = parse_scene(path.clone());
         match scene_and_path {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
                 let mut paths = scene_and_path.1;
-                let mut pathbuf = Vec::with_capacity(1);
+                let mut absolute_path = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|path| pathbuf.push(directory_path.join(path)));
-                for (i, v) in pathbuf.iter().enumerate() {
+                    .for_each(|path| absolute_path.push(directory_path.join(path)));
+                for (i, v) in absolute_path.iter().enumerate() {
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
@@ -64,13 +64,13 @@ impl Scene {
                 Ok(scene)
             }
             Err(error) => {
-                error!("Scene: Importing Scene resulted in error: {error}");
+                error!("Importing Scene resulted in error: {error}");
                 Err(error)
             }
         }
     }
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
-        info!("Scene {self}: Exporting scene");
+        info!("{self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
         match result {
             Err(error) => {
@@ -82,7 +82,7 @@ impl Scene {
             }
             _ => {
                 info!(
-                    "Scene {self}: Successfully exported scene to {}",
+                    "{self}: Successfully exported scene to {}",
                     path.display()
                 );
                 Ok(())
@@ -101,7 +101,7 @@ impl Scene {
         //! ## Returns
         //! Result of either a reference to the new object or an error
         let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
-        info!("Scene {self}: Loading object from {}", path.display());
+        info!("{self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {

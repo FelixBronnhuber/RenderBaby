@@ -10,15 +10,12 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();
 
+    let directory = path.parent().unwrap();//unwrap()                                           Uflabfubwvlaubulbuvbwabviavuwblbwbvubwubvb
     //objects
     sc.get_meshes().iter().for_each(|object| {
         objects.push(ParsingObject {
             name: object.get_name(),
-            path: object
-                .get_path()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
+            path: object.get_path().unwrap_or_default().strip_prefix(directory).unwrap().to_string_lossy().to_string(),
             scale: object.get_scale().into(),
             translation: object.get_translation().into(),
             rotation: object.get_rotation().into(),
@@ -76,7 +73,7 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
             a: None,
         },
     };
-
+    println!("final_scene_export: {:?}", final_scene);
     let output = File::create(path);
     match output {
         Ok(output) => {
