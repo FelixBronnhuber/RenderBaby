@@ -20,7 +20,6 @@ pub struct BVHNode {
     //Index of First Primitive in this Node and how many primitives there are in this node
     pub first_primitive: u32,
     pub primitive_count: u32,
-    pub _pad2: [u32; 2],
 }
 
 impl BVHNode {
@@ -50,6 +49,7 @@ impl BVHNode {
     }
 }
 
+#[derive(Default)]
 pub struct BVH {
     pub nodes: Vec<BVHNode>,
     pub indices: Vec<u32>, // Only Triangles
@@ -63,15 +63,6 @@ impl BVH {
         build_node(triangles, &mut indices, &mut nodes, 0, triangles.len());
 
         Self { nodes, indices }
-    }
-}
-
-impl Default for BVH {
-    fn default() -> Self {
-        Self {
-            nodes: Vec::new(),
-            indices: Vec::new(),
-        }
     }
 }
 

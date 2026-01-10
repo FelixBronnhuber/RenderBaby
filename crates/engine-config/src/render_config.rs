@@ -1,14 +1,17 @@
 use crate::*;
 use core::fmt;
+use engine_bvh::bvh::BVHNode;
+use engine_bvh::triangle::GPUTriangle;
 
 pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
     pub spheres: Change<Vec<Sphere>>,
-    pub vertices: Change<Vec<f32>>,
     pub uvs: Change<Vec<f32>>,
-    pub triangles: Change<Vec<u32>>,
     pub meshes: Change<Vec<Mesh>>,
     pub lights: Change<Vec<PointLight>>,
+    pub bvh_nodes: Change<Vec<BVHNode>>,
+    pub bvh_indices: Change<Vec<u32>>,
+    pub bvh_triangles: Change<Vec<GPUTriangle>>,
     pub textures: Change<Vec<TextureData>>,
 }
 
@@ -45,17 +48,6 @@ impl RenderConfig {
             }
             _ => {}
         }
-
-        match &mut self.vertices {
-            Change::Create(vertices) | Change::Update(vertices) => {
-                for i in (0..vertices.len()).step_by(3) {
-                    vertices[i] += dx;
-                    vertices[i + 1] += dy;
-                    vertices[i + 2] += dz;
-                }
-            }
-            _ => {}
-        }
     }
 }
 
@@ -67,14 +59,8 @@ impl ValidateInit for RenderConfig {
         if !matches!(self.spheres, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidSpheres);
         }
-        if !matches!(self.vertices, Change::Create(_)) {
-            return Err(RenderConfigBuilderError::InvalidVertices);
-        }
         if !matches!(self.uvs, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidUVs);
-        }
-        if !matches!(self.triangles, Change::Create(_)) {
-            return Err(RenderConfigBuilderError::InvalidTriangles);
         }
         if !matches!(self.meshes, Change::Create(_)) {
             return Err(RenderConfigBuilderError::InvalidMeshes);
@@ -124,18 +110,6 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
-        match &self.vertices {
-            Change::Update(vertices) | Change::Create(vertices) => {
-                if vertices.len() % 3 != 0 {
-                    return Err(RenderConfigBuilderError::InvalidVertices);
-                }
-            }
-            Change::Delete => {
-                todo!("Implement Vertices Deletion")
-            }
-            Change::Keep => {}
-        }
-
         match &self.uvs {
             Change::Update(uvs) | Change::Create(uvs) => {
                 if uvs.len() % 2 != 0 {
@@ -148,17 +122,6 @@ impl Validate for RenderConfig {
             Change::Keep => {}
         }
 
-        match &self.triangles {
-            Change::Update(triangles) | Change::Create(triangles) => {
-                if triangles.len() % 3 != 0 {
-                    return Err(RenderConfigBuilderError::InvalidTriangles);
-                }
-            }
-            Change::Delete => {
-                todo!("Implement triangles Deletion")
-            }
-            Change::Keep => {}
-        }
         match &self.meshes {
             Change::Update(_meshes) | Change::Create(_meshes) => {
                 //TODO: Mesh Validation
@@ -199,11 +162,12 @@ impl Validate for RenderConfig {
 pub struct RenderConfigBuilder {
     pub uniforms: Option<Change<Uniforms>>,
     pub spheres: Option<Change<Vec<Sphere>>>,
-    pub vertices: Option<Change<Vec<f32>>>,
     pub uvs: Option<Change<Vec<f32>>>,
-    pub triangles: Option<Change<Vec<u32>>>,
     pub meshes: Option<Change<Vec<Mesh>>>,
     pub lights: Option<Change<Vec<PointLight>>>,
+    pub bvh_nodes: Option<Change<Vec<BVHNode>>>,
+    pub bvh_indices: Option<Change<Vec<u32>>>,
+    pub bvh_triangles: Option<Change<Vec<GPUTriangle>>>,
     pub textures: Option<Change<Vec<TextureData>>>,
 }
 
@@ -212,11 +176,12 @@ impl RenderConfigBuilder {
         Self {
             uniforms: None,
             spheres: None,
-            vertices: None,
             uvs: None,
-            triangles: None,
             meshes: None,
             lights: None,
+            bvh_nodes: None,
+            bvh_indices: None,
+            bvh_triangles: None,
             textures: None,
         }
     }
@@ -261,26 +226,6 @@ impl RenderConfigBuilder {
         self
     }
 
-    pub fn vertices(mut self, vertices: Vec<f32>) -> Self {
-        self.vertices = Some(Change::Update(vertices));
-        self
-    }
-
-    pub fn vertices_create(mut self, vertices: Vec<f32>) -> Self {
-        self.vertices = Some(Change::Create(vertices));
-        self
-    }
-
-    pub fn vertices_no_change(mut self) -> Self {
-        self.vertices = Some(Change::Keep);
-        self
-    }
-
-    pub fn vertices_delete(mut self) -> Self {
-        self.vertices = Some(Change::Delete);
-        self
-    }
-
     pub fn uvs(mut self, uvs: Vec<f32>) -> Self {
         self.uvs = Some(Change::Update(uvs));
         self
@@ -298,26 +243,6 @@ impl RenderConfigBuilder {
 
     pub fn uvs_delete(mut self) -> Self {
         self.uvs = Some(Change::Delete);
-        self
-    }
-
-    pub fn triangles(mut self, triangles: Vec<u32>) -> Self {
-        self.triangles = Some(Change::Update(triangles));
-        self
-    }
-
-    pub fn triangles_create(mut self, triangles: Vec<u32>) -> Self {
-        self.triangles = Some(Change::Create(triangles));
-        self
-    }
-
-    pub fn triangles_no_change(mut self) -> Self {
-        self.triangles = Some(Change::Keep);
-        self
-    }
-
-    pub fn triangles_delete(mut self) -> Self {
-        self.triangles = Some(Change::Delete);
         self
     }
 
@@ -361,6 +286,66 @@ impl RenderConfigBuilder {
         self
     }
 
+    pub fn bvh_nodes(mut self, nodes: Vec<BVHNode>) -> Self {
+        self.bvh_nodes = Some(Change::Update(nodes));
+        self
+    }
+
+    pub fn bvh_nodes_create(mut self, nodes: Vec<BVHNode>) -> Self {
+        self.bvh_nodes = Some(Change::Create(nodes));
+        self
+    }
+
+    pub fn bvh_nodes_no_change(mut self) -> Self {
+        self.bvh_nodes = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_nodes_delete(mut self) -> Self {
+        self.bvh_nodes = Some(Change::Delete);
+        self
+    }
+
+    pub fn bvh_indices(mut self, indices: Vec<u32>) -> Self {
+        self.bvh_indices = Some(Change::Update(indices));
+        self
+    }
+
+    pub fn bvh_indices_create(mut self, indices: Vec<u32>) -> Self {
+        self.bvh_indices = Some(Change::Create(indices));
+        self
+    }
+
+    pub fn bvh_indices_no_change(mut self) -> Self {
+        self.bvh_indices = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_indices_delete(mut self) -> Self {
+        self.bvh_indices = Some(Change::Delete);
+        self
+    }
+
+    pub fn bvh_triangles(mut self, triangles: Vec<GPUTriangle>) -> Self {
+        self.bvh_triangles = Some(Change::Update(triangles));
+        self
+    }
+
+    pub fn bvh_triangles_create(mut self, triangles: Vec<GPUTriangle>) -> Self {
+        self.bvh_triangles = Some(Change::Create(triangles));
+        self
+    }
+
+    pub fn bvh_triangles_no_change(mut self) -> Self {
+        self.bvh_triangles = Some(Change::Keep);
+        self
+    }
+
+    pub fn bvh_triangles_delete(mut self) -> Self {
+        self.bvh_triangles = Some(Change::Delete);
+        self
+    }
+
     pub fn textures(mut self, textures: Vec<TextureData>) -> Self {
         self.textures = Some(Change::Update(textures));
         self
@@ -388,14 +373,8 @@ impl RenderConfigBuilder {
         if self.spheres.is_none() {
             log::info!("RenderConfigBuilder: spheres not set, defaulting to NoChange.");
         }
-        if self.vertices.is_none() {
-            log::info!("RenderConfigBuilder: vertices not set, defaulting to NoChange.");
-        }
         if self.uvs.is_none() {
             log::info!("RenderConfigBuilder: uvs not set, defaulting to NoChange.");
-        }
-        if self.triangles.is_none() {
-            log::info!("RenderConfigBuilder: triangles not set, defaulting to NoChange.");
         }
         if self.meshes.is_none() {
             log::info!("RenderConfigBuilder: meshes not set, defaulting to NoChange.");
@@ -406,16 +385,26 @@ impl RenderConfigBuilder {
         if self.textures.is_none() {
             log::info!("RenderConfigBuilder: textures not set, defaulting to NoChange.");
         }
+        if self.bvh_nodes.is_none() {
+            log::info!("RenderConfigBuilder: bvh_nodes not set, defaulting to NoChange");
+        }
+        if self.bvh_indices.is_none() {
+            log::info!("RenderConfigBuilder: bvh_indices not set, defaulting to NoChange");
+        }
+        if self.bvh_triangles.is_none() {
+            log::info!("RenderConfigBuilder: bvh_triangles not set, defaulting to NoChange");
+        }
 
         RenderConfig {
             uniforms: self.uniforms.unwrap_or(Change::Keep),
             spheres: self.spheres.unwrap_or(Change::Keep),
-            vertices: self.vertices.unwrap_or(Change::Keep),
             uvs: self.uvs.unwrap_or(Change::Keep),
-            triangles: self.triangles.unwrap_or(Change::Keep),
             meshes: self.meshes.unwrap_or(Change::Keep),
             lights: self.lights.unwrap_or(Change::Keep),
             textures: self.textures.unwrap_or(Change::Keep),
+            bvh_nodes: self.bvh_nodes.unwrap_or(Change::Keep),
+            bvh_indices: self.bvh_indices.unwrap_or(Change::Keep),
+            bvh_triangles: self.bvh_triangles.unwrap_or(Change::Keep),
         }
     }
 }
@@ -427,9 +416,7 @@ pub enum RenderConfigBuilderError {
     InvalidCameraDirection,
     InvalidUniforms,
     InvalidSpheres,
-    InvalidVertices,
     InvalidUVs,
-    InvalidTriangles,
     InvalidMeshes,
     InvalidLights,
     InvalidTextures,
@@ -450,9 +437,7 @@ impl fmt::Display for RenderConfigBuilderError {
             }
             RenderConfigBuilderError::InvalidUniforms => write!(f, "Invalid Uniforms"),
             RenderConfigBuilderError::InvalidSpheres => write!(f, "Invalid Spheres"),
-            RenderConfigBuilderError::InvalidVertices => write!(f, "Invalid Vertices"),
             RenderConfigBuilderError::InvalidUVs => write!(f, "Invalid UVs"),
-            RenderConfigBuilderError::InvalidTriangles => write!(f, "Invalid Triangles"),
             RenderConfigBuilderError::InvalidMeshes => write!(f, "Invalid Meshes"),
             RenderConfigBuilderError::InvalidLights => write!(f, "Invalid Lights"),
             RenderConfigBuilderError::InvalidTextures => write!(f, "Invalid Textures"),
