@@ -1,7 +1,3 @@
-const GROUND_Y: f32 = -1.0;
-const GROUND_ENABLED: bool = true;
-const MAX_DEPTH: i32 = 5;
-
 struct Camera {
     pane_distance: f32,
     pane_width: f32,
@@ -27,7 +23,10 @@ struct Uniforms {
     camera: Camera,
     spheres_count: u32,
     triangles_count: u32,
-    _pad1: vec2<u32>,
+    ground_height: f32,
+    ground_enabled: u32,
+    sky_color: vec3<f32>,
+    max_depth: u32,
 };
 
 struct Sphere {
@@ -94,6 +93,13 @@ struct TextureInfo {
 @group(0) @binding(10) var<storage, read> texture_data: array<u32>;
 @group(0) @binding(11) var<storage, read> texture_info: array<TextureInfo>;
 
+fn ground_enabled() -> bool {
+    if (uniforms.ground_enabled > 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
 fn linear_to_gamma(lin_color: f32) -> f32 {
     if (lin_color > 0.0) {
@@ -249,7 +255,7 @@ fn intersect_ground(ray_origin: vec3<f32>, ray_dir: vec3<f32>) -> f32 {
         return -1.0;
     }
 
-    let t = (GROUND_Y - ray_origin.y) / ray_dir.y;
+    let t = (uniforms.ground_height - ray_origin.y) / ray_dir.y;
 
     if (t > 0.0) {
         return t;
@@ -335,7 +341,7 @@ fn scatter_metal(
 }
 
 fn collision(origin: vec3<f32>, light_dir: vec3<f32>, max_dist: f32) -> bool {
-    if (GROUND_ENABLED) {
+    if (ground_enabled()) {
         let t = intersect_ground(origin, light_dir);
         if (t > 0.001 && t < max_dist) {
             return true;
@@ -399,7 +405,7 @@ fn trace_ray(
     var color = vec3<f32>(0.0);
     var attenuation = vec3<f32>(1.0);
     
-    for (var depth = 0; depth < MAX_DEPTH; depth = depth + 1) {
+    for (var depth: u32 = 0; depth < uniforms.max_depth; depth = depth + 1) {
         var closest_hit = HitRecord(
             false,
             1e20,
@@ -417,7 +423,7 @@ fn trace_ray(
         );
         
         // Ground
-        if (GROUND_ENABLED) {
+        if (ground_enabled()) {
             let t = intersect_ground(origin, direction);
             if (t > 0.001 && t < closest_hit.t) {
                 closest_hit.hit = true;
@@ -517,10 +523,11 @@ fn trace_ray(
             }
         }
 
+        //Sky
         if (!closest_hit.hit) {
             let unit_dir = normalize(direction);
             let a = 0.5 * (unit_dir.y + 1.0);
-            let sky = (1.0 - a) * vec3<f32>(1.0) + a * vec3<f32>(0.5, 0.7, 1.0);
+            let sky = (1.0 - a) * vec3<f32>(1.0) + a * uniforms.sky_color;
             color += attenuation * sky;
             break;
         }

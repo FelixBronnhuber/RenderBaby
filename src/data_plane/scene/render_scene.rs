@@ -382,6 +382,10 @@ impl Scene {
                         cam.get_ray_samples(),
                         0,
                         0,
+                        Uniforms::default().ground_height, //Leave or change to scene defaults
+                        Uniforms::default().ground_enabled,
+                        Uniforms::default().sky_color,
+                        Uniforms::default().max_depth,
                     ))
                     .spheres_create(vec![])
                     .vertices_create(vec![])
