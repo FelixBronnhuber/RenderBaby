@@ -16,7 +16,7 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
             println!("{:?}", object.get_path());
             let written_path;
 
-            //if path is absolute (obj_import) or path is relative (scene_import)
+            //if path is absolute (obj_import) or else path is relative (scene_import)
             if let Ok(relative_path) = object
                 .get_path()
                 .unwrap_or_default()
