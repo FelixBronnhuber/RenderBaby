@@ -1,2 +1,2 @@
-mod frame_buffer;
-mod frame_iterator;
+pub mod frame_buffer;
+pub mod frame_iterator;

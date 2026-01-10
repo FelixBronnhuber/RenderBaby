@@ -36,7 +36,7 @@ impl FrameBuffer {
             latest_frame_rx,
             command_tx,
             join_handle,
-            clone_last: clone_last,
+            clone_last,
             last_frame,
         }
     }

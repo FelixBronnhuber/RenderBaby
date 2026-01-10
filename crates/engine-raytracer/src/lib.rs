@@ -2,6 +2,7 @@ use anyhow::Result;
 pub use engine_config::RenderConfig;
 use engine_config::{RenderOutput, Renderer};
 use engine_wgpu_wrapper::{GpuWrapper};
+use frame_buffer::frame_iterator::FrameIterator;
 
 pub struct Engine {
     gpu_wrapper: GpuWrapper,
@@ -22,6 +23,10 @@ impl Renderer for Engine {
             self.gpu_wrapper.get_height() as usize,
             pixels,
         ))
+    }
+
+    fn frame_iterator(&mut self, _rc: RenderConfig) -> Result<Box<dyn FrameIterator>> {
+        todo!()
     }
 }
 

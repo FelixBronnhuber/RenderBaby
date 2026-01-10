@@ -2,6 +2,7 @@ use anyhow::Result;
 pub use engine_config::RenderConfig;
 use engine_config::{RenderOutput, Renderer};
 use engine_wgpu_wrapper::GpuWrapper;
+use frame_buffer::frame_iterator::FrameIterator;
 
 #[allow(dead_code)]
 pub struct Engine {
@@ -11,6 +12,10 @@ pub struct Engine {
 impl Renderer for Engine {
     fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
         self.render(rc)
+    }
+
+    fn frame_iterator(&mut self, _rc: RenderConfig) -> Result<Box<dyn FrameIterator>> {
+        todo!()
     }
 }
 
