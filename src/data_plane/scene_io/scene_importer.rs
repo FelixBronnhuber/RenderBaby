@@ -108,7 +108,7 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
 
             "objects": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": { "$ref": "#/$defs/object" }
             },
 
@@ -122,7 +122,7 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
 
             "lights": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": { "$ref": "#/$defs/light" }
             }
         },
