@@ -1,3 +1,4 @@
+use std::time::Duration;
 use eframe::emath::Align;
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
@@ -8,6 +9,8 @@ use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
+
+static FRAME_DURATION_FPS24: Duration = Duration::from_millis(1000 / 24);
 
 #[allow(dead_code)]
 pub struct SceneScreen {
@@ -58,16 +61,17 @@ impl SceneScreen {
             });
     }
 
-    fn do_render(&mut self, ctx: &egui::Context) {
-        match self.model.scene.lock().unwrap().render() {
-            Ok(output) => {
-                self.image_area
-                    .set_image(ctx, Image::new(output.width, output.height, output.pixels));
+    fn do_render(&self) {
+        let it = self.model.render();
+        match it {
+            Ok(_) => {}
+            Err(_) => {
+                self.message_popup_pipe
+                    .push_message(Message::from_error(anyhow::anyhow!(
+                        "Failed to generate a frame iterator."
+                    )));
             }
-            Err(e) => {
-                self.message_popup_pipe.push_message(Message::from_error(e));
-            }
-        }
+        };
     }
 }
 
@@ -76,8 +80,8 @@ impl Screen for SceneScreen {
         egui::Vec2::new(1200.0, 800.0)
     }
 
-    fn on_start(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.do_render(ctx);
+    fn on_start(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.do_render();
     }
 
     fn update(
@@ -121,17 +125,37 @@ impl Screen for SceneScreen {
                 let scene_clone = self.model.scene.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.save_file(move |res| {
-                        if let Ok(path) = res {
-                            match scene_clone.lock().unwrap().export_render_img(path.clone()) {
-                                Ok(_) => message_pipe_clone.push_message(Message::new(
-                                    "Export successful.",
-                                    format!("Saved PNG to {}", path.display()).as_str(),
-                                )),
-                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
+                    match self.model.frame_buffer.get_last_frame() {
+                        Ok(last_frame) => {
+                            if let Some(last_frame) = last_frame {
+                                self.model.scene.lock().unwrap().set_last_render(last_frame);
+                                self.file_dialog_export.save_file(move |res| {
+                                    if let Ok(path) = res {
+                                        match scene_clone
+                                            .lock()
+                                            .unwrap()
+                                            .export_render_img(path.clone())
+                                        {
+                                            Ok(_) => message_pipe_clone.push_message(Message::new(
+                                                "Export successful.",
+                                                format!("Saved PNG to {}", path.display()).as_str(),
+                                            )),
+                                            Err(e) => message_pipe_clone
+                                                .push_message(Message::from_error(e)),
+                                        }
+                                    };
+                                });
+                            } else {
+                                message_pipe_clone.push_message(Message::new(
+                                    "No rendered image to export.",
+                                    "Please render the scene before exporting an image.",
+                                ));
                             }
-                        };
-                    });
+                        }
+                        Err(e) => {
+                            self.message_popup_pipe.push_message(Message::from_error(e));
+                        }
+                    }
                 }
                 self.file_dialog_export.update_effect(ctx);
 
@@ -157,8 +181,12 @@ impl Screen for SceneScreen {
             .show(ctx, |ui| {
                 self.model.consume_proxy_dirty_and_reload();
 
-                if ui.button("Render").clicked() {
-                    self.do_render(ctx);
+                if self.model.frame_buffer.has_provider() {
+                    if ui.button("Cancel Render").clicked() {
+                        self.model.frame_buffer.stop_current_provider();
+                    }
+                } else if ui.button("Start Render").clicked() {
+                    self.do_render();
                 }
 
                 ui.separator();
@@ -191,6 +219,23 @@ impl Screen for SceneScreen {
 
         if self.bottom_visible {
             SceneScreen::logs_ui(ctx);
+        }
+
+        if let Some(output) = self.model.frame_buffer.try_recv() {
+            match output {
+                Ok(output) => {
+                    self.image_area
+                        .set_image(ctx, Image::new(output.width, output.height, output.pixels));
+                }
+                Err(e) => {
+                    self.message_popup_pipe.push_message(Message::from_error(e));
+                }
+            }
+        }
+
+        // hopefully temporary fix to keep painting while render is going even if the user is doing nothing.
+        if self.model.frame_buffer.has_provider() {
+            ctx.request_repaint_after(FRAME_DURATION_FPS24);
         }
 
         None

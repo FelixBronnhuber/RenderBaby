@@ -1,5 +1,5 @@
 use anyhow::Result;
-use engine_config::{RenderOutput, Renderer, RenderConfig};
+use engine_config::{Renderer, RenderConfig};
 use engine_config::renderer::RendererIterable;
 use frame_buffer::frame_iterator::{Frame, FrameIterator};
 
@@ -42,7 +42,7 @@ impl Engine {
         }
     }
 
-    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
+    pub fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
         self.renderer.render(rc)
     }
 

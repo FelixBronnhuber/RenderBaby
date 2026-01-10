@@ -1271,6 +1271,7 @@ dependencies = [
  "engine-config",
  "engine-wgpu-wrapper",
  "frame-buffer",
+ "log",
  "wgpu",
 ]
 

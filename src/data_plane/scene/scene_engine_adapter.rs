@@ -1,9 +1,11 @@
 /// Serves as an adpter between the scene plane and the render engine.
 use std::collections::HashMap;
 use anyhow::{Error, Result};
-use engine_config::{RenderConfigBuilder, RenderOutput};
+use engine_config::{RenderConfig, RenderConfigBuilder};
 use glam::Vec3;
 use log::{debug, error, info};
+use engine_config::renderer::RendererIterable;
+use frame_buffer::frame_iterator::{Frame, FrameIterator};
 use scene_objects::{
     camera::{Camera, Resolution},
     light_source::LightSource,
@@ -307,12 +309,7 @@ impl Scene {
             .collect()
     }
 
-    pub fn render(&mut self) -> Result<RenderOutput, Error> {
-        //! calls the render engine for the scene self.
-        //! ## Returns
-        //! Result of either the RenderOutput or a error
-        info!("{self}: Render has been called. Collecting render parameters");
-
+    fn generate_full_render_command_builder(&mut self) -> RenderConfig {
         let render_spheres = self.get_render_spheres();
 
         // Collect textures
@@ -382,8 +379,9 @@ impl Scene {
 
         let point_lights = self.get_render_point_lights();
 
-        let rc = if self.get_first_render() {
-            self.set_first_render(false);
+        // todo: fix this part just in case (|| true)
+        if self.get_first_render() {
+            // self.set_first_render(false); DON'T SET TRUE TEMPORARILY FOR FRAME ITERATOR
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
                 .uniforms_create(uniforms)
@@ -408,7 +406,26 @@ impl Scene {
                 .lights(point_lights)
                 .textures(texture_list)
                 .build()
-        };
+        }
+    }
+
+    pub fn get_frame_iterator(&mut self) -> Result<Box<dyn FrameIterator>> {
+        //! ## Returns
+        //! A FrameIterator for the current scene
+        let rc = self.generate_full_render_command_builder();
+
+        let engine = self.get_render_engine_mut();
+
+        engine.get_frame_iterator(rc)
+    }
+
+    pub fn render(&mut self) -> Result<Frame> {
+        //! calls the render engine for the scene self.
+        //! ## Returns
+        //! Result of either the Frame or a error
+        info!("{self}: Render has been called. Collecting render parameters");
+
+        let rc = self.generate_full_render_command_builder();
 
         let engine = self.get_render_engine_mut();
 

@@ -12,3 +12,4 @@ wgpu = "27.0.1"
 engine-config = { path = "../engine-config" }
 engine-wgpu-wrapper = { path = "../engine-wgpu-wrapper"}
 frame-buffer = { path = "../frame-buffer" }
+log = "0.4.28"

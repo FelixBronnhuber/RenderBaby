@@ -1,5 +1,6 @@
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::AtomicBool;
 use std::thread;
 use std::thread::JoinHandle;
 use crate::frame_iterator::*;
@@ -15,6 +16,7 @@ pub struct FrameBuffer {
     join_handle: JoinHandle<()>,
     clone_last: bool,
     last_frame: Arc<Mutex<Option<Frame>>>,
+    has_provider: Arc<AtomicBool>,
 }
 
 impl FrameBuffer {
@@ -28,8 +30,15 @@ impl FrameBuffer {
         } else {
             None
         };
+        let has_provider = Arc::new(AtomicBool::new(false));
+        let has_provider_clone = has_provider.clone();
         let join_handle = thread::spawn(move || {
-            FrameBuffer::frame_iter_loop(command_rx, latest_frame_tx, last_frame_clone);
+            FrameBuffer::frame_iter_loop(
+                command_rx,
+                latest_frame_tx,
+                last_frame_clone,
+                has_provider_clone,
+            );
         });
 
         Self {
@@ -38,6 +47,7 @@ impl FrameBuffer {
             join_handle,
             clone_last,
             last_frame,
+            has_provider,
         }
     }
 
@@ -45,8 +55,11 @@ impl FrameBuffer {
         command_rx: Receiver<BufferCommand>,
         frame_tx: Sender<anyhow::Result<Frame>>,
         last_frame: Option<Arc<Mutex<Option<Frame>>>>,
+        has_provider: Arc<AtomicBool>,
     ) {
         let mut provider: Option<Box<dyn FrameIterator>> = None;
+        has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
+
         loop {
             if provider.is_none() {
                 match command_rx.recv() {
@@ -54,6 +67,7 @@ impl FrameBuffer {
                         // initial check just in case
                         if p.has_next() {
                             provider = Some(p);
+                            has_provider.store(true, std::sync::atomic::Ordering::SeqCst);
                         }
                     }
                     Ok(BufferCommand::StopCurrentProvider) => continue,
@@ -66,13 +80,17 @@ impl FrameBuffer {
             if let Some(p) = provider.as_mut() {
                 if let Ok(command) = command_rx.try_recv() {
                     match command {
-                        BufferCommand::Provide(_) => {
-                            provider = None;
+                        BufferCommand::Provide(p) => {
+                            if p.has_next() {
+                                provider = Some(p);
+                                has_provider.store(true, std::sync::atomic::Ordering::SeqCst);
+                            }
                             continue;
                         }
                         BufferCommand::StopCurrentProvider => {
                             p.destroy();
                             provider = None;
+                            has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
                             continue;
                         }
                     }
@@ -81,6 +99,7 @@ impl FrameBuffer {
                 let frame = p.next();
                 if !p.has_next() {
                     provider = None;
+                    has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
                     if let Some(last_frame) = last_frame.as_ref()
                         && let Ok(frame) = frame.as_ref()
                     {
@@ -92,9 +111,9 @@ impl FrameBuffer {
         }
     }
 
-    pub fn provide(&self, provider: Box<dyn FrameIterator>) {
+    pub fn provide(&self, iterator: Box<dyn FrameIterator>) {
         self.command_tx
-            .send(BufferCommand::Provide(provider))
+            .send(BufferCommand::Provide(iterator))
             .unwrap();
     }
 
@@ -104,8 +123,8 @@ impl FrameBuffer {
             .unwrap();
     }
 
-    pub fn is_running(&self) -> bool {
-        !self.join_handle.is_finished()
+    pub fn has_provider(&self) -> bool {
+        self.has_provider.load(std::sync::atomic::Ordering::SeqCst) && self.thread_running()
     }
 
     pub fn try_recv(&self) -> Option<anyhow::Result<Frame>> {
@@ -122,8 +141,12 @@ impl FrameBuffer {
         }
     }
 
+    pub fn thread_running(&self) -> bool {
+        !self.join_handle.is_finished()
+    }
+
     pub fn spawn_new(&mut self) -> anyhow::Result<()> {
-        if self.is_running() {
+        if self.thread_running() {
             Err(anyhow::anyhow!("Frame buffer is already running"))
         } else {
             let (latest_frame_tx, latest_frame_rx) = std::sync::mpsc::channel();
@@ -134,9 +157,17 @@ impl FrameBuffer {
             } else {
                 None
             };
+
+            let has_provider = self.has_provider.clone();
             self.join_handle = thread::spawn(move || {
-                FrameBuffer::frame_iter_loop(command_rx, latest_frame_tx, last_frame_clone);
+                FrameBuffer::frame_iter_loop(
+                    command_rx,
+                    latest_frame_tx,
+                    last_frame_clone,
+                    has_provider,
+                );
             });
+
             self.latest_frame_rx = latest_frame_rx;
             self.command_tx = command_tx;
             Ok(())

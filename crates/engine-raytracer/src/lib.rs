@@ -1,21 +1,22 @@
 use anyhow::Result;
 pub use engine_config::RenderConfig;
-use engine_config::{RenderOutput, Renderer};
+use engine_config::Renderer;
 use engine_wgpu_wrapper::{GpuWrapper};
 use frame_buffer::frame_iterator::{FrameIterator, Frame};
+use log::info;
 
 pub struct Engine {
     gpu_wrapper: GpuWrapper,
 }
 
 impl Renderer for Engine {
-    fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
+    fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
         self.gpu_wrapper.update(rc)?;
         self.gpu_wrapper.update_uniforms();
         self.gpu_wrapper.dispatch_compute()?;
         let pixels = self.gpu_wrapper.read_pixels()?;
 
-        Ok(RenderOutput::new(
+        Ok(Frame::new(
             self.gpu_wrapper.get_width() as usize,
             self.gpu_wrapper.get_height() as usize,
             pixels,
@@ -58,7 +59,7 @@ impl FrameIterator for RaytracerFrameIterator {
         self.gpu_wrapper.prh().current_pass < self.gpu_wrapper.prh().total_passes
     }
 
-    fn next(&mut self) -> anyhow::Result<Frame> {
+    fn next(&mut self) -> Result<Frame> {
         if !self.has_next() {
             anyhow::bail!("No more frames available");
         }
@@ -96,10 +97,21 @@ impl FrameIterator for RaytracerFrameIterator {
 
         self.gpu_wrapper.prh_mut().current_pass += 1;
 
+        info!(
+            "PASSED Sample: {}{}",
+            self.gpu_wrapper.prh().current_pass,
+            if self.gpu_wrapper.prh().current_pass == self.gpu_wrapper.prh().total_passes {
+                ", finished rendering!"
+            } else {
+                ""
+            }
+        );
+
         Ok(frame)
     }
 
     fn destroy(&mut self) {
-        //TODO
+        info!("Cancelled Render Iterator.")
+        // todo
     }
 }

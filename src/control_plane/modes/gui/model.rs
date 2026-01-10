@@ -5,6 +5,7 @@ use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 use glam::Vec3;
+use frame_buffer::frame_buffer::FrameBuffer;
 use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 
 #[allow(dead_code)]
@@ -13,6 +14,7 @@ pub struct Model {
     pub proxy: ProxyScene,
     // flag to indicate whether the scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
+    pub frame_buffer: FrameBuffer,
 }
 
 #[allow(dead_code)]
@@ -44,6 +46,7 @@ impl Model {
             scene
                 .get_camera_mut()
                 .set_resolution(Resolution::new(256, 256));
+            scene.get_camera_mut().set_ray_samples(1);
         } else {
             log::warn!(
                 "Capsule fixture not found at {:?}, falling back to proto_init",
@@ -94,6 +97,7 @@ impl Model {
             scene: Arc::new(Mutex::new(scene)),
             proxy,
             proxy_dirty: Arc::new(AtomicBool::new(false)),
+            frame_buffer: FrameBuffer::new(true),
         }
     }
 
@@ -108,11 +112,9 @@ impl Model {
     }
 
     pub fn render(&self) -> anyhow::Result<()> {
-        todo!()
-    }
-
-    pub fn frame_buffer_ref(&self) -> &String {
-        todo!()
+        self.frame_buffer
+            .provide(self.scene.lock().unwrap().get_frame_iterator()?);
+        Ok(())
     }
 
     pub fn reload_proxy(&mut self) {
