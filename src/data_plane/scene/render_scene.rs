@@ -44,8 +44,8 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
-    /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+        //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
         let mut scene_and_path : Result<(Scene,Vec<String>), Error>= Err(anyhow::Error::msg("uninitialized scene and obj path used"));
@@ -98,12 +98,14 @@ impl Scene {
                     )?;
                 }
                 if !temp_dir.as_os_str().is_empty() {
+                    info!("removing temporary directory: {:?}", temp_dir);
                     fs::remove_dir_all(temp_dir);
                 }
                 Ok(scene)
             }
             Err(error) => {
                 if !temp_dir.as_os_str().is_empty() {
+                    info!("removing temporary directory: {:?}", temp_dir);
                     fs::remove_dir_all(temp_dir);
                 }
                 error!("Scene: Importing Scene resulted in error: {error}");
