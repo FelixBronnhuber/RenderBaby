@@ -1015,7 +1015,7 @@ impl Scene {
             None => Err(anyhow!("Index out of bound")),
         }
     }
-    pub(crate) fn set_sphere_color(&mut self, index: usize, color: [f32; 3]) -> Result<(), Error> {
+    pub(crate) fn set_sphere_color(&mut self, color: [f32; 3], index: usize) -> Result<(), Error> {
         //! Sets the LightSource color
         //! ## Parameter
         //! 'color': New LightSource color as array of f32, values in \[0, 1]
@@ -1051,7 +1051,7 @@ impl Scene {
         Ok(self.get_sphere_at(index)?.get_center())
     }
 
-    pub(crate) fn set_sphere_senter(
+    pub(crate) fn set_sphere_center(
         &mut self,
         center: Vec3,
         index: usize,
