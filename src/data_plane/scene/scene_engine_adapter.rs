@@ -122,6 +122,15 @@ fn material_to_render_material(
         mat.specular_reflectivity.get(1).copied().unwrap_or(0.0) as f32,
         mat.specular_reflectivity.get(2).copied().unwrap_or(0.0) as f32,
     ];
+    let emissive = if mat.emissive.len() == 3 {
+        [
+            mat.emissive[0] as f32,
+            mat.emissive[1] as f32,
+            mat.emissive[2] as f32,
+        ]
+    } else {
+        [0.0, 0.0, 0.0]
+    };
 
     let texture_index = if let Some(path) = &mat.texture_path {
         *texture_map.get(path).unwrap_or(&-1)
@@ -134,7 +143,7 @@ fn material_to_render_material(
         diffuse,
         specular,
         mat.shininess as f32,
-        [0.0, 0.0, 0.0],               // emissive
+        emissive,
         1.0,                           // ior
         1.0 - mat.transparency as f32, // opacity
         2,                             // illum (default to specular)
