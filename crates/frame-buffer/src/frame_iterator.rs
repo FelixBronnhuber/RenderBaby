@@ -1,11 +1,11 @@
 #[derive(Debug, Clone)]
-pub struct RenderOutput {
+pub struct Frame {
     pub width: usize,
     pub height: usize,
     pub pixels: Vec<u8>, // RGBA8 data
 }
 
-impl RenderOutput {
+impl Frame {
     pub fn new(width: usize, height: usize, pixels: Vec<u8>) -> Self {
         Self {
             width,
@@ -22,11 +22,17 @@ impl RenderOutput {
         let expected = self.expected_size();
         if self.pixels.len() != expected {
             anyhow::bail!(
-                "RenderOutput pixel size mismatch: expected {} bytes, got {}",
+                "Frame pixel size mismatch: expected {} bytes, got {}",
                 expected,
                 self.pixels.len()
             );
         }
         Ok(())
     }
+}
+
+pub trait FrameIterator: Send + 'static {
+    fn has_next(&self) -> bool;
+    fn next(&mut self) -> anyhow::Result<Frame>;
+    fn destroy(&mut self); // this deletes the iterator
 }

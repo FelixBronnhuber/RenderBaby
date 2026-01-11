@@ -180,8 +180,6 @@ impl Viewable for Vec<ProxyMesh> {
     type RealSceneObject = Arc<Mutex<Scene>>;
 
     fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) {
-        let mut scene_lock = scene.lock().unwrap();
-        let real_meshes = scene_lock.get_meshes_mut();
         let enum_meshes = self.iter_mut();
         if enum_meshes.len() == 0 {
             ui.label("No objects in scene.");
@@ -190,11 +188,11 @@ impl Viewable for Vec<ProxyMesh> {
                 CollapsingHeader::new(format!("Object {}", i))
                     .default_open(false)
                     .show(ui, |ui| {
-                        proxy_mesh.ui(ui, &mut real_meshes[i]);
+                        proxy_mesh.ui(ui, &mut scene.lock().unwrap().get_meshes_mut()[i]);
                     });
 
                 if ui.small_button("remove").clicked() {
-                    real_meshes.remove(i);
+                    scene.lock().unwrap().get_meshes_mut().remove(i);
                     self.remove(i);
                     break;
                 }

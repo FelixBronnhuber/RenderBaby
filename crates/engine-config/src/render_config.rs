@@ -3,6 +3,7 @@ use core::fmt;
 use engine_bvh::bvh::BVHNode;
 use engine_bvh::triangle::GPUTriangle;
 
+#[derive(Clone)]
 pub struct RenderConfig {
     pub uniforms: Change<Uniforms>,
     pub spheres: Change<Vec<Sphere>>,
