@@ -209,7 +209,7 @@ impl Viewable for Misc {
                 CollapsingHeader::new(format!("Sphere {}", i))
                     .default_open(false)
                     .show(ui, |ui| {
-                        proxy_sphere.ui(ui, &mut model, i);
+                        proxy_sphere.ui(ui, model, i);
                     });
 
                 if ui.small_button("remove").clicked() {
