@@ -1,5 +1,6 @@
-use anyhow::Error;
+use anyhow::{Error, anyhow};
 use log::{info, warn};
+use scene_objects::geometric_object::GeometricObject;
 
 use crate::data_plane::scene::{
     render_scene::Scene,
@@ -11,6 +12,7 @@ impl Scene {
         //! Handles a Change in the scene, takes care of Logging and Errors...
         //! ## Parameter
         //! change: SceneChange to handle
+        // some update_render_confix_x might be not needed, p.e. if its a name change
         match change {
             SceneChange::CameraChange(camera_change) => {
                 self.handle_camera_change(camera_change)?;
@@ -87,37 +89,206 @@ impl Scene {
     }
     fn handle_light_change(&mut self, light_change: LightChange) -> Result<(), Error> {
         match light_change {
-            LightChange::Type(light_type, index) => todo!(),
-            LightChange::Position(position, index) => todo!(),
-            LightChange::Luminosity(luminosity, index) => todo!(),
-            LightChange::Color(color, index) => todo!(),
-            LightChange::Direction(direction, index) => todo!(),
-            LightChange::Name(name) => todo!(),
+            LightChange::Type(light_type, index) => {
+                info!(
+                    "Change in {}: Setting ligt {} type to {:?}",
+                    self, index, light_type
+                );
+                match self.get_light_sources_mut().get_mut(index) {
+                    Some(light) => {
+                        light.set_light_type(light_type);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            LightChange::Position(position, index) => {
+                info!(
+                    "Change in {}: Setting ligt {} positon to {:?}",
+                    self, index, position
+                );
+                match self.get_light_sources_mut().get_mut(index) {
+                    Some(light) => {
+                        light.set_position(position);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            LightChange::Luminosity(luminosity, index) => {
+                info!(
+                    "Change in {}: Setting ligt {} luminosity to {:?}",
+                    self, index, luminosity
+                );
+                match self.get_light_sources_mut().get_mut(index) {
+                    Some(light) => {
+                        light.set_luminosity(luminosity);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            LightChange::Color(color, index) => {
+                info!(
+                    "Change in {}: Setting ligt {} color to {:?}",
+                    self, index, color
+                );
+                match self.get_light_sources_mut().get_mut(index) {
+                    Some(light) => {
+                        light.set_color(color);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            LightChange::Direction(_direction, _index) => todo!("Directional lights not supported"),
+            LightChange::Name(name, index) => {
+                info!(
+                    "Change in {}: Setting ligt {} name to {:?}",
+                    self, index, name
+                );
+                match self.get_light_sources_mut().get_mut(index) {
+                    Some(light) => {
+                        light.set_name(name);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
         }
-        todo!()
     }
 
     fn handle_mesh_change(&mut self, mesh_change: MeshChange) -> Result<(), Error> {
         match mesh_change {
-            MeshChange::Translate(translation, index) => todo!(),
-            MeshChange::Scale(factor, index) => todo!(),
-            MeshChange::Rotate(rotation, index) => todo!(),
-            MeshChange::Color(color, index) => todo!(),
-            MeshChange::Material(material, index) => todo!(),
-            MeshChange::Name(name, index) => todo!(),
+            MeshChange::Translate(translation, index) => {
+                info!(
+                    "Change in {}: Translating mesh {} by {:?}",
+                    self, index, translation
+                );
+                match self.get_meshes_mut().get_mut(index) {
+                    Some(mesh) => {
+                        mesh.translate(translation);
+                        self.update_render_config_vertices();
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            MeshChange::Scale(factor, index) => {
+                info!("Change in {}: Scaling mesh {} by {:?}", self, index, factor);
+                match self.get_meshes_mut().get_mut(index) {
+                    Some(mesh) => {
+                        mesh.scale(factor);
+                        self.update_render_config_vertices();
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            MeshChange::Rotate(rotation, index) => {
+                info!(
+                    "Change in {}: Rotating mesh {} by {:?}",
+                    self, index, rotation
+                );
+                match self.get_meshes_mut().get_mut(index) {
+                    Some(mesh) => {
+                        mesh.rotate(rotation);
+                        self.update_render_config_vertices();
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            MeshChange::Material(_material, _index) => {
+                todo!("Material change not supported");
+            }
+            MeshChange::Name(name, index) => {
+                info!(
+                    "Change in {}: Setting mesh {} name to {:?}",
+                    self, index, name
+                );
+                match self.get_meshes_mut().get_mut(index) {
+                    Some(mesh) => {
+                        mesh.set_name(name);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
         }
     }
 
     fn handle_sphere_change(&mut self, sphere_change: SphereChange) -> Result<(), Error> {
         match sphere_change {
-            SphereChange::Translate(translation, index) => todo!(),
-            SphereChange::Scale(factor, index) => todo!(),
-            SphereChange::Color(color, index) => todo!(),
-            SphereChange::Material(material, index) => todo!(),
-            SphereChange::Name(name, index) => todo!(),
+            SphereChange::Translate(translation, index) => {
+                info!(
+                    "Change in {}: Translating sphere {} by {:?}",
+                    self, index, translation
+                );
+                match self.get_spheres_mut().get_mut(index) {
+                    Some(sphere) => {
+                        sphere.translate(translation);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            SphereChange::Scale(factor, index) => {
+                info!(
+                    "Change in {}: Scaling sphere {} by {:?}",
+                    self, index, factor
+                );
+                match self.get_spheres_mut().get_mut(index) {
+                    Some(sphere) => {
+                        sphere.scale(factor);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            SphereChange::Color(color, index) => {
+                info!(
+                    "Change in {}: Setting sphere {} color to {:?}",
+                    self, index, color
+                );
+                match self.get_spheres_mut().get_mut(index) {
+                    Some(sphere) => {
+                        sphere.set_color(color);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            SphereChange::Material(material, index) => {
+                info!(
+                    "Change in {}: Setting sphere {} material to {:?}",
+                    self, index, material
+                );
+                match self.get_spheres_mut().get_mut(index) {
+                    Some(sphere) => {
+                        sphere.set_material(material);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
+            SphereChange::Name(name, index) => {
+                info!(
+                    "Change in {}: Setting sphere {} name to {:?}",
+                    self, index, name
+                );
+                match self.get_spheres_mut().get_mut(index) {
+                    Some(sphere) => {
+                        sphere.set_name(name);
+                        Ok(())
+                    }
+                    None => Err(anyhow!("Index out of bounds")),
+                }
+            }
             SphereChange::Count => {
                 self.update_render_config_uniform();
-                todo!()
+                // probably all that is need right now
+                Ok(())
             }
         }
     }
