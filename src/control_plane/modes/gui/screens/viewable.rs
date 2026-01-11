@@ -213,8 +213,8 @@ impl Viewable for Misc {
                     });
 
                 if ui.small_button("remove").clicked() {
-                    // todo offer pub (crate) remove sphere
-                    todo!("Delete not implemented yet");
+                    let _ = model.remove_sphere(i);
+                    self.spheres.remove(i);
                     break;
                 }
             }

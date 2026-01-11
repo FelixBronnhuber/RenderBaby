@@ -194,7 +194,7 @@ impl Screen for SceneScreen {
                                 });
 
                             if ui.small_button("remove").clicked() {
-                                todo!("Remove mesh not implemented");
+                                let _ = scene_lock.remove_mesh(i);
                                 proxy_tmp.objects.remove(i);
                                 break;
                             }
@@ -219,7 +219,7 @@ impl Screen for SceneScreen {
                                 });
 
                             if ui.small_button("remove").clicked() {
-                                todo!("Remove lights not yet implemented");
+                                let _ = scene_lock.remove_light(i);
                                 proxy_tmp.lights.remove(i);
                                 break;
                             }
