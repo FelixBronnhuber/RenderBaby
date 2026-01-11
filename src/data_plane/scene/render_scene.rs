@@ -642,7 +642,7 @@ impl Scene {
             );
             self.update_render_config();
         } else {
-            // uniform is not very expensive. Maybe Remove if it doesnt crash the application
+            // temp. fix
             self.update_render_config();
         }
 
@@ -1112,6 +1112,12 @@ impl Scene {
         self.get_sphere_mut_at(index)?.translate(vec);
         Ok(())
     }
+    pub(crate) fn remove_sphere(&mut self, index: usize) -> Result<Sphere, Error> {
+        //! Removes the sphere at the given index
+        //! ## Parameter
+        //! index: Index of the sphere that will be removed
+        Ok(self.get_spheres_mut().remove(index))
+    }
 
     // mesh stuff
     fn get_mesh_at(&self, index: usize) -> Result<&Mesh, Error> {
@@ -1182,6 +1188,12 @@ impl Scene {
         //! 'vec': rotation vector as glam::Vec3, euler angles
         self.get_mesh_mut_at(index)?.translate(rotation);
         Ok(())
+    }
+    pub(crate) fn remove_mesh(&mut self, index: usize) -> Result<Mesh, Error> {
+        //! Removes the mesh at the given index
+        //! ## Parameter
+        //! index: Index of the mesh that will be removed
+        Ok(self.get_meshes_mut().remove(index))
     }
 
     // light stuff: position, luminosity, color, type
@@ -1260,6 +1272,13 @@ impl Scene {
         //! 'index': Index of the target light
         self.get_light_mut_at(index)?.set_light_type(light_type);
         Ok(())
+    }
+
+    pub(crate) fn remove_light(&mut self, index: usize) -> Result<LightSource, Error> {
+        //! Removes the light at the given index
+        //! ## Parameter
+        //! index: Index of the light that will be removed
+        Ok(self.get_light_sources_mut().remove(index))
     }
 }
 
