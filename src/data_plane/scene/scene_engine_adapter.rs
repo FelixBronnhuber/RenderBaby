@@ -381,7 +381,7 @@ impl Scene {
 
         // todo: fix this part just in case (|| true)
         if self.get_first_render() {
-            // self.set_first_render(false); DON'T SET TRUE TEMPORARILY FOR FRAME ITERATOR
+            self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
                 .uniforms_create(uniforms)

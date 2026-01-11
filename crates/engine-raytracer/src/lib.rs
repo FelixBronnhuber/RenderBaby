@@ -5,29 +5,38 @@ use engine_wgpu_wrapper::{GpuWrapper};
 use frame_buffer::frame_iterator::{FrameIterator, Frame};
 use log::info;
 
+use std::sync::{Arc, Mutex};
+
 pub struct Engine {
-    gpu_wrapper: GpuWrapper,
+    gpu_wrapper: Arc<Mutex<GpuWrapper>>,
 }
 
 impl Renderer for Engine {
     fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
-        self.gpu_wrapper.update(rc)?;
-        self.gpu_wrapper.update_uniforms();
-        self.gpu_wrapper.dispatch_compute()?;
-        let pixels = self.gpu_wrapper.read_pixels()?;
+        let mut gpu_wrapper = self.gpu_wrapper.lock().unwrap();
+
+        gpu_wrapper.update(rc)?;
+        gpu_wrapper.update_uniforms();
+        gpu_wrapper.dispatch_compute()?;
+        let pixels = gpu_wrapper.read_pixels()?;
 
         Ok(Frame::new(
-            self.gpu_wrapper.get_width() as usize,
-            self.gpu_wrapper.get_height() as usize,
+            gpu_wrapper.get_width() as usize,
+            gpu_wrapper.get_height() as usize,
             pixels,
         ))
     }
 
     fn frame_iterator(&mut self, rc: RenderConfig) -> Result<Box<dyn FrameIterator>> {
-        let mut gpu_wrapper = GpuWrapper::new(rc.clone(), "engine-raytracer/src/shader.wgsl")?;
-        gpu_wrapper.update(rc)?;
-        gpu_wrapper.update_uniforms();
-        Ok(Box::new(RaytracerFrameIterator::new(gpu_wrapper)))
+        {
+            let mut gpu_wrapper = self.gpu_wrapper.lock().unwrap();
+            gpu_wrapper.update(rc)?;
+            gpu_wrapper.update_uniforms();
+            gpu_wrapper.prh_mut().current_pass = 0;
+        }
+        Ok(Box::new(RaytracerFrameIterator::new(Arc::clone(
+            &self.gpu_wrapper,
+        ))))
     }
 }
 
@@ -35,18 +44,18 @@ impl Engine {
     pub fn new(rc: RenderConfig) -> Self {
         let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
         Self {
-            gpu_wrapper: wrapper,
+            gpu_wrapper: Arc::new(Mutex::new(wrapper)),
         }
     }
 }
 
 pub struct RaytracerFrameIterator {
-    gpu_wrapper: GpuWrapper,
+    gpu_wrapper: Arc<Mutex<GpuWrapper>>,
     initialized: bool,
 }
 
 impl RaytracerFrameIterator {
-    fn new(gpu_wrapper: GpuWrapper) -> Self {
+    fn new(gpu_wrapper: Arc<Mutex<GpuWrapper>>) -> Self {
         Self {
             gpu_wrapper,
             initialized: false,
@@ -56,7 +65,8 @@ impl RaytracerFrameIterator {
 
 impl FrameIterator for RaytracerFrameIterator {
     fn has_next(&self) -> bool {
-        self.gpu_wrapper.prh().current_pass < self.gpu_wrapper.prh().total_passes
+        let wrapper = self.gpu_wrapper.lock().unwrap();
+        wrapper.prh().current_pass < wrapper.prh().total_passes
     }
 
     fn next(&mut self) -> Result<Frame> {
@@ -64,43 +74,42 @@ impl FrameIterator for RaytracerFrameIterator {
             anyhow::bail!("No more frames available");
         }
 
+        let mut gpu_wrapper = self.gpu_wrapper.lock().unwrap();
+
         if !self.initialized {
-            self.gpu_wrapper.queue().write_buffer(
-                &self.gpu_wrapper.buffer_wrapper().accumulation,
+            gpu_wrapper.queue().write_buffer(
+                &gpu_wrapper.buffer_wrapper().accumulation,
                 0,
-                &vec![
-                    0u8;
-                    (self.gpu_wrapper.get_width() * self.gpu_wrapper.get_height() * 16) as usize
-                ],
+                &vec![0u8; (gpu_wrapper.get_width() * gpu_wrapper.get_height() * 16) as usize],
             );
             self.initialized = true;
         }
 
-        self.gpu_wrapper.queue().write_buffer(
-            &self.gpu_wrapper.buffer_wrapper().progressive_render,
+        gpu_wrapper.queue().write_buffer(
+            &gpu_wrapper.buffer_wrapper().progressive_render,
             0,
-            bytemuck::cast_slice(&[*self.gpu_wrapper.prh()]),
+            bytemuck::cast_slice(&[*gpu_wrapper.prh()]),
         );
 
-        self.gpu_wrapper.dispatch_compute_progressive(
-            self.gpu_wrapper.prh().current_pass,
-            self.gpu_wrapper.prh().total_passes,
+        gpu_wrapper.dispatch_compute_progressive(
+            gpu_wrapper.prh().current_pass,
+            gpu_wrapper.prh().total_passes,
         )?;
 
-        let pixels = self.gpu_wrapper.read_pixels()?;
+        let pixels = gpu_wrapper.read_pixels()?;
 
         let frame = Frame::new(
-            self.gpu_wrapper.get_width() as usize,
-            self.gpu_wrapper.get_height() as usize,
+            gpu_wrapper.get_width() as usize,
+            gpu_wrapper.get_height() as usize,
             pixels,
         );
 
-        self.gpu_wrapper.prh_mut().current_pass += 1;
+        gpu_wrapper.prh_mut().current_pass += 1;
 
         info!(
             "PASSED Sample: {}{}",
-            self.gpu_wrapper.prh().current_pass,
-            if self.gpu_wrapper.prh().current_pass == self.gpu_wrapper.prh().total_passes {
+            gpu_wrapper.prh().current_pass,
+            if gpu_wrapper.prh().current_pass == gpu_wrapper.prh().total_passes {
                 ", finished rendering!"
             } else {
                 ""
@@ -112,6 +121,5 @@ impl FrameIterator for RaytracerFrameIterator {
 
     fn destroy(&mut self) {
         info!("Cancelled Render Iterator.")
-        // todo
     }
 }
