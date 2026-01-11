@@ -6,7 +6,10 @@ pub trait EframeViewWrapper: ViewWrapper + App + 'static {
     fn on_start(&mut self, ctx: &Context, frame: &mut Frame);
 
     fn open_native(self, app_name: &str) {
-        let options = eframe::NativeOptions::default();
+        let options = eframe::NativeOptions {
+            renderer: eframe::Renderer::Wgpu,
+            ..Default::default()
+        };
         let _ = eframe::run_native(
             app_name,
             options,
