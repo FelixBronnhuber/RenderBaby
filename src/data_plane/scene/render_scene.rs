@@ -381,17 +381,22 @@ impl Scene {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
         info!("{self}: Initialising with 'proto' settings");
-        /* let green = [0.0, 1.0, 0.0];
+        let green = [0.0, 1.0, 0.0];
         let red = [1.0, 0.0, 0.0];
         let blue = [0.0, 0.0, 1.0];
-        let cyan = [0.0, 1.0, 1.0]; */
+        let cyan = [0.0, 1.0, 1.0];
         let magenta = [1.0, 0.0, 1.0];
 
         let sphere0 = Sphere::new(Vec3::new(0.0, 0.6, 2.0), 0.5, Material::default(), magenta);
-        /* let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 2.0), 0.5, Material::default(), green);
+        let sphere1 = Sphere::new(Vec3::new(-0.6, 0.0, 2.0), 0.5, Material::default(), green);
         let sphere2 = Sphere::new(Vec3::new(0.0, 0.0, 2.0), 0.5, Material::default(), red);
         let sphere3 = Sphere::new(Vec3::new(0.6, 0.0, 2.0), 0.5, Material::default(), blue);
-        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan); */
+        let sphere4 = Sphere::new(Vec3::new(0.0, -0.6, 2.0), 0.5, Material::default(), cyan);
+        self.add_sphere(sphere0);
+        self.add_sphere(sphere1);
+        self.add_sphere(sphere2);
+        self.add_sphere(sphere3);
+        self.add_sphere(sphere4);
 
         let cam = Camera::default();
         let light = LightSource::new(
@@ -404,15 +409,6 @@ impl Scene {
         );
         self.set_camera(cam);
         self.add_lightsource(light);
-
-        self.add_sphere(sphere0);
-        /* self.add_sphere(sphere1);
-        self.add_sphere(sphere2);
-        self.add_sphere(sphere3);
-        self.add_sphere(sphere4); */
-
-        /* self.update_render_config();
-        let _ = self.render(); */
     }
 
     pub fn add_sphere(&mut self, sphere: Sphere) {
