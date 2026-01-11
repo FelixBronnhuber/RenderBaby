@@ -1,4 +1,4 @@
-use std::{backtrace::Backtrace, path::PathBuf};
+use std::path::PathBuf;
 use anyhow::{anyhow, Error};
 use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, TextureData, Uniforms};
 use std::collections::HashMap;
@@ -662,7 +662,6 @@ impl Scene {
             },
             Err(error) => {
                 info!("{:?}", self.render_config_builder);
-                println!("Custom backtrace: {}", Backtrace::force_capture());
                 error!("{self}: The following error occurred when rendering: {error}");
                 Err(error)
             }
