@@ -1,5 +1,4 @@
 use eframe::emath::Align;
-use egui::CollapsingHeader;
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
@@ -9,7 +8,6 @@ use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
-use crate::data_plane::scene_proxy::proxy_light::ProxyLight;
 
 #[allow(dead_code)]
 pub struct SceneScreen {
@@ -167,75 +165,22 @@ impl Screen for SceneScreen {
 
                 let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
 
-                proxy_tmp
-                    .camera
-                    .ui(ui, &mut self.model.scene.lock().unwrap());
+                ui.label("Camera");
+                proxy_tmp.camera.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                proxy_tmp.misc.ui(ui, &mut self.model.scene.lock().unwrap());
+                proxy_tmp.misc.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                {
-                    let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_meshes = scene_lock.get_meshes_mut();
-                    ui.label("Objects");
-                    let enum_meshes = proxy_tmp.objects.iter_mut();
-                    if enum_meshes.len() == 0 {
-                        ui.label("No objects in scene.");
-                    } else {
-                        for (i, proxy_mesh) in enum_meshes.enumerate() {
-                            CollapsingHeader::new(format!("Object {}", i))
-                                .default_open(false)
-                                .show(ui, |ui| {
-                                    proxy_mesh.ui(ui, &mut real_meshes[i]);
-                                });
-
-                            if ui.small_button("remove").clicked() {
-                                real_meshes.remove(i);
-                                proxy_tmp.objects.remove(i);
-                                break;
-                            }
-                        }
-                    }
-                }
+                ui.label("Objects");
+                proxy_tmp.objects.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                {
-                    let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_lights = scene_lock.get_light_sources_mut();
-                    ui.label("Lights");
-                    let enum_light = proxy_tmp.lights.iter_mut();
-                    if enum_light.len() == 0 {
-                        ui.label("No lights in scene.");
-                    } else {
-                        for (i, proxy_light) in enum_light.enumerate() {
-                            CollapsingHeader::new(format!("Light {}", i))
-                                .default_open(false)
-                                .show(ui, |ui| {
-                                    proxy_light.ui(ui, &mut real_lights[i]);
-                                });
-
-                            if ui.small_button("remove").clicked() {
-                                real_lights.remove(i);
-                                proxy_tmp.lights.remove(i);
-                                break;
-                            }
-                        }
-                    }
-
-                    if ui.small_button("+").clicked() {
-                        let new_light = ProxyLight::default();
-                        self.model
-                            .scene
-                            .lock()
-                            .unwrap()
-                            .add_lightsource(new_light.clone().into());
-                        proxy_tmp.lights.push(new_light);
-                    }
-                }
+                ui.label("Lights");
+                proxy_tmp.lights.ui(ui, &mut self.model.scene.clone());
 
                 self.model.proxy = proxy_tmp;
             });

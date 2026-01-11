@@ -202,6 +202,7 @@ impl Scene {
                                     mat.ka.iter().map(|a| *a as f64).collect(),
                                     mat.kd.iter().map(|a| *a as f64).collect(),
                                     mat.ks.iter().map(|a| *a as f64).collect(),
+                                    mat.ke.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
                                     mat.map_kd.clone().map(|name| {
@@ -441,11 +442,14 @@ impl Scene {
                         cam.get_ray_samples(),
                         0,
                         0,
+                        0,
+                        Uniforms::default().ground_height, //Leave or change to scene defaults
+                        Uniforms::default().ground_enabled,
+                        Uniforms::default().sky_color,
+                        Uniforms::default().max_depth,
                     ))
                     .spheres_create(vec![])
-                    .vertices_create(vec![])
                     .uvs_create(vec![])
-                    .triangles_create(vec![])
                     .meshes_create(vec![])
                     .lights_create(vec![])
                     .textures_create(vec![])

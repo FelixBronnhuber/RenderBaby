@@ -9,7 +9,7 @@ impl BindGroupLayout {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Main Bind Group Layout"),
             entries: &[
-                // Camera Buffer
+                // Uniform Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -42,42 +42,9 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                // Vertices Buffer
+                //Accumulation buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 3,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                // Triangles Buffer
-                wgpu::BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                // Meshes Buffer
-                wgpu::BindGroupLayoutEntry {
-                    binding: 5,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                //accu buffer
-                wgpu::BindGroupLayoutEntry {
-                    binding: 6,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: false },
@@ -88,7 +55,7 @@ impl BindGroupLayout {
                 },
                 // Progressive Render Buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 7,
+                    binding: 4,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
@@ -99,6 +66,39 @@ impl BindGroupLayout {
                 },
                 //Pointlight Buffer
                 wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Meshes Buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // BVH Nodes Buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // BVH Indices Buffer
+                wgpu::BindGroupLayoutEntry {
                     binding: 8,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
@@ -108,7 +108,7 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                // UV Buffer
+                // BVH Triangles Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 9,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -119,7 +119,7 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                // Texture Data Buffer
+                // UV Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 10,
                     visibility: wgpu::ShaderStages::COMPUTE,
@@ -130,9 +130,20 @@ impl BindGroupLayout {
                     },
                     count: None,
                 },
-                // Texture Info Buffer
+                // Texture Data Buffer
                 wgpu::BindGroupLayoutEntry {
                     binding: 11,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Texture Info Buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 12,
                     visibility: wgpu::ShaderStages::COMPUTE,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -178,38 +189,42 @@ impl BindGroup {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: buffers.vertices.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: buffers.triangles.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 5,
-                    resource: buffers.meshes.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 6,
                     resource: buffers.accumulation.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 7,
+                    binding: 4,
                     resource: buffers.progressive_render.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 8,
+                    binding: 5,
                     resource: buffers.lights.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: buffers.meshes.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: buffers.bvh_nodes.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: buffers.bvh_indices.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
                     binding: 9,
-                    resource: buffers.uvs.as_entire_binding(),
+                    resource: buffers.bvh_triangles.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 10,
-                    resource: buffers.texture_data.as_entire_binding(),
+                    resource: buffers.uvs.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 11,
+                    resource: buffers.texture_data.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 12,
                     resource: buffers.texture_info.as_entire_binding(),
                 },
             ],

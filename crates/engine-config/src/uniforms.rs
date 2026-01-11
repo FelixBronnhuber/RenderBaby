@@ -10,7 +10,14 @@ pub struct Uniforms {
     pub camera: Camera,
     pub spheres_count: u32,
     pub triangles_count: u32,
-    _pad1: [u32; 2],
+    pub bvh_node_count: u32,
+    pub bvh_triangle_count: u32,
+    pub bvh_root: u32,
+    pub ground_height: f32,
+    pub ground_enabled: u32, //bool doesn't satisfy Pod
+    pub _pad: u32,
+    pub sky_color: [f32; 3],
+    pub max_depth: u32,
 }
 
 impl Default for Uniforms {
@@ -23,19 +30,32 @@ impl Default for Uniforms {
             camera: Camera::default(),
             spheres_count: 0,
             triangles_count: 0,
-            _pad1: [0; 2],
+            bvh_node_count: 0,
+            bvh_triangle_count: 0,
+            bvh_root: 0,
+            ground_height: -5.0,
+            ground_enabled: 1,
+            _pad: 0,
+            sky_color: [0.5, 0.7, 1.0],
+            max_depth: 5,
         }
     }
 }
 
 impl Uniforms {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         width: u32,
         height: u32,
         camera: Camera,
         total_samples: u32,
         spheres_count: u32,
-        triangles_count: u32,
+        bvh_node_count: u32,
+        bvh_triangle_count: u32,
+        ground_height: f32,
+        ground_enabled: u32,
+        sky_color: [f32; 3],
+        max_depth: u32,
     ) -> Self {
         Self {
             width,
@@ -43,7 +63,12 @@ impl Uniforms {
             camera,
             total_samples,
             spheres_count,
-            triangles_count,
+            bvh_node_count,
+            bvh_triangle_count,
+            ground_height,
+            ground_enabled,
+            sky_color,
+            max_depth,
             ..Default::default()
         }
     }
