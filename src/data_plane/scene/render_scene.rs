@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::time::{SystemTime, UNIX_EPOCH};
+use egui::TextBuffer;
 use glam::Vec3;
 use log::{info, error};
 use scene_objects::{
@@ -45,7 +46,6 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
-
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
@@ -74,12 +74,12 @@ impl Scene {
                     } else {
                         return Err(anyhow::Error::msg("Scene: invalid rscn prefix"));
                     }
-                    scene_and_path = parse_scene(directory_path.join("scene.json"));
+                    scene_and_path = parse_scene(directory_path.join("scene.json"), None);
                 }
                 "json" => {
                     directory_path = path.clone();
                     directory_path.pop();
-                    scene_and_path = parse_scene(path.clone());
+                    scene_and_path = parse_scene(path.clone(), None);
                 }
                 _ => {
                     return Err(anyhow::Error::msg("Incorrect file extension found"));
@@ -100,10 +100,6 @@ impl Scene {
                     .iter()
                     .for_each(|path| absolute_path.push(directory_path.join(path)));
                 for (i, v) in absolute_path.iter().enumerate() {
-                    println!(
-                        "rotation: {}, translation: {}, scale{}",
-                        rotation[i], translation[i], scale[i]
-                    );
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
@@ -323,7 +319,6 @@ impl Scene {
             }
         }
     }
-    #[deprecated]
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         let mesh = self.parse_obj_to_mesh(path, None)?;
         self.add_mesh(mesh);
@@ -360,33 +355,59 @@ impl Scene {
         self.add_mesh(mesh);
         Ok(())
     }
-    pub fn load_scene_from_path(path: PathBuf, relative_obj_path: Option<PathBuf>, detached: bool) -> anyhow::Result<Scene>{
+    pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
         let mut scene = Self::load_scene_from_file(path.clone());
         match scene {
             Ok(mut scene) => {
-                if !detached {
+                if let Some(extension) = path.extension()
+                    && extension.to_string_lossy().as_str() != "rscn"
+                    && !detached
+                {
                     scene.output_path = path;
                 } else {
                     scene.output_path = PathBuf::new();
                 }
                 Ok(scene)
             }
-            Err(error) => {Err(error.into())}
+            Err(error) => Err(error),
         }
-
     }
-    pub fn load_scene_from_string(json_string: String, relative_obj_path: Option<PathBuf>) -> anyhow::Result<()>{
-        Ok(())
+    pub fn load_scene_from_string(
+        json_string: String,
+        absolute_obj_paths: Option<Vec<PathBuf>>,
+    ) -> anyhow::Result<Scene> {
+        let scene = parse_scene(PathBuf::new(), Some(json_string));
+        match scene {
+            Ok(scene_and_values) => {
+                let mut scene = scene_and_values.0;
+                let paths = scene_and_values.1;
+                let rotation = scene_and_values.2;
+                let translation = scene_and_values.3;
+                let scale = scene_and_values.4;
+                for (i, v) in absolute_obj_paths.unwrap().iter().enumerate() {
+                    scene.load_object_from_file_relative(
+                        v.clone(),
+                        PathBuf::from(paths[i].clone()),
+                        rotation[i],
+                        translation[i],
+                        scale[i],
+                    )?;
+                }
+                Ok(scene)
+            }
+            Err(error) => Err(error),
+        }
     }
 
-    pub fn save() -> anyhow::Result<()>{
-        if Self.output_path.exists() {
-            Err(anyhow::Error::msg("no output path set for this scene"))//////////////////////////////////////////////////
+    pub fn save(&mut self) -> anyhow::Result<()> {
+        if self.output_path.exists() {
+            Err(anyhow::Error::msg("no output path set for this scene"))
         } else {
+            self.export_scene(self.output_path.clone());
             Ok(())
         }
     }
-    pub fn set_output_path(&mut self, path: PathBuf) -> anyhow::Result<()>{
+    pub fn set_output_path(&mut self, path: PathBuf) -> anyhow::Result<()> {
         self.output_path = path;
         Ok(())
     }
@@ -653,6 +674,10 @@ impl Scene {
         //! ## Returns
         //! first_render: if the last render was the first render of this scene?
         self.first_render
+    }
+
+    pub fn get_output_path(&self) -> PathBuf {
+        self.output_path.clone()
     }
 
     pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {

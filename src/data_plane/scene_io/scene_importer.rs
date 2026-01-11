@@ -98,14 +98,23 @@ fn transform_to_scene(
 }
 pub fn parse_scene(
     scene_path: PathBuf,
+    json_string: Option<String>,
 ) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
-    if !scene_path.is_file() {
-        return Err(anyhow::Error::msg(format!(
-            "File {} does not exist!",
-            scene_path.display()
-        )));
+    let mut _json_content: String = String::new();
+    match json_string {
+        Some(json_string) => {
+            _json_content = json_string;
+        }
+        _ => {
+            if !scene_path.is_file() {
+                return Err(anyhow::Error::msg(format!(
+                    "File {} does not exist!",
+                    scene_path.display()
+                )));
+            }
+        }
     }
-    let _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
+    _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
 
     let schema = json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
