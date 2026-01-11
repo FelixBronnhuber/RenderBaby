@@ -1177,7 +1177,8 @@ impl Scene {
         //! Moves the center of the mesh
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
-        self.get_mesh_mut_at(index)?.translate(vec);
+        let rel_translation = vec - self.get_mesh_translation(index)?;
+        self.get_mesh_mut_at(index)?.translate(rel_translation);
         Ok(())
     }
 
@@ -1185,7 +1186,8 @@ impl Scene {
         //! Rotates the mesh around its centroid
         //! ## Parameter
         //! 'vec': rotation vector as glam::Vec3, euler angles
-        self.get_mesh_mut_at(index)?.translate(rotation);
+        let rel_rotation = rotation - self.get_mesh_rotation(index)?;
+        self.get_mesh_mut_at(index)?.translate(rel_rotation);
         Ok(())
     }
     pub(crate) fn remove_mesh(&mut self, index: usize) -> Result<Mesh, Error> {
