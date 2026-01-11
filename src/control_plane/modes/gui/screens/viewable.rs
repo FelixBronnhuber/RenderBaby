@@ -187,7 +187,7 @@ impl Viewable for ProxySphere {
 }
 
 impl Viewable for Misc {
-    fn ui(&mut self, ui: &mut Ui, mut model: &mut Scene, _: usize) {
+    fn ui(&mut self, ui: &mut Ui, model: &mut Scene, _: usize) {
         if ui
             .checkbox(&mut self.color_hash_enabled, "Enable Color Hash")
             .changed()
