@@ -135,7 +135,7 @@ impl Viewable for ProxyCamera {
 
         ui.label("Camera Position:");
         if vec3_ui(ui, &mut self.position) {
-            let _ = scene.set_camera_position(self.position.clone().into());
+            let _ = scene.set_camera_position(self.position.into());
         }
 
         ui.label("Camera Direction:");
@@ -149,7 +149,7 @@ impl Viewable for ProxyMesh {
     fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize) {
         ui.label("Rotation:");
         if vec3_ui(ui, &mut self.rotation) {
-            let _ = model.rotate_mesh(self.rotation.clone().into(), index); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
+            let _ = model.rotate_mesh(self.rotation.into(), index); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
         }
 
         ui.label("Scale:");
@@ -159,7 +159,7 @@ impl Viewable for ProxyMesh {
 
         ui.label("Translation:");
         if vec3_ui(ui, &mut self.translation) {
-            let _ = model.translate_mesh(self.translation.clone().into(), index);
+            let _ = model.translate_mesh(self.translation.into(), index);
         }
     }
 }
@@ -221,10 +221,10 @@ impl Viewable for Misc {
             if ui.small_button("+").clicked() {
                 let new_sphere = ProxySphere::default();
                 model.add_sphere(Sphere::new(
-                    new_sphere.center.clone().into(),
+                    new_sphere.center.into(),
                     new_sphere.radius,
                     Material::default(),
-                    new_sphere.color.clone().into(),
+                    new_sphere.color.into(),
                 ));
                 self.spheres.push(new_sphere);
             }
