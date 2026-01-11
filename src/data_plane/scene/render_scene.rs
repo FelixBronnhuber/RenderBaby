@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
 use std::collections::HashMap;
 use std::fs;
@@ -36,6 +36,7 @@ pub struct Scene {
     last_render: Option<RenderOutput>,
     color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
+    output_path: PathBuf,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -44,6 +45,7 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
+
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
@@ -321,7 +323,7 @@ impl Scene {
             }
         }
     }
-
+    #[deprecated]
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         let mesh = self.parse_obj_to_mesh(path, None)?;
         self.add_mesh(mesh);
@@ -358,6 +360,37 @@ impl Scene {
         self.add_mesh(mesh);
         Ok(())
     }
+    pub fn load_scene_from_path(path: PathBuf, relative_obj_path: Option<PathBuf>, detached: bool) -> anyhow::Result<Scene>{
+        let mut scene = Self::load_scene_from_file(path.clone());
+        match scene {
+            Ok(mut scene) => {
+                if !detached {
+                    scene.output_path = path;
+                } else {
+                    scene.output_path = PathBuf::new();
+                }
+                Ok(scene)
+            }
+            Err(error) => {Err(error.into())}
+        }
+
+    }
+    pub fn load_scene_from_string(json_string: String, relative_obj_path: Option<PathBuf>) -> anyhow::Result<()>{
+        Ok(())
+    }
+
+    pub fn save() -> anyhow::Result<()>{
+        if Self.output_path.exists() {
+            Err(anyhow::Error::msg("no output path set for this scene"))//////////////////////////////////////////////////
+        } else {
+            Ok(())
+        }
+    }
+    pub fn set_output_path(&mut self, path: PathBuf) -> anyhow::Result<()>{
+        self.output_path = path;
+        Ok(())
+    }
+
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
@@ -460,6 +493,7 @@ impl Scene {
             last_render: None,
             color_hash_enabled: true,
             textures: HashMap::new(),
+            output_path: PathBuf::new(),
         }
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
