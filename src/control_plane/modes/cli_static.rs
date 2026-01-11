@@ -39,7 +39,7 @@ impl App for CliStaticApp {
     fn show(self: Box<CliStaticApp>) {
         info!("Loading scene...");
 
-        let scene_res = Scene::load_scene_from_file(self.args.scene.clone());
+        let scene_res = Scene::load_scene_from_path(self.args.scene.clone(), true);
         let mut scene: Scene;
         match scene_res {
             Err(e) => {

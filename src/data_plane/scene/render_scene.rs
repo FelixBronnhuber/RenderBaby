@@ -38,7 +38,7 @@ pub struct Scene {
     last_frame: Option<Frame>,
     color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
-    output_path: PathBuf,
+    output_path: Option<PathBuf>,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -47,11 +47,12 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
-    pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+    fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
         // todo: i want to murder myself when i see this type. please just add a struct like "SceneParseResult"
+        #[allow(clippy::type_complexity)]
         let mut scene_and_path: Result<
             (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
             Error,
@@ -126,6 +127,7 @@ impl Scene {
             }
         }
     }
+
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
         info!("{self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
@@ -143,6 +145,8 @@ impl Scene {
             }
         }
     }
+
+    // LOAD OBJECTS
 
     pub fn parse_obj_to_mesh(
         &mut self,
@@ -321,6 +325,7 @@ impl Scene {
             }
         }
     }
+
     pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
         let mesh = self.parse_obj_to_mesh(path, None)?;
         self.add_mesh(mesh);
@@ -357,27 +362,28 @@ impl Scene {
         self.add_mesh(mesh);
         Ok(())
     }
+
+    // LOAD SCENES
+
     pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
-        let mut scene = Self::load_scene_from_file(path.clone());
+        let mut scene = Self::_load_scene_from_path(path.clone());
         match scene {
             Ok(mut scene) => {
                 if let Some(extension) = path.extension()
                     && extension.to_string_lossy().as_str() != "rscn"
                     && !detached
                 {
-                    scene.output_path = path;
+                    scene.output_path = Some(path);
                 } else {
-                    scene.output_path = PathBuf::new();
+                    scene.output_path = None;
                 }
                 Ok(scene)
             }
             Err(error) => Err(error),
         }
     }
-    pub fn load_scene_from_string(
-        json_string: String,
-        absolute_obj_paths: Option<Vec<PathBuf>>,
-    ) -> anyhow::Result<Scene> {
+
+    pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
         let scene = parse_scene(PathBuf::new(), Some(json_string));
         match scene {
             Ok(scene_and_values) => {
@@ -386,15 +392,6 @@ impl Scene {
                 let rotation = scene_and_values.2;
                 let translation = scene_and_values.3;
                 let scale = scene_and_values.4;
-                for (i, v) in absolute_obj_paths.unwrap().iter().enumerate() {
-                    scene.load_object_from_file_relative(
-                        v.clone(),
-                        PathBuf::from(paths[i].clone()),
-                        rotation[i],
-                        translation[i],
-                        scale[i],
-                    )?;
-                }
                 Ok(scene)
             }
             Err(error) => Err(error),
@@ -402,14 +399,19 @@ impl Scene {
     }
 
     pub fn save(&mut self) -> anyhow::Result<()> {
-        if self.output_path.exists() {
-            Err(anyhow::Error::msg("no output path set for this scene"))
-        } else {
-            self.export_scene(self.output_path.clone());
+        if let Some(output_path) = self.output_path.clone()
+            && output_path.exists()
+        {
+            self.export_scene(output_path)?;
             Ok(())
+        } else {
+            Err(anyhow::Error::msg(
+                "No valid output path set for this scene",
+            ))
         }
     }
-    pub fn set_output_path(&mut self, path: PathBuf) -> anyhow::Result<()> {
+
+    pub fn set_output_path(&mut self, path: Option<PathBuf>) -> anyhow::Result<()> {
         self.output_path = path;
         Ok(())
     }
@@ -463,6 +465,7 @@ impl Scene {
         //! a mutable reference to the camera
         self.scene_graph.get_camera_mut()
     }
+
     pub fn get_camera(&self) -> &Camera {
         //! ## Returns
         //!  a reference to the camera
@@ -516,7 +519,7 @@ impl Scene {
             last_frame: None,
             color_hash_enabled: true,
             textures: HashMap::new(),
-            output_path: PathBuf::new(),
+            output_path: None,
         }
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
@@ -678,7 +681,7 @@ impl Scene {
         self.first_render
     }
 
-    pub fn get_output_path(&self) -> PathBuf {
+    pub fn get_output_path(&self) -> Option<PathBuf> {
         self.output_path.clone()
     }
 

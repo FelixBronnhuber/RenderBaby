@@ -11,6 +11,7 @@ use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
+#[allow(clippy::type_complexity)]
 fn transform_to_scene(
     file: SceneFile,
 ) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
@@ -96,6 +97,8 @@ fn transform_to_scene(
         .collect();
     Ok((scene, paths, rotation, translation, scale))
 }
+
+#[allow(clippy::type_complexity)]
 pub fn parse_scene(
     scene_path: PathBuf,
     json_string: Option<String>,
@@ -105,16 +108,16 @@ pub fn parse_scene(
         Some(json_string) => {
             _json_content = json_string;
         }
-        _ => {
+        None => {
             if !scene_path.is_file() {
                 return Err(anyhow::Error::msg(format!(
                     "File {} does not exist!",
                     scene_path.display()
                 )));
             }
+            _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
         }
     }
-    _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
 
     let schema = json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
