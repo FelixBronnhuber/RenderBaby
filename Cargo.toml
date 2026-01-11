@@ -15,6 +15,7 @@ glam = "0.30.9"
 engine-config = { version = "0.1.0", path = "crates/engine-config" }
 engine-pathtracer = { version = "0.1.0", path = "crates/engine-pathtracer" }
 engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
+engine-bvh = {path = "crates/engine-bvh"}
 view-wrappers = { path = "crates/view-wrappers" }
 engine-wgpu-wrapper = { version = "0.1.0", path = "crates/engine-wgpu-wrapper" }
 log-buffer = { path = "crates/log-buffer" }
