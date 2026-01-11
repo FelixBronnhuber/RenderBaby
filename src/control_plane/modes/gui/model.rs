@@ -38,9 +38,9 @@ impl Model {
             }
             // Set up camera for capsule
             // todo: use scene defaults, maybe update scene defaults
-            scene.set_camera_position(Vec3::new(0.0, 2.0, 4.0));
-            scene.set_camera_look_at(Vec3::new(0.0, 0.0, 0.0));
-            scene.set_camera_resolution(Resolution::new(256, 256));
+            let _ = scene.set_camera_position(Vec3::new(0.0, 2.0, 4.0));
+            let _ = scene.set_camera_look_at(Vec3::new(0.0, 0.0, 0.0));
+            let _ = scene.set_camera_resolution(Resolution::new(256, 256));
         } else {
             log::warn!(
                 "Capsule fixture not found at {:?}, falling back to proto_init",

@@ -89,14 +89,14 @@ impl Viewable for ProxyCamera {
             .add(egui::Slider::new(&mut self.pane_width, 0.1..=100.0).text("Pane Width"))
             .changed()
         {
-            scene.set_camera_pane_width(self.pane_width);
+            let _ = scene.set_camera_pane_width(self.pane_width);
         }
 
         if ui
             .add(egui::Slider::new(&mut self.pane_distance, 0.1..=100.0).text("Pane Distance"))
             .changed()
         {
-            scene.set_camera_pane_distance(self.pane_distance);
+            let _ = scene.set_camera_pane_distance(self.pane_distance);
         }
 
         ui.horizontal(|ui| {
@@ -107,7 +107,7 @@ impl Viewable for ProxyCamera {
                 )
                 .changed()
             {
-                scene.set_camera_resolution(Resolution {
+                let _ = scene.set_camera_resolution(Resolution {
                     width: self.resolution[0],
                     height: self.resolution[1],
                 });
@@ -122,30 +122,31 @@ impl Viewable for ProxyCamera {
                 )
                 .changed()
             {
-                scene.set_camera_resolution(Resolution {
+                match scene.set_camera_resolution(Resolution {
                     width: self.resolution[0],
                     height: self.resolution[1],
-                })
+                }) {
+                    Ok(()) => (),
+                    Err(_) => todo!("Handle resolution error"),
+                }
             }
         });
         ui.separator();
 
         ui.label("Camera Position:");
         if vec3_ui(ui, &mut self.position) {
-            scene.set_camera_position(self.position.clone().into());
+            let _ = scene.set_camera_position(self.position.clone().into());
         }
 
         ui.label("Camera Direction:");
         if vec3_ui(ui, &mut self.look_at) {
-            scene.set_camera_look_at(self.look_at.clone().into());
+            let _ = scene.set_camera_look_at(self.look_at.clone().into());
         }
     }
 }
 
 impl Viewable for ProxyMesh {
     fn ui(&mut self, ui: &mut Ui, model: &mut Scene, index: usize) {
-        // TODO MICHAEL: Hier weiß ich nicht, wie dein neues interface genau sein soll. Falls die meshes hinter einer private reference liegen und irgendwie über indizes geändert werden, müssen wir uns hier etwas neues überlegen.
-
         ui.label("Rotation:");
         if vec3_ui(ui, &mut self.rotation) {
             let _ = model.rotate_mesh(self.rotation.clone().into(), index); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
@@ -199,7 +200,7 @@ impl Viewable for Misc {
             .add(egui::Slider::new(&mut self.ray_samples, 1..=2000).text("Samples"))
             .changed()
         {
-            model.set_camera_ray_samples(self.ray_samples);
+            let _ = model.set_camera_ray_samples(self.ray_samples);
         }
 
         ui.vertical(|ui| {

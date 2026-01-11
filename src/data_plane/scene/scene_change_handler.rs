@@ -6,8 +6,6 @@ use crate::data_plane::scene::{
     scene_change::{CameraChange, LightChange, MeshChange, SceneChange, SphereChange},
 };
 
-pub(crate) struct SceneChangeHandler {}
-
 impl Scene {
     pub(crate) fn handle_scene_change(&mut self, change: SceneChange) -> Result<(), Error> {
         //! Handles a Change in the scene, takes care of Logging and Errors...
