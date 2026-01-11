@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms, RenderOutput, TextureData};
+use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::time::{SystemTime, UNIX_EPOCH};
 use glam::Vec3;
 use log::{info, error};
+use frame_buffer::frame_iterator::Frame;
 use scene_objects::{
     camera::{Camera, Resolution},
     geometric_object::GeometricObject,
@@ -33,7 +34,7 @@ pub struct Scene {
     name: String,
     render_engine: Option<Engine>,
     first_render: bool,
-    last_render: Option<RenderOutput>,
+    last_frame: Option<Frame>,
     color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
 }
@@ -439,7 +440,7 @@ impl Scene {
                 RenderEngine::Raytracer,
             )),
             first_render: true,
-            last_render: None,
+            last_frame: None,
             color_hash_enabled: true,
             textures: HashMap::new(),
         }
@@ -585,8 +586,8 @@ impl Scene {
         );
     }
 
-    pub fn set_last_render(&mut self, render: RenderOutput) {
-        self.last_render = Some(render.clone());
+    pub fn set_last_render(&mut self, frame: Frame) {
+        self.last_frame = Some(frame);
         info!("{self}: Last render saved to buffer");
     }
 
@@ -604,7 +605,7 @@ impl Scene {
     }
 
     pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
-        let render = self.last_render.clone().ok_or_else(|| {
+        let render = self.last_frame.clone().ok_or_else(|| {
             image::ImageError::Parameter(image::error::ParameterError::from_kind(
                 image::error::ParameterErrorKind::Generic("No render available".into()),
             ))
