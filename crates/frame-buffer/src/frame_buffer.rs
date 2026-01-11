@@ -10,6 +10,65 @@ pub enum BufferCommand {
     StopCurrentProvider,
 }
 
+pub struct Provider {
+    iterator: Option<Box<dyn FrameIterator>>,
+    has_provider_arc: Arc<AtomicBool>,
+}
+
+impl Provider {
+    pub fn new(has_next: Arc<AtomicBool>) -> Self {
+        Self {
+            iterator: None,
+            has_provider_arc: has_next,
+        }
+    }
+
+    pub fn set(&mut self, iterator: Box<dyn FrameIterator>) {
+        if !iterator.has_next() {
+            self.has_provider_arc
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+            self.iterator = None;
+        } else {
+            self.has_provider_arc
+                .store(true, std::sync::atomic::Ordering::SeqCst);
+            self.iterator = Some(iterator);
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.has_provider_arc
+            .store(false, std::sync::atomic::Ordering::SeqCst);
+        self.iterator = None;
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.iterator.is_none()
+    }
+
+    pub fn is_some(&self) -> bool {
+        self.iterator.is_some()
+    }
+}
+
+impl FrameIterator for Provider {
+    fn has_next(&self) -> bool {
+        self.iterator
+            .as_ref()
+            .expect("Tried has_next() on None")
+            .has_next()
+    }
+
+    fn next(&mut self) -> anyhow::Result<Frame> {
+        self.iterator.as_mut().expect("Tried next() on None").next()
+    }
+
+    fn destroy(&mut self) {
+        if let Some(mut iterator) = self.iterator.take() {
+            iterator.destroy()
+        }
+    }
+}
+
 pub struct FrameBuffer {
     latest_frame_rx: Receiver<anyhow::Result<Frame>>,
     command_tx: Sender<BufferCommand>,
@@ -57,55 +116,54 @@ impl FrameBuffer {
         last_frame: Option<Arc<Mutex<Option<Frame>>>>,
         has_provider: Arc<AtomicBool>,
     ) {
-        let mut provider: Option<Box<dyn FrameIterator>> = None;
-        has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
+        let mut provider: Provider = Provider::new(has_provider);
+
+        let set_last_frame = |frame: &anyhow::Result<Frame>| {
+            if let Some(last_frame) = last_frame.as_ref()
+                && let Ok(frame) = frame.as_ref()
+            {
+                *last_frame.lock().unwrap() = Some(frame.clone());
+            }
+        };
 
         loop {
             if provider.is_none() {
                 match command_rx.recv() {
                     Ok(BufferCommand::Provide(p)) => {
-                        // initial check just in case
-                        if p.has_next() {
-                            provider = Some(p);
-                            has_provider.store(true, std::sync::atomic::Ordering::SeqCst);
-                        }
+                        provider.set(p);
                     }
                     Ok(BufferCommand::StopCurrentProvider) => continue,
                     Err(_) => {
                         break;
                     }
                 }
-            }
+            } else {
+                let frame = provider.next();
+                let is_last = !provider.has_next();
 
-            if let Some(p) = provider.as_mut() {
+                if is_last {
+                    set_last_frame(&frame);
+                    provider.reset();
+                }
+
                 if let Ok(command) = command_rx.try_recv() {
+                    if !is_last {
+                        set_last_frame(&frame);
+                    }
+
                     match command {
                         BufferCommand::Provide(p) => {
-                            if p.has_next() {
-                                provider = Some(p);
-                                has_provider.store(true, std::sync::atomic::Ordering::SeqCst);
-                            }
+                            provider.set(p);
                             continue;
                         }
                         BufferCommand::StopCurrentProvider => {
-                            p.destroy();
-                            provider = None;
-                            has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
+                            provider.destroy();
+                            provider.reset();
                             continue;
                         }
                     }
                 }
 
-                let frame = p.next();
-                if !p.has_next() {
-                    provider = None;
-                    has_provider.store(false, std::sync::atomic::Ordering::SeqCst);
-                    if let Some(last_frame) = last_frame.as_ref()
-                        && let Ok(frame) = frame.as_ref()
-                    {
-                        *last_frame.lock().unwrap() = Some(frame.clone());
-                    }
-                }
                 frame_tx.send(frame).unwrap();
             }
         }
