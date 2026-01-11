@@ -105,6 +105,10 @@ impl Mesh {
         self.name.clone()
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn get_vertices(&self) -> &Vec<f32> {
         //! ## Returns
         //! Reference to Vec<f32>, where three entries define one point in 3d space

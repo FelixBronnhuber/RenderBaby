@@ -69,6 +69,12 @@ impl Sphere {
         //! 'material': New material
         self.material = material;
     }
+    pub fn set_name(&mut self, name: String) {
+        //! Sets the name of the sphere
+        //! ## Paramater
+        //! 'name' new name
+        self.name = name;
+    }
 
     pub fn new(center: Vec3, radius: f32, material: Material, color: [f32; 3]) -> Self {
         //! Constructor for a new sphere
