@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::{backtrace::Backtrace, path::PathBuf};
 use anyhow::{anyhow, Error};
 use engine_config::{RenderConfig, RenderConfigBuilder, RenderOutput, TextureData, Uniforms};
 use std::collections::HashMap;
@@ -369,9 +369,11 @@ impl Scene {
             res.build_render_config(),
             RenderEngine::Raytracer,
         ));
-        res.update_render_config();
-        let _ = res.render();
-        res.update_render_config(); // 2nd time so that nothing is set to create. Maybe find a better way for this
+        // render one time so that everything in the config is created
+        match res.render() {
+            Ok(_) => debug!("Successfull initial render on new scene"),
+            Err(err) => error!("Failure during initial render of new scene : {err}"),
+        }
 
         res
     }
@@ -643,8 +645,10 @@ impl Scene {
                 "{self}: Render has been called for the first time. Updating entire render config"
             );
             self.update_render_config();
+        } else {
+            // uniform is not very expensive. Maybe Remove if it doesnt crash the application
+            self.update_render_config();
         }
-        self.update_render_config();
 
         let rc = self.build_render_config();
         let output = self.get_render_engine_mut().render(rc);
@@ -661,6 +665,8 @@ impl Scene {
                 }
             },
             Err(error) => {
+                info!("{:?}", self.render_config_builder);
+                println!("Custom backtrace: {}", Backtrace::force_capture());
                 error!("{self}: The following error occurred when rendering: {error}");
                 Err(error)
             }
@@ -741,6 +747,7 @@ impl Scene {
         let point_lights = self.get_render_point_lights();
 
         self.render_config_builder = if self.get_first_render() {
+            info!("Rendering for the first time: Using create for render config");
             self.set_first_render(false);
             // NOTE: *_create is for the first initial render which initializes all the buffers etc.
             RenderConfigBuilder::new()
@@ -753,7 +760,7 @@ impl Scene {
                 .lights_create(point_lights)
                 .textures_create(texture_list)
         } else {
-            // NOTE: * otherwise the values are updated with the new value an the unchanged fields
+            // NOTE: * otherwise the values are updated with the new value and the unchanged fields
             // are kept as is. See: ../../../crates/engine-config/src/render_config.rs - `Change<T>`
             RenderConfigBuilder::new()
                 .uniforms(uniforms)

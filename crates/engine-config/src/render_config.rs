@@ -195,7 +195,7 @@ impl Validate for RenderConfig {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct RenderConfigBuilder {
     pub uniforms: Option<Change<Uniforms>>,
     pub spheres: Option<Change<Vec<Sphere>>>,
