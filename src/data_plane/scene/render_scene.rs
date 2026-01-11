@@ -2,6 +2,9 @@ use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
+use std::time::{SystemTime, UNIX_EPOCH};
 use glam::Vec3;
 use log::{info, error};
 use frame_buffer::frame_iterator::Frame;
@@ -42,36 +45,78 @@ impl Default for Scene {
 }
 #[allow(unused)]
 impl Scene {
-    /// loads and return a new scene from a json / rscn file
     pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
-        let mut directory_path = path.clone();
-        directory_path.pop();
+        //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
-        let scene_and_path = parse_scene(path.clone());
+        let mut directory_path = PathBuf::with_capacity(50);
+        let mut scene_and_path: Result<(Scene, Vec<String>), Error> =
+            Err(anyhow::Error::msg("uninitialized scene and obj path used"));
+        let mut temp_dir = PathBuf::with_capacity(50);
+        if let Some(extension) = path.extension().unwrap_or_default().to_str() {
+            match extension {
+                "rscn" => {
+                    let randomized_temp_name = format!(
+                        "render{}",
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .subsec_nanos()
+                    );
+                    temp_dir = std::env::temp_dir().join(PathBuf::from(randomized_temp_name));
+                    let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
+                    archive.extract(temp_dir.clone());
+                    info!("using temporary directory {:?}", temp_dir);
+                    if let Some(temp_directory_prefix) = path.file_prefix() {
+                        directory_path = temp_dir.join(temp_directory_prefix);
+                    } else {
+                        return Err(anyhow::Error::msg("Scene: invalid rscn prefix"));
+                    }
+                    scene_and_path = parse_scene(directory_path.join("scene.json"));
+                }
+                "json" => {
+                    directory_path = path.clone();
+                    directory_path.pop();
+                    scene_and_path = parse_scene(path.clone());
+                }
+                _ => {
+                    return Err(anyhow::Error::msg("Incorrect file extension found"));
+                }
+            }
+        } else {
+            return Err(anyhow::Error::msg("no file extension found"));
+        }
         match scene_and_path {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
                 let mut paths = scene_and_path.1;
-                let mut pathbuf = Vec::with_capacity(1);
+                let mut absolute_path = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|path| pathbuf.push(directory_path.join(path)));
-                for (i, v) in pathbuf.iter().enumerate() {
+                    .for_each(|path| absolute_path.push(directory_path.join(path)));
+                for (i, v) in absolute_path.iter().enumerate() {
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
                     )?;
                 }
+                if !temp_dir.as_os_str().is_empty() {
+                    info!("removing temporary directory: {:?}", temp_dir);
+                    fs::remove_dir_all(temp_dir);
+                }
                 Ok(scene)
             }
             Err(error) => {
+                if !temp_dir.as_os_str().is_empty() {
+                    info!("removing temporary directory: {:?}", temp_dir);
+                    fs::remove_dir_all(temp_dir);
+                }
                 error!("Scene: Importing Scene resulted in error: {error}");
                 Err(error)
             }
         }
     }
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
-        info!("Scene {self}: Exporting scene");
+        info!("{self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
         match result {
             Err(error) => {
@@ -82,10 +127,7 @@ impl Scene {
                 Err(error)
             }
             _ => {
-                info!(
-                    "Scene {self}: Successfully exported scene to {}",
-                    path.display()
-                );
+                info!("{self}: Successfully exported scene to {}", path.display());
                 Ok(())
             }
         }
@@ -102,7 +144,7 @@ impl Scene {
         //! ## Returns
         //! Result of either a reference to the new object or an error
         let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
-        info!("Scene {self}: Loading object from {}", path.display());
+        info!("{self}: Loading object from {}", path.display());
         let result = OBJParser::parse(path.clone());
 
         match result {
@@ -149,6 +191,7 @@ impl Scene {
                                     mat.ka.iter().map(|a| *a as f64).collect(),
                                     mat.kd.iter().map(|a| *a as f64).collect(),
                                     mat.ks.iter().map(|a| *a as f64).collect(),
+                                    mat.ke.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
                                     mat.map_kd.clone().map(|name| {
@@ -382,11 +425,14 @@ impl Scene {
                         cam.get_ray_samples(),
                         0,
                         0,
+                        0,
+                        Uniforms::default().ground_height, //Leave or change to scene defaults
+                        Uniforms::default().ground_enabled,
+                        Uniforms::default().sky_color,
+                        Uniforms::default().max_depth,
                     ))
                     .spheres_create(vec![])
-                    .vertices_create(vec![])
                     .uvs_create(vec![])
-                    .triangles_create(vec![])
                     .meshes_create(vec![])
                     .lights_create(vec![])
                     .textures_create(vec![])
