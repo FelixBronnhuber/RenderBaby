@@ -48,8 +48,10 @@ impl Scene {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
-        let mut scene_and_path: Result<(Scene, Vec<String>), Error> =
-            Err(anyhow::Error::msg("uninitialized scene and obj path used"));
+        let mut scene_and_path: Result<
+            (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
+            Error,
+        > = Err(anyhow::Error::msg("uninitialized scene and obj path used"));
         let mut temp_dir = PathBuf::with_capacity(50);
         if let Some(extension) = path.extension().unwrap_or_default().to_str() {
             match extension {
@@ -88,14 +90,24 @@ impl Scene {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
                 let mut paths = scene_and_path.1;
+                let rotation = scene_and_path.2;
+                let translation = scene_and_path.3;
+                let scale = scene_and_path.4;
                 let mut absolute_path = Vec::with_capacity(1);
                 paths
                     .iter()
                     .for_each(|path| absolute_path.push(directory_path.join(path)));
                 for (i, v) in absolute_path.iter().enumerate() {
+                    println!(
+                        "rotation: {}, translation: {}, scale{}",
+                        rotation[i], translation[i], scale[i]
+                    );
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
+                        rotation[i],
+                        translation[i],
+                        scale[i],
                     )?;
                 }
                 if !temp_dir.as_os_str().is_empty() {
@@ -319,8 +331,14 @@ impl Scene {
         &mut self,
         path: PathBuf,
         relative_path: PathBuf,
+        translation: Vec3,
+        rotation: Vec3,
+        scale: Vec3,
     ) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        mesh.scale(scale.x);
+        mesh.rotate(rotation);
+        mesh.translate(translation);
         self.add_mesh(mesh);
         Ok(())
     }

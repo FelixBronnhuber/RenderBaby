@@ -11,7 +11,9 @@ use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
-fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
+fn transform_to_scene(
+    file: SceneFile,
+) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
     let mut scene = Scene::new();
 
     //name
@@ -77,9 +79,26 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
         .iter()
         .map(|o| o.path.clone())
         .collect::<Vec<String>>();
-    Ok((scene, paths))
+    let rotation = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.rotation.x, o.rotation.y, o.rotation.z))
+        .collect();
+    let translation = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.translation.x, o.translation.y, o.translation.z))
+        .collect();
+    let scale = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
+        .collect();
+    Ok((scene, paths, rotation, translation, scale))
 }
-pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> {
+pub fn parse_scene(
+    scene_path: PathBuf,
+) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
     if !scene_path.is_file() {
         return Err(anyhow::Error::msg(format!(
             "File {} does not exist!",
