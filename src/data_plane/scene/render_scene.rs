@@ -1211,7 +1211,10 @@ impl Scene {
         Ok(self.get_light_at(index)?.get_position())
     }
     pub(crate) fn set_light_position(&mut self, position: Vec3, index: usize) -> Result<(), Error> {
-        //!
+        //! Sets the position of the light given by the index
+        //! ## Parameter
+        //! 'position': New position as glam::Vec3
+        //! 'index': Index of the target light
         self.get_light_mut_at(index)?.set_position(position);
         Ok(())
     }
@@ -1225,7 +1228,10 @@ impl Scene {
         luminosity: f32,
         index: usize,
     ) -> Result<(), Error> {
-        //!
+        //! Sets the luminisoty of the light given by the index
+        //! ## Parameter
+        //! 'luminosity': New luminosity
+        //! 'index': Index of the target light
         self.get_light_mut_at(index)?.set_luminosity(luminosity);
         Ok(())
     }
@@ -1235,7 +1241,10 @@ impl Scene {
         Ok(self.get_light_at(index)?.get_color())
     }
     pub(crate) fn set_light_color(&mut self, color: [f32; 3], index: usize) -> Result<(), Error> {
-        //!
+        //! Sets the color of the light given by the index
+        //! ## Parameter
+        //! 'color': New position as [f32; 3]
+        //! 'index': Index of the target light
         self.get_light_mut_at(index)?.set_color(color);
         Ok(())
     }
@@ -1249,7 +1258,10 @@ impl Scene {
         light_type: LightType,
         index: usize,
     ) -> Result<(), Error> {
-        //!
+        //! Sets the type of the light given by the index
+        //! ## Parameter
+        //! 'light_type': New light_type
+        //! 'index': Index of the target light
         self.get_light_mut_at(index)?.set_light_type(light_type);
         Ok(())
     }
