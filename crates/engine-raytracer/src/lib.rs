@@ -3,7 +3,8 @@ pub use engine_config::RenderConfig;
 use engine_config::Renderer;
 use engine_wgpu_wrapper::{GpuWrapper};
 use frame_buffer::frame_iterator::{FrameIterator, Frame};
-use log::info;
+use std::time::Instant;
+use chrono::Local;
 
 use std::sync::{Arc, Mutex};
 
@@ -52,6 +53,7 @@ impl Engine {
 pub struct RaytracerFrameIterator {
     gpu_wrapper: Arc<Mutex<GpuWrapper>>,
     initialized: bool,
+    render_time: Option<Instant>,
 }
 
 impl RaytracerFrameIterator {
@@ -59,6 +61,7 @@ impl RaytracerFrameIterator {
         Self {
             gpu_wrapper,
             initialized: false,
+            render_time: None,
         }
     }
 }
@@ -71,12 +74,21 @@ impl FrameIterator for RaytracerFrameIterator {
 
     fn next(&mut self) -> Result<Frame> {
         if !self.has_next() {
+            // Stop render time
+            if let Some(timer) = self.render_time {
+                let duration = timer.elapsed();
+                log::info!("Render finished in {:?}", duration);
+            }
             anyhow::bail!("No more frames available");
         }
 
         let mut gpu_wrapper = self.gpu_wrapper.lock().unwrap();
 
         if !self.initialized {
+            // Start render time
+            self.render_time = Some(Instant::now());
+            log::info!("Render started at {}", Local::now());
+
             gpu_wrapper.queue().write_buffer(
                 &gpu_wrapper.buffer_wrapper().accumulation,
                 0,
@@ -106,20 +118,22 @@ impl FrameIterator for RaytracerFrameIterator {
 
         gpu_wrapper.prh_mut().current_pass += 1;
 
-        info!(
-            "PASSED Sample: {}{}",
+        log::info!(
+            "[ENGINE-RAYTRACER] Sample: {} / {}",
             gpu_wrapper.prh().current_pass,
-            if gpu_wrapper.prh().current_pass == gpu_wrapper.prh().total_passes {
-                ", finished rendering!"
-            } else {
-                ""
-            }
+            gpu_wrapper.prh().total_passes,
         );
 
+        if gpu_wrapper.prh().current_pass == gpu_wrapper.prh().total_passes
+            && let Some(timer) = self.render_time
+        {
+            let duration = timer.elapsed();
+            log::info!("[ENGINE-RAYTRACER] Render finished in {:?}", duration);
+        }
         Ok(frame)
     }
 
     fn destroy(&mut self) {
-        info!("Cancelled Render Iterator.")
+        log::info!("[ENGINE-RAYTRACER] Cancelled Render Iterator.")
     }
 }
