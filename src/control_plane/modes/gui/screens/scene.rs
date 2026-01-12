@@ -98,11 +98,26 @@ impl Screen for SceneScreen {
 
         egui::TopBottomPanel::top("Toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Toolbar");
+                let save_as_clicked = ui.button("Save As").clicked();
+                let save_clicked = ui.button("Save").clicked();
+                let output_path = self.model.scene.lock().unwrap().get_output_path();
 
-                if ui.button("Toggle log-view").clicked() {
-                    self.bottom_visible = !self.bottom_visible;
+                let scene_clone = self.model.scene.clone();
+                let message_pipe_clone = self.message_popup_pipe.clone();
+
+                if save_clicked && output_path.is_some() {
+                    message_pipe_clone.default_handle(scene_clone.lock().unwrap().save());
+                } else if save_as_clicked || save_clicked {
+                    self.file_dialog_save.save_file(move |res| {
+                        if let Ok(path) = res {
+                            let mut scene_lock = scene_clone.lock().unwrap();
+                            message_pipe_clone
+                                .default_handle(scene_lock.set_output_path(Some(path.clone())));
+                            message_pipe_clone.default_handle(scene_lock.save());
+                        }
+                    });
                 }
+                self.file_dialog_save.update_effect(ctx);
 
                 let scene_clone = self.model.scene.clone();
                 let proxy_dirty = self.model.proxy_dirty.clone();
@@ -159,19 +174,9 @@ impl Screen for SceneScreen {
                 }
                 self.file_dialog_export.update_effect(ctx);
 
-                let scene_clone = self.model.scene.clone();
-                let message_pipe_clone = self.message_popup_pipe.clone();
-                if ui.button("Save").clicked() {
-                    self.file_dialog_save.save_file(move |res| {
-                        if let Ok(path) = res {
-                            match scene_clone.lock().unwrap().export_scene(path.clone()) {
-                                Ok(_) => {}
-                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
-                            }
-                        }
-                    });
+                if ui.button("Toggle log-view").clicked() {
+                    self.bottom_visible = !self.bottom_visible;
                 }
-                self.file_dialog_save.update_effect(ctx);
             })
         });
 

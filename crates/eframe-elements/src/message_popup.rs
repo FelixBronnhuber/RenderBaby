@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 use egui::{Context, Window};
+use log::info;
 
 #[derive(Clone)]
 pub struct Message {
@@ -20,6 +21,12 @@ impl Message {
             title: "Error".to_string(),
             message: format!("{:?}", error),
         }
+    }
+}
+
+impl std::fmt::Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.title, self.message)
     }
 }
 
@@ -74,7 +81,15 @@ impl MessagePopupPipe {
     }
 
     pub fn push_message(&self, message: Message) {
+        info!("Message pushed: {}", message);
         self.message_pipe.lock().unwrap().push(message);
+    }
+
+    pub fn default_handle<T>(&self, result: anyhow::Result<T>) {
+        match result {
+            Ok(_) => {}
+            Err(e) => self.push_message(Message::from_error(e)),
+        }
     }
 }
 
