@@ -1,10 +1,11 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::time::{SystemTime, UNIX_EPOCH};
+use egui::TextBuffer;
 use glam::Vec3;
 use log::{info, error};
 use frame_buffer::frame_iterator::Frame;
@@ -37,20 +38,34 @@ pub struct Scene {
     last_frame: Option<Frame>,
     color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
+    output_path: Option<PathBuf>,
 }
 impl Default for Scene {
     fn default() -> Self {
         Self::new()
     }
 }
+
+fn get_path_prefix(path: &Path) -> Option<&str> {
+    path.file_name()
+        .unwrap_or_default()
+        .to_str()?
+        .split(".")
+        .next()
+}
+
 #[allow(unused)]
 impl Scene {
-    pub fn load_scene_from_file(path: PathBuf) -> anyhow::Result<Scene> {
+    fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
-        let mut scene_and_path: Result<(Scene, Vec<String>), Error> =
-            Err(anyhow::Error::msg("uninitialized scene and obj path used"));
+        // todo: i want to murder myself when i see this type. please just add a struct like "SceneParseResult"
+        #[allow(clippy::type_complexity)]
+        let mut scene_and_path: Result<
+            (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
+            Error,
+        > = Err(Error::msg("uninitialized scene and obj path used"));
         let mut temp_dir = PathBuf::with_capacity(50);
         if let Some(extension) = path.extension().unwrap_or_default().to_str() {
             match extension {
@@ -66,29 +81,33 @@ impl Scene {
                     let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
                     archive.extract(temp_dir.clone());
                     info!("using temporary directory {:?}", temp_dir);
-                    if let Some(temp_directory_prefix) = path.file_prefix() {
+
+                    if let Some(temp_directory_prefix) = get_path_prefix(&path) {
                         directory_path = temp_dir.join(temp_directory_prefix);
                     } else {
-                        return Err(anyhow::Error::msg("Scene: invalid rscn prefix"));
+                        return Err(Error::msg("Scene: invalid rscn prefix"));
                     }
-                    scene_and_path = parse_scene(directory_path.join("scene.json"));
+                    scene_and_path = parse_scene(directory_path.join("scene.json"), None);
                 }
                 "json" => {
                     directory_path = path.clone();
                     directory_path.pop();
-                    scene_and_path = parse_scene(path.clone());
+                    scene_and_path = parse_scene(path.clone(), None);
                 }
                 _ => {
-                    return Err(anyhow::Error::msg("Incorrect file extension found"));
+                    return Err(Error::msg("Incorrect file extension found"));
                 }
             }
         } else {
-            return Err(anyhow::Error::msg("no file extension found"));
+            return Err(Error::msg("no file extension found"));
         }
         match scene_and_path {
             Ok(scene_and_path) => {
                 let mut scene = scene_and_path.0;
                 let mut paths = scene_and_path.1;
+                let rotation = scene_and_path.2;
+                let translation = scene_and_path.3;
+                let scale = scene_and_path.4;
                 let mut absolute_path = Vec::with_capacity(1);
                 paths
                     .iter()
@@ -97,6 +116,9 @@ impl Scene {
                     scene.load_object_from_file_relative(
                         v.clone(),
                         PathBuf::from(paths[i].clone()),
+                        rotation[i],
+                        translation[i],
+                        scale[i],
                     )?;
                 }
                 if !temp_dir.as_os_str().is_empty() {
@@ -115,6 +137,7 @@ impl Scene {
             }
         }
     }
+
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
         info!("{self}: Exporting scene");
         let result = scene_exporter::serialize_scene(path.clone(), self);
@@ -132,6 +155,8 @@ impl Scene {
             }
         }
     }
+
+    // LOAD OBJECTS
 
     pub fn parse_obj_to_mesh(
         &mut self,
@@ -321,8 +346,14 @@ impl Scene {
         &mut self,
         path: PathBuf,
         relative_path: PathBuf,
+        translation: Vec3,
+        rotation: Vec3,
+        scale: Vec3,
     ) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        mesh.scale(scale.x);
+        mesh.rotate(rotation);
+        mesh.translate(translation);
         self.add_mesh(mesh);
         Ok(())
     }
@@ -341,6 +372,60 @@ impl Scene {
         self.add_mesh(mesh);
         Ok(())
     }
+
+    // LOAD SCENES
+
+    pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
+        let mut scene = Self::_load_scene_from_path(path.clone());
+        match scene {
+            Ok(mut scene) => {
+                if let Some(extension) = path.extension()
+                    && extension.to_string_lossy().as_str() != "rscn"
+                    && !detached
+                {
+                    scene.output_path = Some(path);
+                } else {
+                    scene.output_path = None;
+                }
+                Ok(scene)
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
+        let scene = parse_scene(PathBuf::new(), Some(json_string));
+        match scene {
+            Ok(scene_and_values) => {
+                let mut scene = scene_and_values.0;
+                let paths = scene_and_values.1;
+                let rotation = scene_and_values.2;
+                let translation = scene_and_values.3;
+                let scale = scene_and_values.4;
+                Ok(scene)
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    pub fn save(&mut self) -> anyhow::Result<()> {
+        if let Some(output_path) = self.output_path.clone()
+        // && output_path.exists() TODO: why would the path already need to exist?
+        {
+            self.export_scene(output_path)?;
+            Ok(())
+        } else {
+            Err(anyhow::Error::msg(
+                "No valid output path set for this scene",
+            ))
+        }
+    }
+
+    pub fn set_output_path(&mut self, path: Option<PathBuf>) -> anyhow::Result<()> {
+        self.output_path = path;
+        Ok(())
+    }
+
     pub fn proto_init(&mut self) {
         //! For the early version: This function adds a sphere, a camera, and a lightsource
         //! This is a temporary function for test purposes
@@ -390,6 +475,7 @@ impl Scene {
         //! a mutable reference to the camera
         self.scene_graph.get_camera_mut()
     }
+
     pub fn get_camera(&self) -> &Camera {
         //! ## Returns
         //!  a reference to the camera
@@ -443,6 +529,7 @@ impl Scene {
             last_frame: None,
             color_hash_enabled: true,
             textures: HashMap::new(),
+            output_path: None,
         }
     }
     pub fn add_sphere(&mut self, sphere: Sphere) {
@@ -602,6 +689,10 @@ impl Scene {
         //! ## Returns
         //! first_render: if the last render was the first render of this scene?
         self.first_render
+    }
+
+    pub fn get_output_path(&self) -> Option<PathBuf> {
+        self.output_path.clone()
     }
 
     pub fn export_render_img(&self, path: PathBuf) -> anyhow::Result<()> {
