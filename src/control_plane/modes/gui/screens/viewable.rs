@@ -140,7 +140,7 @@ impl Viewable for ProxyCamera {
 
         ui.label("Camera Direction:");
         if vec3_ui(ui, &mut self.look_at) {
-            let _ = scene.set_camera_look_at(self.look_at.clone().into());
+            let _ = scene.set_camera_look_at(self.look_at.into());
         }
     }
 }
