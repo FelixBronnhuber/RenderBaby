@@ -2,6 +2,8 @@ use anyhow::Result;
 use engine_config::{Renderer, RenderConfig};
 use engine_config::renderer::RendererIterable;
 use frame_buffer::frame_iterator::{Frame, FrameIterator};
+use std::time::Instant;
+use chrono::Local;
 
 use crate::compute_plane::render_engine::RenderEngine;
 
@@ -12,6 +14,9 @@ pub struct Engine {
 
 impl RendererIterable for Engine {
     fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
+        log::info!("Render started at {}", Local::now());
+        let start = Instant::now();
+
         let mut frame_iterator = self.get_frame_iterator(rc)?;
         let mut last_frame: Frame = Frame::new(0, 0, vec![]);
         loop {
@@ -21,6 +26,9 @@ impl RendererIterable for Engine {
                 break;
             }
         }
+
+        let duration = start.elapsed();
+        log::info!("Render finished in {:?}", duration);
         Ok(last_frame)
     }
 
@@ -43,7 +51,15 @@ impl Engine {
     }
 
     pub fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
-        self.renderer.render(rc)
+        log::info!("Render started at {}", Local::now());
+        let start = Instant::now();
+
+        let result = self.renderer.render(rc);
+
+        let duration = start.elapsed();
+        log::info!("Render finished in {:?}", duration);
+
+        result
     }
 
     #[allow(dead_code)]
