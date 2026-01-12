@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use image::{ImageBuffer, Rgba};
-use engine_config::RenderOutput;
+use frame_buffer::frame_iterator::Frame;
 
-pub fn export_img_png(path: PathBuf, render: RenderOutput) -> image::ImageResult<()> {
+pub fn export_img_png(path: PathBuf, frame: Frame) -> image::ImageResult<()> {
     let img: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
-        render.width as u32,
-        render.height as u32,
-        render.pixels.clone(),
+        frame.width as u32,
+        frame.height as u32,
+        frame.pixels.clone(),
     )
     .ok_or_else(|| {
         image::ImageError::Parameter(image::error::ParameterError::from_kind(

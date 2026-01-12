@@ -1,12 +1,40 @@
 use anyhow::Result;
-use engine_config::RenderConfig;
-use engine_config::{RenderOutput, Renderer};
+use engine_config::{Renderer, RenderConfig};
+use engine_config::renderer::RendererIterable;
+use frame_buffer::frame_iterator::{Frame, FrameIterator};
+use std::time::Instant;
+use chrono::Local;
 
 use crate::compute_plane::render_engine::RenderEngine;
 
 pub struct Engine {
     renderer: Box<dyn Renderer + Sync>,
     engine_type: RenderEngine,
+}
+
+impl RendererIterable for Engine {
+    fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
+        log::info!("Render started at {}", Local::now());
+        let start = Instant::now();
+
+        let mut frame_iterator = self.get_frame_iterator(rc)?;
+        let mut last_frame: Frame = Frame::new(0, 0, vec![]);
+        loop {
+            if frame_iterator.has_next() {
+                last_frame = frame_iterator.next().unwrap();
+            } else {
+                break;
+            }
+        }
+
+        let duration = start.elapsed();
+        log::info!("Render finished in {:?}", duration);
+        Ok(last_frame)
+    }
+
+    fn get_frame_iterator(&mut self, rc: RenderConfig) -> Result<Box<dyn FrameIterator>> {
+        self.renderer.frame_iterator(rc)
+    }
 }
 
 impl Engine {
@@ -22,8 +50,16 @@ impl Engine {
         }
     }
 
-    pub fn render(&mut self, rc: RenderConfig) -> Result<RenderOutput> {
-        self.renderer.render(rc)
+    pub fn render(&mut self, rc: RenderConfig) -> Result<Frame> {
+        log::info!("Render started at {}", Local::now());
+        let start = Instant::now();
+
+        let result = self.renderer.render(rc);
+
+        let duration = start.elapsed();
+        log::info!("Render finished in {:?}", duration);
+
+        result
     }
 
     #[allow(dead_code)]

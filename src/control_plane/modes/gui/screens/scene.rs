@@ -1,5 +1,5 @@
+use std::time::Duration;
 use eframe::emath::Align;
-use egui::CollapsingHeader;
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
@@ -9,7 +9,8 @@ use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
-use crate::data_plane::scene_proxy::proxy_light::ProxyLight;
+
+static FRAME_DURATION_FPS24: Duration = Duration::from_millis(1000 / 24);
 
 #[allow(dead_code)]
 pub struct SceneScreen {
@@ -60,16 +61,17 @@ impl SceneScreen {
             });
     }
 
-    fn do_render(&mut self, ctx: &egui::Context) {
-        match self.model.scene.lock().unwrap().render() {
-            Ok(output) => {
-                self.image_area
-                    .set_image(ctx, Image::new(output.width, output.height, output.pixels));
+    fn do_render(&self) {
+        let it = self.model.render();
+        match it {
+            Ok(_) => {}
+            Err(_) => {
+                self.message_popup_pipe
+                    .push_message(Message::from_error(anyhow::anyhow!(
+                        "Failed to generate a frame iterator."
+                    )));
             }
-            Err(e) => {
-                self.message_popup_pipe.push_message(Message::from_error(e));
-            }
-        }
+        };
     }
 }
 
@@ -78,8 +80,8 @@ impl Screen for SceneScreen {
         egui::Vec2::new(1200.0, 800.0)
     }
 
-    fn on_start(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.do_render(ctx);
+    fn on_start(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.do_render();
     }
 
     fn update(
@@ -96,11 +98,26 @@ impl Screen for SceneScreen {
 
         egui::TopBottomPanel::top("Toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label("Toolbar");
+                let save_as_clicked = ui.button("Save As").clicked();
+                let save_clicked = ui.button("Save").clicked();
+                let output_path = self.model.scene.lock().unwrap().get_output_path();
 
-                if ui.button("Toggle log-view").clicked() {
-                    self.bottom_visible = !self.bottom_visible;
+                let scene_clone = self.model.scene.clone();
+                let message_pipe_clone = self.message_popup_pipe.clone();
+
+                if save_clicked && output_path.is_some() {
+                    message_pipe_clone.default_handle(scene_clone.lock().unwrap().save());
+                } else if save_as_clicked || save_clicked {
+                    self.file_dialog_save.save_file(move |res| {
+                        if let Ok(path) = res {
+                            let mut scene_lock = scene_clone.lock().unwrap();
+                            message_pipe_clone
+                                .default_handle(scene_lock.set_output_path(Some(path.clone())));
+                            message_pipe_clone.default_handle(scene_lock.save());
+                        }
+                    });
                 }
+                self.file_dialog_save.update_effect(ctx);
 
                 let scene_clone = self.model.scene.clone();
                 let proxy_dirty = self.model.proxy_dirty.clone();
@@ -123,33 +140,43 @@ impl Screen for SceneScreen {
                 let scene_clone = self.model.scene.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
                 if ui.button("Export PNG").clicked() {
-                    self.file_dialog_export.save_file(move |res| {
-                        if let Ok(path) = res {
-                            match scene_clone.lock().unwrap().export_render_img(path.clone()) {
-                                Ok(_) => message_pipe_clone.push_message(Message::new(
-                                    "Export successful.",
-                                    format!("Saved PNG to {}", path.display()).as_str(),
-                                )),
-                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
+                    match self.model.frame_buffer.get_last_frame() {
+                        Ok(last_frame) => {
+                            if let Some(last_frame) = last_frame {
+                                self.model.scene.lock().unwrap().set_last_render(last_frame);
+                                self.file_dialog_export.save_file(move |res| {
+                                    if let Ok(path) = res {
+                                        match scene_clone
+                                            .lock()
+                                            .unwrap()
+                                            .export_render_img(path.clone())
+                                        {
+                                            Ok(_) => message_pipe_clone.push_message(Message::new(
+                                                "Export successful.",
+                                                format!("Saved PNG to {}", path.display()).as_str(),
+                                            )),
+                                            Err(e) => message_pipe_clone
+                                                .push_message(Message::from_error(e)),
+                                        }
+                                    };
+                                });
+                            } else {
+                                message_pipe_clone.push_message(Message::new(
+                                    "No rendered image to export.",
+                                    "Please render the scene before exporting an image.",
+                                ));
                             }
-                        };
-                    });
+                        }
+                        Err(e) => {
+                            self.message_popup_pipe.push_message(Message::from_error(e));
+                        }
+                    }
                 }
                 self.file_dialog_export.update_effect(ctx);
 
-                let scene_clone = self.model.scene.clone();
-                let message_pipe_clone = self.message_popup_pipe.clone();
-                if ui.button("Save").clicked() {
-                    self.file_dialog_save.save_file(move |res| {
-                        if let Ok(path) = res {
-                            match scene_clone.lock().unwrap().export_scene(path.clone()) {
-                                Ok(_) => {}
-                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
-                            }
-                        }
-                    });
+                if ui.button("Toggle log-view").clicked() {
+                    self.bottom_visible = !self.bottom_visible;
                 }
-                self.file_dialog_save.update_effect(ctx);
             })
         });
 
@@ -159,83 +186,34 @@ impl Screen for SceneScreen {
             .show(ctx, |ui| {
                 self.model.consume_proxy_dirty_and_reload();
 
-                if ui.button("Render").clicked() {
-                    self.do_render(ctx);
+                if self.model.frame_buffer.has_provider() {
+                    if ui.button("Cancel Render").clicked() {
+                        self.model.frame_buffer.stop_current_provider();
+                    }
+                } else if ui.button("Start Render").clicked() {
+                    self.do_render();
                 }
 
                 ui.separator();
 
                 let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
 
-                proxy_tmp
-                    .camera
-                    .ui(ui, &mut self.model.scene.lock().unwrap());
+                ui.label("Camera");
+                proxy_tmp.camera.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                proxy_tmp.misc.ui(ui, &mut self.model.scene.lock().unwrap());
+                proxy_tmp.misc.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                {
-                    let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_meshes = scene_lock.get_meshes_mut();
-                    ui.label("Objects");
-                    let enum_meshes = proxy_tmp.objects.iter_mut();
-                    if enum_meshes.len() == 0 {
-                        ui.label("No objects in scene.");
-                    } else {
-                        for (i, proxy_mesh) in enum_meshes.enumerate() {
-                            CollapsingHeader::new(format!("Object {}", i))
-                                .default_open(false)
-                                .show(ui, |ui| {
-                                    proxy_mesh.ui(ui, &mut real_meshes[i]);
-                                });
-
-                            if ui.small_button("remove").clicked() {
-                                real_meshes.remove(i);
-                                proxy_tmp.objects.remove(i);
-                                break;
-                            }
-                        }
-                    }
-                }
+                ui.label("Objects");
+                proxy_tmp.objects.ui(ui, &mut self.model.scene.clone());
 
                 ui.separator();
 
-                {
-                    let mut scene_lock = self.model.scene.lock().unwrap();
-                    let real_lights = scene_lock.get_light_sources_mut();
-                    ui.label("Lights");
-                    let enum_light = proxy_tmp.lights.iter_mut();
-                    if enum_light.len() == 0 {
-                        ui.label("No lights in scene.");
-                    } else {
-                        for (i, proxy_light) in enum_light.enumerate() {
-                            CollapsingHeader::new(format!("Light {}", i))
-                                .default_open(false)
-                                .show(ui, |ui| {
-                                    proxy_light.ui(ui, &mut real_lights[i]);
-                                });
-
-                            if ui.small_button("remove").clicked() {
-                                real_lights.remove(i);
-                                proxy_tmp.lights.remove(i);
-                                break;
-                            }
-                        }
-                    }
-
-                    if ui.small_button("+").clicked() {
-                        let new_light = ProxyLight::default();
-                        self.model
-                            .scene
-                            .lock()
-                            .unwrap()
-                            .add_lightsource(new_light.clone().into());
-                        proxy_tmp.lights.push(new_light);
-                    }
-                }
+                ui.label("Lights");
+                proxy_tmp.lights.ui(ui, &mut self.model.scene.clone());
 
                 self.model.proxy = proxy_tmp;
             });
@@ -246,6 +224,23 @@ impl Screen for SceneScreen {
 
         if self.bottom_visible {
             SceneScreen::logs_ui(ctx);
+        }
+
+        if let Some(output) = self.model.frame_buffer.try_recv() {
+            match output {
+                Ok(output) => {
+                    self.image_area
+                        .set_image(ctx, Image::new(output.width, output.height, output.pixels));
+                }
+                Err(e) => {
+                    self.message_popup_pipe.push_message(Message::from_error(e));
+                }
+            }
+        }
+
+        // hopefully temporary fix to keep painting while render is going even if the user is doing nothing.
+        if self.model.frame_buffer.has_provider() {
+            ctx.request_repaint_after(FRAME_DURATION_FPS24);
         }
 
         None

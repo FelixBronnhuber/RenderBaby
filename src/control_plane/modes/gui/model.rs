@@ -5,6 +5,7 @@ use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 use glam::Vec3;
+use frame_buffer::frame_buffer::FrameBuffer;
 use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 
 #[allow(dead_code)]
@@ -13,12 +14,13 @@ pub struct Model {
     pub proxy: ProxyScene,
     // flag to indicate whether the scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
+    pub frame_buffer: FrameBuffer,
 }
 
 #[allow(dead_code)]
 impl Model {
     pub fn new_from_path(path: PathBuf) -> anyhow::Result<Self> {
-        match Scene::load_scene_from_file(path) {
+        match Scene::load_scene_from_path(path, false) {
             Ok(scene) => Ok(Self::new(scene)),
             Err(e) => Err(e),
         }
@@ -44,6 +46,7 @@ impl Model {
             scene
                 .get_camera_mut()
                 .set_resolution(Resolution::new(256, 256));
+            scene.get_camera_mut().set_ray_samples(1);
         } else {
             log::warn!(
                 "Capsule fixture not found at {:?}, falling back to proto_init",
@@ -80,8 +83,13 @@ impl Model {
         Self::new(scene)
     }
 
-    pub fn new_from_template(_file: &'static File<'static>) -> anyhow::Result<Self> {
-        todo!()
+    pub fn new_from_template(file: &'static File<'static>) -> anyhow::Result<Self> {
+        let file_contents = file
+            .contents_utf8()
+            .expect("Couldn't turn file into string.");
+        Ok(Self::new(Scene::load_scene_from_string(
+            file_contents.to_string(),
+        )?))
     }
 
     pub fn new_empty() -> Self {
@@ -94,25 +102,24 @@ impl Model {
             scene: Arc::new(Mutex::new(scene)),
             proxy,
             proxy_dirty: Arc::new(AtomicBool::new(false)),
+            frame_buffer: FrameBuffer::new(true),
         }
     }
 
-    pub fn set_output_path(_path: PathBuf) -> anyhow::Result<()> {
+    pub fn set_output_path(&mut self, path: Option<PathBuf>) -> anyhow::Result<()> {
         // ask scene to change the output path. This would require the destination not to already exist
-        todo!()
+        self.scene.lock().unwrap().set_output_path(path)
     }
 
-    pub fn save() -> anyhow::Result<()> {
+    pub fn save(&self) -> anyhow::Result<()> {
         // throws an error if an output path isn't set
-        todo!()
+        self.scene.lock().unwrap().save()
     }
 
     pub fn render(&self) -> anyhow::Result<()> {
-        todo!()
-    }
-
-    pub fn frame_buffer_ref(&self) -> &String {
-        todo!()
+        self.frame_buffer
+            .provide(self.scene.lock().unwrap().get_frame_iterator()?);
+        Ok(())
     }
 
     pub fn reload_proxy(&mut self) {

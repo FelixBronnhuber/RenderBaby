@@ -11,7 +11,10 @@ use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
-fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
+#[allow(clippy::type_complexity)]
+fn transform_to_scene(
+    file: SceneFile,
+) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
     let mut scene = Scene::new();
 
     //name
@@ -77,16 +80,44 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<(Scene, Vec<String>)> {
         .iter()
         .map(|o| o.path.clone())
         .collect::<Vec<String>>();
-    Ok((scene, paths))
+    let rotation = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.rotation.x, o.rotation.y, o.rotation.z))
+        .collect();
+    let translation = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.translation.x, o.translation.y, o.translation.z))
+        .collect();
+    let scale = file
+        .objects
+        .iter()
+        .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
+        .collect();
+    Ok((scene, paths, rotation, translation, scale))
 }
-pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> {
-    if !scene_path.is_file() {
-        return Err(anyhow::Error::msg(format!(
-            "File {} does not exist!",
-            scene_path.display()
-        )));
+
+#[allow(clippy::type_complexity)]
+pub fn parse_scene(
+    scene_path: PathBuf,
+    json_string: Option<String>,
+) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
+    let mut _json_content: String = String::new();
+    match json_string {
+        Some(json_string) => {
+            _json_content = json_string;
+        }
+        None => {
+            if !scene_path.is_file() {
+                return Err(anyhow::Error::msg(format!(
+                    "File {} does not exist!",
+                    scene_path.display()
+                )));
+            }
+            _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
+        }
     }
-    let _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
 
     let schema = json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -108,7 +139,7 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
 
             "objects": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": { "$ref": "#/$defs/object" }
             },
 
@@ -122,7 +153,7 @@ pub fn parse_scene(scene_path: PathBuf) -> anyhow::Result<(Scene, Vec<String>)> 
 
             "lights": {
                 "type": "array",
-                "minItems": 1,
+                "minItems": 0,
                 "items": { "$ref": "#/$defs/light" }
             }
         },
