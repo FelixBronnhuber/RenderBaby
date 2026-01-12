@@ -6,7 +6,7 @@ pub(crate) enum SceneChange {
     LightChange(LightChange),
     MeshChange(MeshChange),
     SphereChange(SphereChange),
-    General,
+    _General,
 }
 
 pub(crate) enum CameraChange {
@@ -24,23 +24,23 @@ pub(crate) enum LightChange {
     Position(Vec3, usize),
     Luminosity(f32, usize),
     Color([f32; 3], usize),
-    Direction(Vec3, usize),
-    Name(String, usize),
+    _Direction(Vec3, usize),
+    _Name(String, usize),
 }
 
 pub(crate) enum MeshChange {
     Translate(Vec3, usize),
     Scale(f32, usize),
     Rotate(Vec3, usize),
-    Material(Material, usize),
-    Name(String, usize),
+    _Material(Material, usize),
+    _Name(String, usize),
 }
 
 pub(crate) enum SphereChange {
-    Count,
+    _Count,
     Translate(Vec3, usize),
-    Scale(f32, usize),
+    Radius(f32, usize),
     Color([f32; 3], usize),
     Material(Material, usize),
-    Name(String, usize),
+    _Name(String, usize),
 }

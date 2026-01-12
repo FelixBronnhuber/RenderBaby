@@ -30,7 +30,7 @@ impl Scene {
                 self.handle_light_change(light_change)?;
                 self.update_render_config_lights(); // maybe not needed if only rename?
             }
-            SceneChange::General => self.update_render_config(),
+            SceneChange::_General => todo!(),
         }
         Ok(())
     }
@@ -141,8 +141,10 @@ impl Scene {
                     None => Err(anyhow!("Index out of bounds")),
                 }
             }
-            LightChange::Direction(_direction, _index) => todo!("Directional lights not supported"),
-            LightChange::Name(name, index) => {
+            LightChange::_Direction(_direction, _index) => {
+                todo!("Directional lights not supported")
+            }
+            LightChange::_Name(name, index) => {
                 info!(
                     "Change in {}: Setting ligt {} name to {:?}",
                     self, index, name
@@ -199,10 +201,10 @@ impl Scene {
                     None => Err(anyhow!("Index out of bounds")),
                 }
             }
-            MeshChange::Material(_material, _index) => {
+            MeshChange::_Material(_material, _index) => {
                 todo!("Material change not supported");
             }
-            MeshChange::Name(name, index) => {
+            MeshChange::_Name(name, index) => {
                 info!(
                     "Change in {}: Setting mesh {} name to {:?}",
                     self, index, name
@@ -233,7 +235,7 @@ impl Scene {
                     None => Err(anyhow!("Index out of bounds")),
                 }
             }
-            SphereChange::Scale(factor, index) => {
+            SphereChange::Radius(factor, index) => {
                 info!(
                     "Change in {}: Scaling sphere {} by {:?}",
                     self, index, factor
@@ -272,7 +274,7 @@ impl Scene {
                     None => Err(anyhow!("Index out of bounds")),
                 }
             }
-            SphereChange::Name(name, index) => {
+            SphereChange::_Name(name, index) => {
                 info!(
                     "Change in {}: Setting sphere {} name to {:?}",
                     self, index, name
@@ -285,7 +287,7 @@ impl Scene {
                     None => Err(anyhow!("Index out of bounds")),
                 }
             }
-            SphereChange::Count => {
+            SphereChange::_Count => {
                 self.update_render_config_uniform();
                 // probably all that is need right now
                 Ok(())

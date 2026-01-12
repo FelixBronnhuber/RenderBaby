@@ -16,7 +16,7 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::{
-            scene_change::{CameraChange, SceneChange},
+            scene_change::{CameraChange, LightChange, MeshChange, SceneChange, SphereChange},
             scene_engine_adapter::{
                 camera_to_render_uniforms, light_to_render_point_light, mesh_to_render_data,
                 sphere_to_render_sphere,
@@ -1013,24 +1013,20 @@ impl Scene {
         //! Sets the LightSource color
         //! ## Parameter
         //! 'color': New LightSource color as array of f32, values in \[0, 1]
-        self.get_sphere_mut_at(index)?.set_color(color);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Color(color, index)))
     }
     pub(crate) fn get_sphere_color(&self, index: usize) -> Result<[f32; 3], Error> {
         //! ## Returns
         //! LightSource color as rgb array of f32, values in \[0, 1]
         Ok(self.get_sphere_at(index)?.get_color())
     }
-    pub(crate) fn set_sphere_radius(
-        &mut self,
-        radius: f32,
-        index: usize,
-    ) -> Result<(), Box<Error>> {
+    pub(crate) fn set_sphere_radius(&mut self, radius: f32, index: usize) -> Result<(), Error> {
         //! Sets the radius
         //! ## Parameter
         //! 'radius': new radius
-        self.get_sphere_mut_at(index)?.set_radius(radius);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Radius(
+            radius, index,
+        )))
     }
 
     pub(crate) fn get_sphere_radius(&self, index: usize) -> Result<f32, Error> {
@@ -1045,16 +1041,13 @@ impl Scene {
         Ok(self.get_sphere_at(index)?.get_center())
     }
 
-    pub(crate) fn set_sphere_center(
-        &mut self,
-        center: Vec3,
-        index: usize,
-    ) -> Result<(), Box<Error>> {
+    pub(crate) fn set_sphere_center(&mut self, center: Vec3, index: usize) -> Result<(), Error> {
         //! sets the Sphere center
         //! ## Parameter
         //! 'center'
-        self.get_sphere_mut_at(index)?.set_center(center);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Translate(
+            center, index,
+        )))
     }
 
     pub(crate) fn get_sphere_material(&self, index: usize) -> Result<&Material, Error> {
@@ -1070,8 +1063,9 @@ impl Scene {
         //! Sets the Sphere Material
         //! ## Parameter
         //! 'material': New material
-        self.get_sphere_mut_at(index)?.set_material(material);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Material(
+            material, index,
+        )))
     }
     pub(crate) fn get_sphere_path(&self, index: usize) -> Result<Option<PathBuf>, Error> {
         // todo: maybe remove the option?
@@ -1101,21 +1095,24 @@ impl Scene {
         //! scales the radius of the sphere
         //! ## Parameter
         //! 'factor': scale factor
-        self.get_sphere_mut_at(index)?.scale(factor);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Radius(
+            factor, index,
+        )))
     }
     pub(crate) fn translate_sphere(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
         //! Moves the center of the sphere
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
-        self.get_sphere_mut_at(index)?.translate(vec);
-        Ok(())
+        self.handle_scene_change(SceneChange::SphereChange(SphereChange::Translate(
+            vec, index,
+        )))
     }
     pub(crate) fn remove_sphere(&mut self, index: usize) -> Result<Sphere, Error> {
         //! Removes the sphere at the given index
         //! ## Parameter
         //! index: Index of the sphere that will be removed
         Ok(self.get_spheres_mut().remove(index))
+        // todo should there be a scene change for this?
     }
 
     // mesh stuff
@@ -1170,16 +1167,21 @@ impl Scene {
         //! scales the radius of the mesh
         //! ## Parameter
         //! 'factor': scale factor
-        self.get_mesh_mut_at(index)?.scale(factor);
-        Ok(())
+        let rel_factor = factor / self.get_mesh_at(index)?.get_scale();
+        self.handle_scene_change(SceneChange::MeshChange(MeshChange::Scale(
+            rel_factor.x,
+            index,
+        )))
     }
     pub(crate) fn translate_mesh(&mut self, vec: Vec3, index: usize) -> Result<(), Error> {
         //! Moves the center of the mesh
         //! ## Parameter
         //! 'vec': Translation vector as glam::Vec3
         let rel_translation = vec - self.get_mesh_translation(index)?;
-        self.get_mesh_mut_at(index)?.translate(rel_translation);
-        Ok(())
+        self.handle_scene_change(SceneChange::MeshChange(MeshChange::Translate(
+            rel_translation,
+            index,
+        )))
     }
 
     pub(crate) fn rotate_mesh(&mut self, rotation: Vec3, index: usize) -> Result<(), Error> {
@@ -1187,14 +1189,17 @@ impl Scene {
         //! ## Parameter
         //! 'vec': rotation vector as glam::Vec3, euler angles
         let rel_rotation = rotation - self.get_mesh_rotation(index)?;
-        self.get_mesh_mut_at(index)?.translate(rel_rotation);
-        Ok(())
+        self.handle_scene_change(SceneChange::MeshChange(MeshChange::Rotate(
+            rel_rotation,
+            index,
+        )))
     }
     pub(crate) fn remove_mesh(&mut self, index: usize) -> Result<Mesh, Error> {
         //! Removes the mesh at the given index
         //! ## Parameter
         //! index: Index of the mesh that will be removed
         Ok(self.get_meshes_mut().remove(index))
+        // todo should there be a scene change for this?
     }
 
     // light stuff: position, luminosity, color, type
@@ -1224,8 +1229,9 @@ impl Scene {
         //! ## Parameter
         //! 'position': New position as glam::Vec3
         //! 'index': Index of the target light
-        self.get_light_mut_at(index)?.set_position(position);
-        Ok(())
+        self.handle_scene_change(SceneChange::LightChange(LightChange::Position(
+            position, index,
+        )))
     }
     pub(crate) fn get_light_luminosity(&self, index: usize) -> Result<f32, Error> {
         //! ## Returns
@@ -1241,8 +1247,9 @@ impl Scene {
         //! ## Parameter
         //! 'luminosity': New luminosity
         //! 'index': Index of the target light
-        self.get_light_mut_at(index)?.set_luminosity(luminosity);
-        Ok(())
+        self.handle_scene_change(SceneChange::LightChange(LightChange::Luminosity(
+            luminosity, index,
+        )))
     }
     pub(crate) fn get_light_color(&self, index: usize) -> Result<[f32; 3], Error> {
         //! ## Returns
@@ -1254,8 +1261,7 @@ impl Scene {
         //! ## Parameter
         //! 'color': New position as [f32; 3]
         //! 'index': Index of the target light
-        self.get_light_mut_at(index)?.set_color(color);
-        Ok(())
+        self.handle_scene_change(SceneChange::LightChange(LightChange::Color(color, index)))
     }
     pub(crate) fn get_light_type(&self, index: usize) -> Result<&LightType, Error> {
         //! ## Returns
@@ -1271,8 +1277,9 @@ impl Scene {
         //! ## Parameter
         //! 'light_type': New light_type
         //! 'index': Index of the target light
-        self.get_light_mut_at(index)?.set_light_type(light_type);
-        Ok(())
+        self.handle_scene_change(SceneChange::LightChange(LightChange::Type(
+            light_type, index,
+        )))
     }
 
     pub(crate) fn remove_light(&mut self, index: usize) -> Result<LightSource, Error> {
@@ -1280,6 +1287,7 @@ impl Scene {
         //! ## Parameter
         //! index: Index of the light that will be removed
         Ok(self.get_light_sources_mut().remove(index))
+        // todo should there be a scene change for this?
     }
 }
 
