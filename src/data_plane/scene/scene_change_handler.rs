@@ -178,13 +178,18 @@ impl Scene {
             }
             MeshChange::Scale(factor, index) => {
                 info!("Change in {}: Scaling mesh {} by {:?}", self, index, factor);
-                match self.get_meshes_mut().get_mut(index) {
-                    Some(mesh) => {
-                        mesh.scale(factor);
-                        self.update_render_config_vertices();
-                        Ok(())
+                if factor == 0.0 {
+                    warn!("Mesh scale cannot be set to 0");
+                    Err(anyhow!("Invalid scale: 0"))
+                } else {
+                    match self.get_meshes_mut().get_mut(index) {
+                        Some(mesh) => {
+                            mesh.scale(factor);
+                            self.update_render_config_vertices();
+                            Ok(())
+                        }
+                        None => Err(anyhow!("Index out of bounds")),
                     }
-                    None => Err(anyhow!("Index out of bounds")),
                 }
             }
             MeshChange::Rotate(rotation, index) => {

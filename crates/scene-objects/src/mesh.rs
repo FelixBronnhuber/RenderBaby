@@ -137,6 +137,7 @@ impl GeometricObject for Mesh {
         //! scales the geometry by the given factor
         //! ## Parameter
         //! 'factor': factor for scale
+        self.update_centroid();
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] =
                 self.centroid.x + (self.vertices[i * 3] - self.centroid.x) * factor;
@@ -146,7 +147,8 @@ impl GeometricObject for Mesh {
                 self.centroid.z + (self.vertices[i * 3 + 2] - self.centroid.z) * factor;
         }
         // if switch to 3d transformation: use factor.x, factor.y, factor.z
-        self.scale *= factor
+        self.scale *= factor;
+        self.update_centroid();
     }
 
     fn translate(&mut self, vec: glam::Vec3) {
@@ -159,6 +161,7 @@ impl GeometricObject for Mesh {
             self.vertices[i * 3 + 2] += vec.z;
         }
         self.translation += vec;
+        self.update_centroid();
     }
 
     fn rotate(&mut self, vec: glam::Vec3) {
@@ -167,7 +170,7 @@ impl GeometricObject for Mesh {
         //! 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
         // https://en.wikipedia.org/wiki/Euler_angles
         // https://en.wikipedia.org/wiki/Rotation_matrix
-
+        self.update_centroid();
         let conv_factor = std::f32::consts::PI / 180.0;
         let yaw = vec.z * conv_factor;
         let pitch = vec.y * conv_factor;
@@ -212,6 +215,7 @@ impl GeometricObject for Mesh {
                 + self.centroid.x;
         }
         self.rotation += vec;
+        self.update_centroid();
     }
 }
 
