@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
@@ -45,6 +45,15 @@ impl Default for Scene {
         Self::new()
     }
 }
+
+fn get_path_prefix(path: &Path) -> Option<&str> {
+    path.file_name()
+        .unwrap_or_default()
+        .to_str()?
+        .split(".")
+        .next()
+}
+
 #[allow(unused)]
 impl Scene {
     fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
@@ -56,7 +65,7 @@ impl Scene {
         let mut scene_and_path: Result<
             (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
             Error,
-        > = Err(anyhow::Error::msg("uninitialized scene and obj path used"));
+        > = Err(Error::msg("uninitialized scene and obj path used"));
         let mut temp_dir = PathBuf::with_capacity(50);
         if let Some(extension) = path.extension().unwrap_or_default().to_str() {
             match extension {
@@ -72,10 +81,11 @@ impl Scene {
                     let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
                     archive.extract(temp_dir.clone());
                     info!("using temporary directory {:?}", temp_dir);
-                    if let Some(temp_directory_prefix) = path.file_prefix() {
+
+                    if let Some(temp_directory_prefix) = get_path_prefix(&path) {
                         directory_path = temp_dir.join(temp_directory_prefix);
                     } else {
-                        return Err(anyhow::Error::msg("Scene: invalid rscn prefix"));
+                        return Err(Error::msg("Scene: invalid rscn prefix"));
                     }
                     scene_and_path = parse_scene(directory_path.join("scene.json"), None);
                 }
@@ -85,11 +95,11 @@ impl Scene {
                     scene_and_path = parse_scene(path.clone(), None);
                 }
                 _ => {
-                    return Err(anyhow::Error::msg("Incorrect file extension found"));
+                    return Err(Error::msg("Incorrect file extension found"));
                 }
             }
         } else {
-            return Err(anyhow::Error::msg("no file extension found"));
+            return Err(Error::msg("no file extension found"));
         }
         match scene_and_path {
             Ok(scene_and_path) => {
@@ -400,7 +410,7 @@ impl Scene {
 
     pub fn save(&mut self) -> anyhow::Result<()> {
         if let Some(output_path) = self.output_path.clone()
-            && output_path.exists()
+        // && output_path.exists() TODO: why would the path already need to exist?
         {
             self.export_scene(output_path)?;
             Ok(())
