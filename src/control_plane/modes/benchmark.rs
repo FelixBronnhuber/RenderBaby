@@ -2,11 +2,13 @@ use crate::control_plane::app::App;
 
 pub struct BenchmarkApp {}
 
-impl App for BenchmarkApp {
-    fn new() -> Self {
+impl BenchmarkApp {
+    pub fn new() -> Self {
         Self {}
     }
+}
 
+impl App for BenchmarkApp {
     fn show(self: Box<BenchmarkApp>) {
         todo!("Do the actual implementation of running the app here")
 

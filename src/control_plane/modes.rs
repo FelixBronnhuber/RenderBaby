@@ -1,3 +1,4 @@
+use std::process::exit;
 use std::sync::OnceLock;
 use clap::{Parser, Subcommand};
 use log::{info, warn};
@@ -15,7 +16,10 @@ pub fn is_debug_mode() -> bool {
 
 #[derive(Subcommand, Debug)]
 enum Mode {
-    Cli,
+    Cli {
+        #[command(flatten)]
+        args: cli_static::Args,
+    },
     Gui,
     Benchmark,
 }
@@ -33,8 +37,11 @@ struct ModeArg {
 pub fn get_app() -> Box<dyn App> {
     // Default args
     let mode_arg = ModeArg::try_parse().unwrap_or_else(|e| {
-        warn!("No mode provided, defaulting to Gui (--gui). This is because unwrap came with this error: {:?}.", e);
-        ModeArg { mode: Some(Mode::Gui), no_debug: false } // TODO: change default debug to false in release mode!!!
+        warn!(
+            "Couldn't parse the args. This is because unwrap came with this error: {:?}.",
+            e
+        );
+        exit(0);
     });
 
     // Set debug mode statically
@@ -52,7 +59,7 @@ pub fn get_app() -> Box<dyn App> {
 
     // Return the appropriate app based on the selected mode
     match mode_arg.mode {
-        Some(Mode::Cli) => Box::new(cli_static::CliStaticApp::new()),
+        Some(Mode::Cli { args }) => Box::new(cli_static::CliStaticApp::new(args)),
         Some(Mode::Gui) => Box::new(gui::GuiApp::new()),
         Some(Mode::Benchmark) => Box::new(benchmark::BenchmarkApp::new()),
         None => Box::new(gui::GuiApp::new()),
