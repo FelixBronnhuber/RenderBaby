@@ -60,12 +60,7 @@ impl Scene {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
         let mut directory_path = PathBuf::with_capacity(50);
-        // todo: i want to murder myself when i see this type. please just add a struct like "SceneParseResult"
-        #[allow(clippy::type_complexity)]
-        let mut scene_and_path: Result<
-            (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
-            Error,
-        > = Err(Error::msg("uninitialized scene and obj path used"));
+        let mut scene_parse_result;
         let mut temp_dir = PathBuf::with_capacity(50);
         if let Some(extension) = path.extension().unwrap_or_default().to_str() {
             match extension {
@@ -87,12 +82,39 @@ impl Scene {
                     } else {
                         return Err(Error::msg("Scene: invalid rscn prefix"));
                     }
-                    scene_and_path = parse_scene(directory_path.join("scene.json"), None);
+
+                    //standard scene name
+                    let mut scene_path = directory_path.join("scene.json");
+
+                    //find arbitrary scene name
+                    let mut dir = fs::read_dir(&directory_path);
+
+                    //check if files were directly zipped
+                    if dir.is_err() {
+                        if directory_path.parent().is_some() {
+                            directory_path = directory_path.parent().unwrap().into();
+                            dir = fs::read_dir(&directory_path);
+                        } else {
+                            return Err(Error::msg("Scene: rscn archive could not be read"));
+                        }
+                    }
+                    if dir.is_err() {
+                        return Err(Error::msg("Scene: rscn archive could not be read"));
+                    }
+
+                    for x in dir? {
+                        let path = x?.path();
+                        if path.extension().unwrap_or_default() == "json" {
+                            scene_path = path;
+                        }
+                    }
+
+                    scene_parse_result = parse_scene(scene_path, None);
                 }
                 "json" => {
                     directory_path = path.clone();
                     directory_path.pop();
-                    scene_and_path = parse_scene(path.clone(), None);
+                    scene_parse_result = parse_scene(path.clone(), None);
                 }
                 _ => {
                     return Err(Error::msg("Incorrect file extension found"));
@@ -101,31 +123,27 @@ impl Scene {
         } else {
             return Err(Error::msg("no file extension found"));
         }
-        match scene_and_path {
-            Ok(scene_and_path) => {
-                let mut scene = scene_and_path.0;
-                let mut paths = scene_and_path.1;
-                let rotation = scene_and_path.2;
-                let translation = scene_and_path.3;
-                let scale = scene_and_path.4;
+        match scene_parse_result {
+            Ok(mut scene_parse_result) => {
                 let mut absolute_path = Vec::with_capacity(1);
-                paths
+                scene_parse_result
+                    .obj_paths
                     .iter()
                     .for_each(|path| absolute_path.push(directory_path.join(path)));
                 for (i, v) in absolute_path.iter().enumerate() {
-                    scene.load_object_from_file_relative(
+                    scene_parse_result.scene.load_object_from_file_relative(
                         v.clone(),
-                        PathBuf::from(paths[i].clone()),
-                        rotation[i],
-                        translation[i],
-                        scale[i],
+                        PathBuf::from(scene_parse_result.obj_paths[i].clone()),
+                        scene_parse_result.rotation[i],
+                        scene_parse_result.translation[i],
+                        scene_parse_result.scale[i],
                     )?;
                 }
                 if !temp_dir.as_os_str().is_empty() {
                     info!("removing temporary directory: {:?}", temp_dir);
                     fs::remove_dir_all(temp_dir);
                 }
-                Ok(scene)
+                Ok(scene_parse_result.scene)
             }
             Err(error) => {
                 if !temp_dir.as_os_str().is_empty() {
@@ -394,24 +412,15 @@ impl Scene {
     }
 
     pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
-        let scene = parse_scene(PathBuf::new(), Some(json_string));
-        match scene {
-            Ok(scene_and_values) => {
-                let mut scene = scene_and_values.0;
-                let paths = scene_and_values.1;
-                let rotation = scene_and_values.2;
-                let translation = scene_and_values.3;
-                let scale = scene_and_values.4;
-                Ok(scene)
-            }
+        let scene_parse_result = parse_scene(PathBuf::new(), Some(json_string));
+        match scene_parse_result {
+            Ok(scene_parse_result) => Ok(scene_parse_result.scene),
             Err(error) => Err(error),
         }
     }
 
     pub fn save(&mut self) -> anyhow::Result<()> {
-        if let Some(output_path) = self.output_path.clone()
-        // && output_path.exists() TODO: why would the path already need to exist?
-        {
+        if let Some(output_path) = self.output_path.clone() {
             self.export_scene(output_path)?;
             Ok(())
         } else {

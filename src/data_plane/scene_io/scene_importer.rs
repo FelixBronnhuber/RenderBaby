@@ -13,10 +13,14 @@ use scene_objects::material::Material;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
-#[allow(clippy::type_complexity)]
-fn transform_to_scene(
-    file: SceneFile,
-) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
+pub struct SceneParseResult {
+    pub scene: Scene,
+    pub obj_paths: Vec<String>,
+    pub rotation: Vec<Vec3>,
+    pub translation: Vec<Vec3>,
+    pub scale: Vec<Vec3>,
+}
+fn transform_to_scene(file: SceneFile) -> anyhow::Result<SceneParseResult> {
     let mut scene = Scene::new();
 
     //name
@@ -77,7 +81,7 @@ fn transform_to_scene(
         file.background_color.g,
         file.background_color.b,
     ]);
-    let paths = file
+    let obj_paths = file
         .objects
         .iter()
         .map(|o| o.path.clone())
@@ -122,14 +126,19 @@ fn transform_to_scene(
             ))
         })
     };
-    Ok((scene, paths, rotation, translation, scale))
+    Ok(SceneParseResult {
+        scene,
+        obj_paths,
+        rotation,
+        translation,
+        scale,
+    })
 }
 
-#[allow(clippy::type_complexity)]
 pub fn parse_scene(
     scene_path: PathBuf,
     json_string: Option<String>,
-) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
+) -> anyhow::Result<SceneParseResult> {
     let mut _json_content: String = String::new();
     match json_string {
         Some(json_string) => {
