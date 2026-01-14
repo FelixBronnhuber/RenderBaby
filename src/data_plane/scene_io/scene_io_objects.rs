@@ -8,6 +8,8 @@ pub struct SceneFile {
     pub lights: Vec<FileLightSource>,
     pub camera: FileCamera,
     pub background_color: FileColor,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spheres: Option<Vec<FileSphere>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -58,6 +60,27 @@ pub struct Vec3d {
 pub struct Resolution {
     pub x: u32,
     pub y: u32,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FileSphere {
+    pub center: Vec3,
+    pub radius: f32,
+    pub material: FileMaterial,
+    pub color: FileColor,
+    pub name: String,
+    pub scale: Vec3,
+    pub translation: Vec3,
+    pub rotation: Vec3,
+}
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileMaterial {
+    pub name: String,
+    pub ambient_reflectivity: Vec<f64>,  //Ka
+    pub diffuse_reflectivity: Vec<f64>,  //Kd
+    pub specular_reflectivity: Vec<f64>, //Ks
+    pub emissive: Vec<f64>,              //Ke
+    pub shininess: f64,                  //Ns
+    pub transparency: f64,               //d
 }
 
 impl From<Vec3> for Vec3d {

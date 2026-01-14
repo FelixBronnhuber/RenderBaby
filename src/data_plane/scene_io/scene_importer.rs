@@ -6,8 +6,10 @@ use scene_objects::{
     camera,
     camera::Camera,
     light_source::{LightSource, LightType},
+    sphere::Sphere,
 };
 use serde_json::json;
+use scene_objects::material::Material;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 #[allow(dead_code)]
@@ -95,6 +97,31 @@ fn transform_to_scene(
         .iter()
         .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
         .collect();
+
+    //Spheres
+    if let Some(file_spheres) = file.spheres {
+        file_spheres.iter().for_each(|file_sphere| {
+            scene.add_sphere(Sphere::new(
+                file_sphere.center,
+                file_sphere.radius,
+                Material::new(
+                    file_sphere.material.name.clone(),
+                    file_sphere.material.ambient_reflectivity.clone(),
+                    file_sphere.material.diffuse_reflectivity.clone(),
+                    file_sphere.material.specular_reflectivity.clone(),
+                    file_sphere.material.emissive.clone(),
+                    file_sphere.material.shininess,
+                    file_sphere.material.transparency,
+                    None,
+                ),
+                [
+                    file_sphere.color.r,
+                    file_sphere.color.g,
+                    file_sphere.color.b,
+                ],
+            ))
+        })
+    };
     Ok((scene, paths, rotation, translation, scale))
 }
 
@@ -129,7 +156,9 @@ pub fn parse_scene(
         "camera",
         "lights"
         ],
-        "additionalProperties": false,
+        "additionalProperties": {
+            "$ref": "#/$defs/sphere"
+        },
 
         "properties": {
             "scene_name": {
@@ -265,6 +294,54 @@ pub fn parse_scene(
 
                     "color": { "$ref": "#/$defs/color" }
                 }
+            },
+
+            "sphere": {
+                "type": "array",
+                "required": [
+                    "center",
+                    "radius",
+                    "material",
+                    "color",
+                    "name",
+                    "scale",
+                    "translation",
+                    "rotation",
+                ],
+                "properties": {
+                    "center": {"$ref": "#/$defs/vec3"},
+                    "radius": {"type": "number"},
+                    "material": {"$ref": "#/$defs/sphereMaterial"},
+                    "color": {"$ref": "#/$defs/color"},
+                    "name": {"type": "string"},
+                    "scale": {"$ref": "#/$defs/vec3"},
+                    "translation": {"$ref": "#/$defs/vec3"},
+                    "rotation": {"$ref": "#/$defs/vec3"},
+                },
+                "additionalProperties": false,
+            },
+
+            "sphereMaterial": {
+                "type": "object",
+                "required:": [
+                    "name",
+                    "ambient_reflectivity",
+                    "diffuse_reflectivity",
+                    "specular_reflectivity",
+                    "emissive",
+                    "shininess",
+                    "transparency",
+                ],
+                "properties": {
+                    "name": {"type": "string"},
+                    "ambient_reflectivity": {"$ref": "#/$defs/vec3"},
+                    "diffuse_reflectivity": {"$ref": "#/$defs/vec3"},
+                    "specular_reflectivity": {"$ref": "#/$defs/vec3"},
+                    "emissive": {"$ref": "#/$defs/vec3"},
+                    "shininess": {"type": "number"},
+                    "transparency": {"type": "number"},
+                },
+                "additionalProperties": false,
             }
         }
     });

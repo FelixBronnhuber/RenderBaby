@@ -77,17 +77,65 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
         //background
         let bg = sc.get_background_color();
 
-        let final_scene = SceneFile {
-            scene_name,
-            objects,
-            lights: lightarr,
-            camera: file_camera,
-            background_color: FileColor {
-                r: bg[0],
-                g: bg[1],
-                b: bg[2],
-                a: None,
-            },
+        //spheres
+        let spheres = sc.get_spheres();
+        let mut file_spheres = Vec::new();
+        if !spheres.is_empty() {
+            spheres.iter().for_each(|sphere| {
+                let material = sphere.get_material();
+                file_spheres.push(FileSphere {
+                    center: sphere.get_center(),
+                    radius: sphere.get_radius(),
+                    material: FileMaterial {
+                        name: material.name.clone(),
+                        ambient_reflectivity: material.ambient_reflectivity.clone(), //Ka
+                        diffuse_reflectivity: material.diffuse_reflectivity.clone(), //Kd
+                        specular_reflectivity: material.specular_reflectivity.clone(), //Ks
+                        emissive: material.emissive.clone(),                         //Ke
+                        shininess: material.shininess,                               //Ns
+                        transparency: material.transparency,                         //d
+                    },
+                    color: FileColor {
+                        r: sphere.get_color()[0],
+                        g: sphere.get_color()[1],
+                        b: sphere.get_color()[2],
+                        a: None,
+                    },
+                    name: "Sphere".to_owned(),
+                    scale: sphere.get_scale(),
+                    translation: sphere.get_translation(),
+                    rotation: sphere.get_rotation(),
+                })
+            });
+        }
+        let final_scene = if file_spheres.is_empty() {
+            SceneFile {
+                scene_name,
+                objects,
+                lights: lightarr,
+                camera: file_camera,
+                background_color: FileColor {
+                    r: bg[0],
+                    g: bg[1],
+                    b: bg[2],
+                    a: None,
+                },
+                spheres: None,
+            }
+        } else {
+            SceneFile {
+                scene_name,
+                objects,
+                lights: lightarr,
+                camera: file_camera,
+                background_color: FileColor {
+                    r: bg[0],
+                    g: bg[1],
+                    b: bg[2],
+                    a: None,
+                },
+                spheres: Some(file_spheres),
+            }
         };
         let output = File::create(path);
         match output {
