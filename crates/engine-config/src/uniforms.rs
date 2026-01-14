@@ -37,14 +37,14 @@ impl Default for Uniforms {
             bvh_node_count: 0,
             bvh_triangle_count: 0,
             bvh_root: 0,
-            ground_height: -5.0,
+            ground_height: -1.0,
             ground_enabled: 1,
             checkerboard_enabled: 1,
             sky_color: [0.5, 0.7, 1.0],
             max_depth: 5,
             checkerboard_color_1: [0.0; 3], //Black
             _pad1: 0,
-            checkerboard_color_2: [1.0, 0.5, 1.0], //Magenta
+            checkerboard_color_2: [1.0, 0.0, 1.0], //Magenta
             _pad2: 0,
         }
     }
