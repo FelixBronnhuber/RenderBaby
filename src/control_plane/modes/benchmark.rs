@@ -1,9 +1,11 @@
 use std::time::Instant;
 use log::{info};
+use sysinfo::{System};
+use wgpu::Instance;
 use crate::control_plane::app::App;
 use crate::data_plane::scene::render_scene::Scene;
 
-const SAMPLE_COUNTS: &[u32] = &[1, 100, 200, 1000, 2000];
+const SAMPLE_COUNTS: &[u32] = &[1, 100,];
 pub struct BenchmarkApp;
 
 impl BenchmarkApp {
@@ -33,6 +35,38 @@ impl App for BenchmarkApp {
             let duration = Self::benchmark(samples);
             results.push((samples, duration));
         }
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        let instance = Instance::default();
+        let adapter = pollster::block_on(
+            instance.request_adapter(&wgpu::RequestAdapterOptions::default())
+        ).unwrap();
+
+        info!("----------------------------");
+        info!("Hardware Specs:");
+
+        let gpu = adapter.get_info();
+        info!("GPU: {}", gpu.name);
+        info!("Backend: {:?}", gpu.backend);
+
+        info!("CPU: {}", sys.cpus()[0].brand());
+        info!("Cores: {}", sys.cpus().len());
+
+        info!("Total RAM: {} MB", sys.total_memory() / 1024);
+        info!("Available RAM: {} MB", sys.available_memory() / 1024);
+
+        if let Some(os) = System::long_os_version() {
+            info!("OS: {}", os);
+        } else {
+            info!("OS: Unknown");
+        }
+        if let Some(ke) = System::kernel_version() {
+            info!("Kernel: {}", ke);
+        } else {
+            info!("Kernel: Unknown");
+        }
+        info!("Architecture: {}", std::env::consts::ARCH);
 
         info!("----------------------------");
         info!("Benchmark results:");

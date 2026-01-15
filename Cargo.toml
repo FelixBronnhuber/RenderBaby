@@ -28,6 +28,9 @@ jsonschema = "0.37.4"
 frame-buffer = { path = "crates/frame-buffer" }
 zip = "7.0.0"
 chrono = "0.4.42"
+sysinfo = "0.37.2"
+wgpu = "27.0.1"
+pollster = "0.4.0"
 
 [workspace]
 members = [
