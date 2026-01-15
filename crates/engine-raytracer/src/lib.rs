@@ -43,6 +43,9 @@ impl Renderer for Engine {
 
 impl Engine {
     pub fn new(rc: RenderConfig) -> Self {
+        //! Path Tracer Module
+        #![doc = include_str!("shader_docs.md")]
+
         let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
         Self {
             gpu_wrapper: Arc::new(Mutex::new(wrapper)),
