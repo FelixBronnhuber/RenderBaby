@@ -319,11 +319,6 @@ impl Scene {
                         }
                     }
                 }
-                let mut used_path: PathBuf = if let Some(relative_path) = relative_path {
-                    relative_path
-                } else {
-                    path.clone()
-                };
                 let mesh = Mesh::new(
                     new_vertices,
                     new_tris,
@@ -335,7 +330,7 @@ impl Scene {
                     Some(material_list),
                     Some(material_index),
                     Some(objs.name),
-                    Some(used_path),
+                    Some(path.clone()),
                 )?;
                 info!(
                     "Scene {self}: Successfully loaded object from {}",

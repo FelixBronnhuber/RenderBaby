@@ -10,24 +10,31 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();
 
+    let mut path_error : bool = false;
     if let Some(directory) = path.parent() {
         //objects
         sc.get_meshes().iter().for_each(|object| {
             let written_path;
 
-            //if path is absolute (obj_import) or else path is relative (scene_import)
+            //if path to obj is in current directory or one directory above
             if let Ok(relative_path) = object
                 .get_path()
                 .unwrap_or_default()
                 .strip_prefix(directory)
             {
                 written_path = relative_path.to_string_lossy().to_string();
+            } else if let Ok(relative_path) = object
+                .get_path()
+                .unwrap_or_default()
+                .strip_prefix(directory
+                    .parent()
+                    .unwrap()){
+                let mut path = PathBuf::from("../");
+                path.push(relative_path);
+                written_path = path.to_string_lossy().to_string();
             } else {
-                written_path = object
-                    .get_path()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string();
+                written_path = String::new();
+                path_error = true;
             }
             objects.push(ParsingObject {
                 name: object.get_name(),
@@ -37,6 +44,9 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 rotation: object.get_rotation().into(),
             });
         });
+        if path_error {
+            return Err(anyhow::Error::msg("Path to an obj cannot be created"));
+        }
 
         //lights
         sc.get_light_sources().iter().for_each(|light_source| {
