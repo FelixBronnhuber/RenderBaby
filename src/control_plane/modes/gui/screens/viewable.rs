@@ -132,12 +132,136 @@ impl Vec3d {
 }
 
 impl ProxyCamera {
-    pub fn handle_wasd_input(
+    pub fn ui_with_settings(
         &mut self,
         ui: &mut Ui,
         scene: &mut Arc<Mutex<Scene>>,
-        delta_time: f32,
+        render_on_change: &mut bool,
     ) -> bool {
+        let mut changed = false;
+
+        ui.collapsing(
+            RichText::new("ℹ Controls & Tips").color(Color32::LIGHT_BLUE),
+            |ui| {
+                ui.label(RichText::new("Viewfinding:").strong());
+                ui.horizontal(|ui| {
+                    ui.label("W/S: Forward/Backward");
+                    ui.label("A/D: Left/Right");
+                });
+                ui.horizontal(|ui| {
+                    ui.label("E/Q: Up/Down");
+                });
+                ui.label("Use 'Rener on change' for better viewfinding");
+            },
+        );
+
+        ui.separator();
+
+        if *render_on_change {
+            ui.label(
+                RichText::new("⚠ This feature affects Performance")
+                    .color(Color32::ORANGE)
+                    .strong(),
+            );
+            ui.label(RichText::new("Reduce samples/resolution for smoother navigation.").small());
+        }
+        ui.checkbox(render_on_change, "Render on change");
+
+        ui.separator();
+
+        // TODO: Get the fov limits from somewhere central as consts.
+        if ui
+            .add(egui::Slider::new(&mut self.pane_width, 0.1..=100.0).text("Pane Width"))
+            .changed()
+        {
+            // TODO MICHAEL:
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_pane_width(self.pane_width);
+            changed = true;
+        }
+
+        if ui
+            .add(egui::Slider::new(&mut self.pane_distance, 0.1..=100.0).text("Pane Distance"))
+            .changed()
+        {
+            // TODO MICHAEL:
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_pane_distance(self.pane_distance);
+            changed = true;
+        }
+
+        ui.horizontal(|ui| {
+            ui.label("Width:");
+            if ui
+                .add(
+                    egui::DragValue::new(&mut self.resolution[0]), //.range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
+                )
+                .changed()
+            {
+                // TODO MICHAEL:
+                scene
+                    .lock()
+                    .unwrap()
+                    .get_camera_mut()
+                    .set_resolution(Resolution {
+                        width: self.resolution[0],
+                        height: self.resolution[1],
+                    });
+                changed = true;
+            }
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Height:");
+            if ui
+                .add(
+                    egui::DragValue::new(&mut self.resolution[1]), //.range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
+                )
+                .changed()
+            {
+                // TODO MICHAEL:
+                scene
+                    .lock()
+                    .unwrap()
+                    .get_camera_mut()
+                    .set_resolution(Resolution {
+                        width: self.resolution[0],
+                        height: self.resolution[1],
+                    });
+                changed = true;
+            }
+        });
+        ui.separator();
+
+        ui.label("Camera Position:");
+        if vec3_ui(ui, &mut self.position) {
+            // TODO MICHAEL:
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_position(self.position.clone().into());
+            changed = true;
+        }
+
+        ui.label("Camera Direction:");
+        if vec3_ui(ui, &mut self.look_at) {
+            // TODO MICHAEL:
+            scene
+                .lock()
+                .unwrap()
+                .get_camera_mut()
+                .set_look_at(self.look_at.clone().into());
+            changed = true;
+        }
+
+        let delta_time = ui.input(|i| i.stable_dt);
         let speed = 5.0;
         let forward = Vec3d {
             x: self.look_at.x - self.position.x,
@@ -196,9 +320,10 @@ impl ProxyCamera {
             scene_lock
                 .get_camera_mut()
                 .set_look_at(self.look_at.clone().into());
-            return true;
+            changed = true;
         }
-        false
+
+        changed
     }
 }
 
@@ -324,8 +449,6 @@ impl Viewable for ProxyCamera {
                 .set_look_at(self.look_at.clone().into());
             changed = true;
         }
-        let delta_time = ui.input(|i| i.stable_dt); // egui provides delta time
-        changed |= self.handle_wasd_input(ui, scene, delta_time);
         changed
     }
 }
