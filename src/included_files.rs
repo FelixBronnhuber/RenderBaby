@@ -33,7 +33,7 @@ impl<'a> AutoPath<'a> {
                 f.path()
                     .extension()
                     .and_then(|ext| ext.to_str())
-                    .map_or(false, |ext| extensions.contains(&ext))
+                    .is_some_and(|ext| extensions.contains(&ext))
             })
             .collect()
     }
@@ -46,7 +46,7 @@ impl<'a> AutoPath<'a> {
                 if let Some(d) = d {
                     AutoPath::get_included_files_with_extensions(d, extensions)
                         .into_iter()
-                        .map(|f| AutoPath::from(f))
+                        .map(AutoPath::from)
                         .collect::<Vec<AutoPath>>()
                 } else {
                     Vec::new()
@@ -223,7 +223,7 @@ fn strip_include_path(path: &Path) -> &Path {
 }
 
 fn get_included_file(path: &Path) -> Option<&'static IncludeFile<'static>> {
-    if is_include_path(&path) {
+    if is_include_path(path) {
         INCLUDED_FILES.get_file(strip_include_path(path))
     } else {
         None
@@ -231,7 +231,7 @@ fn get_included_file(path: &Path) -> Option<&'static IncludeFile<'static>> {
 }
 
 fn get_included_subdir(dir: &Path) -> Option<&'static Dir<'static>> {
-    if is_include_path(&dir) {
+    if is_include_path(dir) {
         INCLUDED_FILES.get_dir(strip_include_path(dir))
     } else {
         None

@@ -214,7 +214,7 @@ impl Scene {
                                         self.textures.entry(tex_key)
                                     {
                                         info!("Loading texture from {:?}", tex_path);
-                                        match image::open(&tex_path.path()) {
+                                        match image::open(tex_path.path()) {
                                             Ok(img) => {
                                                 let img = img.to_rgba8();
                                                 let (width, height) = img.dimensions();
@@ -241,10 +241,7 @@ impl Scene {
                                     mat.ns.into(),
                                     mat.d.into(),
                                     match &mat.map_kd {
-                                        Some(map_kd) => match parent_dir.get_joined(map_kd) {
-                                            None => None,
-                                            Some(auto_path) => Some(auto_path.path().to_string_lossy().to_string()),
-                                        },
+                                        Some(map_kd) => parent_dir.get_joined(map_kd).map(|auto_path| auto_path.path().to_string_lossy().to_string()),
                                         None => None,
                                     }
                                 ))
@@ -356,7 +353,7 @@ impl Scene {
                     "{self}: Parsing obj from {} resulted in error: {error}",
                     auto_path.display()
                 );
-                Err(error.into())
+                Err(error)
             }
         }
     }
