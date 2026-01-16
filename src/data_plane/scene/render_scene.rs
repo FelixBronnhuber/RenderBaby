@@ -25,6 +25,7 @@ use crate::{
             obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
         },
     },
+    included_files::AutoPath,
 };
 use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 
@@ -59,7 +60,14 @@ impl Scene {
     fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
-        let mut directory_path = PathBuf::with_capacity(50);
+
+        let auto_path = match AutoPath::from_buf(path) {
+            Ok(auto_path) => auto_path,
+            Err(e) => return Err(e.into()),
+        };
+
+        let dir_path: AutoPath;
+
         // todo: i want to murder myself when i see this type. please just add a struct like "SceneParseResult"
         #[allow(clippy::type_complexity)]
         let mut scene_and_path: Result<
@@ -67,7 +75,7 @@ impl Scene {
             Error,
         > = Err(Error::msg("uninitialized scene and obj path used"));
         let mut temp_dir = PathBuf::with_capacity(50);
-        if let Some(extension) = path.extension().unwrap_or_default().to_str() {
+        if let Some(extension) = auto_path.path().extension().unwrap_or_default().to_str() {
             match extension {
                 "rscn" => {
                     let randomized_temp_name = format!(
@@ -78,21 +86,27 @@ impl Scene {
                             .subsec_nanos()
                     );
                     temp_dir = std::env::temp_dir().join(PathBuf::from(randomized_temp_name));
-                    let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
+
+                    let mut archive = zip::ZipArchive::new(auto_path.reader()?)?;
                     archive.extract(temp_dir.clone());
                     info!("using temporary directory {:?}", temp_dir);
 
-                    if let Some(temp_directory_prefix) = get_path_prefix(&path) {
-                        directory_path = temp_dir.join(temp_directory_prefix);
+                    if let Some(temp_directory_prefix) = get_path_prefix(auto_path.path()) {
+                        dir_path = AutoPath::from_buf(temp_dir.join(temp_directory_prefix))?;
                     } else {
                         return Err(Error::msg("Scene: invalid rscn prefix"));
                     }
-                    scene_and_path = parse_scene(directory_path.join("scene.json"), None);
+                    scene_and_path = parse_scene(
+                        dir_path
+                            .get_joined("scene.json")
+                            .expect("Could not find any scene.json after extraction of rscn."),
+                    );
                 }
                 "json" => {
-                    directory_path = path.clone();
-                    directory_path.pop();
-                    scene_and_path = parse_scene(path.clone(), None);
+                    dir_path = AutoPath::from(auto_path.path())
+                        .get_popped()
+                        .expect("Could not find any parent directory of scene file.");
+                    scene_and_path = parse_scene(auto_path);
                 }
                 _ => {
                     return Err(Error::msg("Incorrect file extension found"));
@@ -111,7 +125,7 @@ impl Scene {
                 let mut absolute_path = Vec::with_capacity(1);
                 paths
                     .iter()
-                    .for_each(|path| absolute_path.push(directory_path.join(path)));
+                    .for_each(|path| absolute_path.push(dir_path.path().join(path.clone())));
                 for (i, v) in absolute_path.iter().enumerate() {
                     scene.load_object_from_file_relative(
                         v.clone(),

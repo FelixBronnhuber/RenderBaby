@@ -1,6 +1,7 @@
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
+use crate::included_files::AutoPath;
 
 #[derive(Debug)]
 pub enum OBJParseError {
@@ -57,11 +58,17 @@ pub struct OBJParser {
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(path: PathBuf) -> Result<OBJParser, OBJParseError> {
-        let path_clone = path.clone();
-        let data = fs::read_to_string(path_clone.clone())?;
-        let mut directory_path = path_clone;
-        directory_path.pop();
+    pub fn parse(path: AutoPath) -> Result<OBJParser, OBJParseError> {
+        let data = match path.contents() {
+            Ok(data) => data,
+            Err(_) => {
+                return Err(OBJParseError::FileRead(
+                    "could not read file contents".to_string(),
+                ));
+            }
+        };
+        let directory_path = path.get_popped().unwrap();
+
         if data.is_empty() {
             return Err(OBJParseError::FileRead("empty file".to_string()));
         }
@@ -131,18 +138,19 @@ impl OBJParser {
                 Some(("usemtl", usemtl)) => {
                     currentmaterial = usemtl.trim().to_string();
                 }
-                Some(("mtllib", mtllib)) => mtl_path.push(
-                    directory_path
-                        .join(mtllib.trim())
-                        .to_string_lossy()
-                        .to_string(),
-                ),
+                Some(("mtllib", mtllib)) => {
+                    mtl_path.push(match directory_path.get_joined(mtllib.trim()) {
+                        Some(path) => path.path_buf().to_string_lossy().to_string(),
+                        None => String::new(),
+                    })
+                }
 
                 _ => {}
             }
         }
 
         let filename = path
+            .path()
             .file_name()
             .unwrap_or(OsStr::new(" "))
             .to_string_lossy()

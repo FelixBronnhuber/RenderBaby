@@ -10,6 +10,8 @@ use scene_objects::{
 use serde_json::json;
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
+use crate::included_files::AutoPath;
+
 #[allow(dead_code)]
 #[allow(clippy::type_complexity)]
 fn transform_to_scene(
@@ -100,24 +102,9 @@ fn transform_to_scene(
 
 #[allow(clippy::type_complexity)]
 pub fn parse_scene(
-    scene_path: PathBuf,
-    json_string: Option<String>,
+    scene_path: AutoPath,
 ) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
-    let mut _json_content: String = String::new();
-    match json_string {
-        Some(json_string) => {
-            _json_content = json_string;
-        }
-        None => {
-            if !scene_path.is_file() {
-                return Err(anyhow::Error::msg(format!(
-                    "File {} does not exist!",
-                    scene_path.display()
-                )));
-            }
-            _json_content = fs::read_to_string(scene_path).context("file could not be read")?;
-        }
-    }
+    let mut _json_content: String = scene_path.contents()?;
 
     let schema = json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -272,7 +259,7 @@ pub fn parse_scene(
     if jsonschema::is_valid(&schema, &json_value) {
         let read = serde_json::from_str::<SceneFile>(&_json_content)?;
         let res = transform_to_scene(read)?;
-        Result::Ok(res)
+        Ok(res)
     } else {
         Err(anyhow::Error::msg(
             "JSON does not comply with Schema".to_string(),
