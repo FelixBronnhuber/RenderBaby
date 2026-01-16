@@ -126,6 +126,17 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<SceneParseResult> {
             ))
         })
     };
+
+    //set ray_samples
+    if let Some(samples) = file.ray_samples {
+        scene.get_camera_mut().set_ray_samples(samples);
+    }
+
+    //set hash_coloring
+    if let Some(coloring) = file.hash_color {
+        scene.set_color_hash_enabled(coloring);
+    }
+
     Ok(SceneParseResult {
         scene,
         obj_paths,
@@ -165,9 +176,7 @@ pub fn parse_scene(
         "camera",
         "lights"
         ],
-        "additionalProperties": {
-            "$ref": "#/$defs/sphere"
-        },
+        "additionalProperties": true,
 
         "properties": {
             "scene_name": {
@@ -351,6 +360,14 @@ pub fn parse_scene(
                     "transparency": {"type": "number"},
                 },
                 "additionalProperties": false,
+            },
+
+            "ray_samples": {
+                "type": "number",
+            },
+
+            "hash_color": {
+                "type": "boolean",
             }
         }
     });

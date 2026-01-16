@@ -10,6 +10,10 @@ pub struct SceneFile {
     pub background_color: FileColor,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub spheres: Option<Vec<FileSphere>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ray_samples: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash_color: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
