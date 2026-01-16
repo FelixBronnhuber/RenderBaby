@@ -199,21 +199,29 @@ impl Screen for SceneScreen {
                 let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
 
                 ui.label("Camera");
-                proxy_tmp.camera.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.camera.ui(ui, &mut self.model.scene.clone()) {
+                    self.do_render();
+                }
 
                 ui.separator();
 
-                proxy_tmp.misc.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) {
+                    self.do_render();
+                }
 
                 ui.separator();
 
                 ui.label("Objects");
-                proxy_tmp.objects.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) {
+                    self.do_render();
+                }
 
                 ui.separator();
 
                 ui.label("Lights");
-                proxy_tmp.lights.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) {
+                    self.do_render();
+                }
 
                 self.model.proxy = proxy_tmp;
             });
