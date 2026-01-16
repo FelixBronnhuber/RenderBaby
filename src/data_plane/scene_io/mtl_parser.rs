@@ -1,37 +1,5 @@
-use std::fs;
-#[derive(Debug)]
-pub enum MTLParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-impl std::fmt::Display for MTLParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MTLParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            MTLParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            MTLParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            MTLParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for MTLParseError {}
-impl From<std::io::Error> for MTLParseError {
-    fn from(e: std::io::Error) -> Self {
-        MTLParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for MTLParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        MTLParseError::ParseInteger(e)
-    }
-}
-impl From<std::num::ParseFloatError> for MTLParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        MTLParseError::ParseFloat(e)
-    }
-}
+use crate::included_files::AutoPath;
+
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct MTLParser {
@@ -46,14 +14,15 @@ pub struct MTLParser {
     pub map_kd: Option<String>,
     pub bump: Option<String>,
 }
+
 impl MTLParser {
-    pub fn parse(path: &str) -> Result<Vec<MTLParser>, MTLParseError> {
-        let data = fs::read_to_string(path)?;
+    pub fn parse(path: AutoPath) -> anyhow::Result<Vec<MTLParser>> {
+        let data = path.contents()?;
         if data.is_empty() {
-            return Err(MTLParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("MTL file is empty!"));
         }
 
-        let mut returnmats = Vec::new();
+        let mut return_mats = Vec::new();
         let mut name: String = String::with_capacity(2);
         let mut ka: Vec<f32> = Vec::with_capacity(10);
         let mut kd: Vec<f32> = Vec::with_capacity(10);
@@ -71,7 +40,7 @@ impl MTLParser {
                 let line = l.trim();
                 if line.starts_with("newmtl") {
                     if !name.is_empty() {
-                        returnmats.push({
+                        return_mats.push({
                             MTLParser {
                                 name: name.clone(),
                                 ka: ka.clone(),
@@ -163,7 +132,7 @@ impl MTLParser {
                 }
             }
         }
-        returnmats.push({
+        return_mats.push({
             MTLParser {
                 name: name.clone(),
                 ka: ka.clone(),
@@ -177,6 +146,6 @@ impl MTLParser {
                 bump: bump.clone(),
             }
         });
-        Ok(returnmats)
+        Ok(return_mats)
     }
 }

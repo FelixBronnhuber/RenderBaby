@@ -1,6 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
-use anyhow::Context;
 use glam::Vec3;
 use scene_objects::{
     camera,

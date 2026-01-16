@@ -13,6 +13,7 @@ const INCLUDED_PREFIX: &str = "$INCLUDED/";
 pub trait ReadSeek: Read + Seek {}
 impl<T: Read + Seek> ReadSeek for T {}
 
+#[derive(Clone, Debug)]
 pub enum AutoPath<'a> {
     Included(
         &'a Path,
@@ -39,56 +40,13 @@ impl<'a> AutoPath<'a> {
 }
 
 impl<'a> AutoPath<'a> {
-    pub fn from(path: &Path) -> AutoPath<'_> {
-        if is_included_and_exists(path) {
-            let file = get_included_file(path);
-            let dir = get_included_subdir(path);
-            AutoPath::Included(path, dir, file)
-        } else {
-            AutoPath::External(path.to_path_buf())
-        }
-    }
-
-    pub fn from_included_file(file: &'static IncludeFile<'static>) -> AutoPath<'static> {
-        AutoPath::Included(strip_include_path(file.path()), None, Some(file))
-    }
-
-    pub fn from_included_dir(dir: &'static Dir<'static>) -> AutoPath<'static> {
-        AutoPath::Included(strip_include_path(dir.path()), Some(dir), None)
-    }
-
-    pub fn from_buf(path: PathBuf) -> anyhow::Result<AutoPath<'static>> {
-        if is_include_path(&path) {
-            let file = get_included_file(&path);
-            let dir = get_included_subdir(&path);
-            let path = if let Some(file) = file {
-                file.path()
-            } else if let Some(dir) = dir {
-                dir.path()
-            } else {
-                return Err(anyhow::Error::msg(format!(
-                    "Path {} is neither included nor exists!",
-                    path.display()
-                )));
-            };
-            Ok(AutoPath::Included(path, dir, file))
-        } else if path.exists() {
-            Ok(AutoPath::External(path.to_path_buf()))
-        } else {
-            Err(anyhow::Error::msg(format!(
-                "Path {} is neither included nor exists!",
-                path.display()
-            )))
-        }
-    }
-
     pub fn all_from_extensions(&self, extensions: &[&str]) -> Vec<AutoPath<'static>> {
         match self {
             AutoPath::Included(_, d, _) => {
                 if let Some(d) = d {
                     AutoPath::get_included_files_with_extensions(d, extensions)
                         .into_iter()
-                        .map(|f| AutoPath::from_included_file(f))
+                        .map(|f| AutoPath::from(f))
                         .collect::<Vec<AutoPath>>()
                 } else {
                     Vec::new()
@@ -130,7 +88,7 @@ impl<'a> AutoPath<'a> {
         }
     }
 
-    pub fn display(&self) -> Display {
+    pub fn display(&self) -> Display<'_> {
         self.path().display()
     }
 
@@ -163,7 +121,9 @@ impl<'a> AutoPath<'a> {
 
     pub fn get_popped(&self) -> Option<AutoPath<'a>> {
         match self {
-            AutoPath::Included(path, _, _) => path.parent().map(|p| AutoPath::from(p)),
+            AutoPath::Included(path, _, _) => path
+                .parent()
+                .map(|p| AutoPath::try_from(p.to_path_buf()).unwrap()),
             AutoPath::External(path) => {
                 let mut new_path = path.clone();
                 if new_path.pop() {
@@ -176,16 +136,74 @@ impl<'a> AutoPath<'a> {
     }
 
     pub fn get_joined(&self, other: &str) -> Option<AutoPath<'a>> {
-        match self {
-            AutoPath::Included(path, _, _) => {
-                let joined = path.join(other);
-                AutoPath::from_buf(joined).ok()
-            }
-            AutoPath::External(path) => {
-                let joined = path.join(other);
-                AutoPath::from_buf(joined).ok()
-            }
+        let joined = self.path().join(other);
+        AutoPath::try_from(joined).ok()
+    }
+}
+
+impl<'a> From<&'a Path> for AutoPath<'a> {
+    fn from(path: &'a Path) -> Self {
+        if is_included_and_exists(path) {
+            let file = get_included_file(path);
+            let dir = get_included_subdir(path);
+            AutoPath::Included(path, dir, file)
+        } else {
+            AutoPath::External(path.to_path_buf())
         }
+    }
+}
+
+impl<'a> From<&'static IncludeFile<'static>> for AutoPath<'a> {
+    fn from(file: &'static IncludeFile<'static>) -> Self {
+        AutoPath::Included(file.path(), None, Some(file))
+    }
+}
+
+impl<'a> From<&'static Dir<'static>> for AutoPath<'a> {
+    fn from(dir: &'static Dir<'static>) -> Self {
+        AutoPath::Included(dir.path(), Some(dir), None)
+    }
+}
+
+impl<'a> TryFrom<PathBuf> for AutoPath<'a> {
+    type Error = anyhow::Error;
+    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
+        if is_include_path(&path) {
+            let file = get_included_file(&path);
+            let dir = get_included_subdir(&path);
+            let path = if let Some(file) = file {
+                file.path()
+            } else if let Some(dir) = dir {
+                dir.path()
+            } else {
+                return Err(anyhow::Error::msg(format!(
+                    "Path {} is neither included nor exists!",
+                    path.display()
+                )));
+            };
+            Ok(AutoPath::Included(path, dir, file))
+        } else if path.exists() {
+            Ok(AutoPath::External(path.to_path_buf()))
+        } else {
+            Err(anyhow::Error::msg(format!(
+                "Path {} is neither included nor exists!",
+                path.display()
+            )))
+        }
+    }
+}
+
+impl TryFrom<String> for AutoPath<'static> {
+    type Error = anyhow::Error;
+    fn try_from(path: String) -> Result<Self, Self::Error> {
+        AutoPath::try_from(PathBuf::from(path))
+    }
+}
+
+impl TryFrom<&str> for AutoPath<'static> {
+    type Error = anyhow::Error;
+    fn try_from(path: &str) -> Result<Self, Self::Error> {
+        AutoPath::try_from(PathBuf::from(path))
     }
 }
 

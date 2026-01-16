@@ -9,6 +9,7 @@ use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
+use crate::included_files::AutoPath;
 
 static FRAME_DURATION_FPS24: Duration = Duration::from_millis(1000 / 24);
 
@@ -125,13 +126,24 @@ impl Screen for SceneScreen {
                 if ui.button("Import Obj").clicked() {
                     self.file_dialog_obj.pick_file(move |res| {
                         if let Ok(path) = res {
-                            let res = scene_clone.lock().unwrap().load_object_from_file(path);
-                            match res {
-                                Ok(_) => {
-                                    proxy_dirty.store(true, std::sync::atomic::Ordering::SeqCst);
+                            match AutoPath::try_from(path) {
+                                Ok(path) => {
+                                    let res =
+                                        scene_clone.lock().unwrap().load_object_from_file(path);
+                                    match res {
+                                        Ok(_) => {
+                                            proxy_dirty
+                                                .store(true, std::sync::atomic::Ordering::SeqCst);
+                                        }
+                                        Err(e) => {
+                                            message_pipe_clone.push_message(Message::from_error(e))
+                                        }
+                                    };
                                 }
-                                Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
-                            };
+                                Err(e) => {
+                                    log::warn!("Obj fixture not found. {:?}.", e.to_string());
+                                }
+                            }
                         }
                     });
                 }

@@ -1,43 +1,5 @@
 use std::ffi::OsStr;
-use std::fs;
-use std::path::PathBuf;
 use crate::included_files::AutoPath;
-
-#[derive(Debug)]
-pub enum OBJParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-
-impl std::fmt::Display for OBJParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OBJParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            OBJParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            OBJParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            OBJParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for OBJParseError {}
-impl From<std::io::Error> for OBJParseError {
-    fn from(e: std::io::Error) -> Self {
-        OBJParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for OBJParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        OBJParseError::ParseInteger(e)
-    }
-}
-
-impl From<std::num::ParseFloatError> for OBJParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        OBJParseError::ParseFloat(e)
-    }
-}
 
 #[derive(Debug)]
 pub struct FaceLine {
@@ -58,19 +20,12 @@ pub struct OBJParser {
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(path: AutoPath) -> Result<OBJParser, OBJParseError> {
-        let data = match path.contents() {
-            Ok(data) => data,
-            Err(_) => {
-                return Err(OBJParseError::FileRead(
-                    "could not read file contents".to_string(),
-                ));
-            }
-        };
+    pub fn parse(path: AutoPath) -> anyhow::Result<OBJParser> {
+        let data = path.contents()?;
         let directory_path = path.get_popped().unwrap();
 
         if data.is_empty() {
-            return Err(OBJParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("OBJ file is empty!"));
         }
 
         let mut v_numarr = Vec::with_capacity(30);

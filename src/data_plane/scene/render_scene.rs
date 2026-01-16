@@ -3,7 +3,6 @@ use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
 use std::fs;
-use std::fs::File;
 use std::time::{SystemTime, UNIX_EPOCH};
 use egui::TextBuffer;
 use glam::Vec3;
@@ -57,14 +56,9 @@ fn get_path_prefix(path: &Path) -> Option<&str> {
 
 #[allow(unused)]
 impl Scene {
-    fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
+    fn _load_scene_from_path(auto_path: AutoPath) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
-        info!("Scene: Loading new scene from {}", path.display());
-
-        let auto_path = match AutoPath::from_buf(path) {
-            Ok(auto_path) => auto_path,
-            Err(e) => return Err(e.into()),
-        };
+        info!("Scene: Loading new scene from {}", auto_path.display());
 
         let dir_path: AutoPath;
 
@@ -92,7 +86,7 @@ impl Scene {
                     info!("using temporary directory {:?}", temp_dir);
 
                     if let Some(temp_directory_prefix) = get_path_prefix(auto_path.path()) {
-                        dir_path = AutoPath::from_buf(temp_dir.join(temp_directory_prefix))?;
+                        dir_path = AutoPath::try_from(temp_dir.join(temp_directory_prefix))?;
                     } else {
                         return Err(Error::msg("Scene: invalid rscn prefix"));
                     }
@@ -106,7 +100,7 @@ impl Scene {
                     dir_path = AutoPath::from(auto_path.path())
                         .get_popped()
                         .expect("Could not find any parent directory of scene file.");
-                    scene_and_path = parse_scene(auto_path);
+                    scene_and_path = parse_scene(auto_path.clone());
                 }
                 _ => {
                     return Err(Error::msg("Incorrect file extension found"));
@@ -123,17 +117,24 @@ impl Scene {
                 let translation = scene_and_path.3;
                 let scale = scene_and_path.4;
                 let mut absolute_path = Vec::with_capacity(1);
-                paths
-                    .iter()
-                    .for_each(|path| absolute_path.push(dir_path.path().join(path.clone())));
-                for (i, v) in absolute_path.iter().enumerate() {
-                    scene.load_object_from_file_relative(
-                        v.clone(),
-                        PathBuf::from(paths[i].clone()),
-                        rotation[i],
-                        translation[i],
-                        scale[i],
-                    )?;
+                paths.iter().for_each(|path| {
+                    absolute_path.push(AutoPath::try_from(dir_path.path().join(path.clone())))
+                });
+                for (i, path_res) in absolute_path.iter().enumerate() {
+                    match path_res {
+                        Ok(path) => {
+                            scene.load_object_from_file_relative(
+                                path.clone(),
+                                PathBuf::from(paths[i].clone()),
+                                rotation[i],
+                                translation[i],
+                                scale[i],
+                            )?;
+                        }
+                        Err(e) => {
+                            error!("{}", e);
+                        }
+                    }
                 }
                 if !temp_dir.as_os_str().is_empty() {
                     info!("removing temporary directory: {:?}", temp_dir);
@@ -174,17 +175,17 @@ impl Scene {
 
     pub fn parse_obj_to_mesh(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: Option<PathBuf>,
-    ) -> Result<Mesh, Error> {
+    ) -> anyhow::Result<Mesh> {
         //! Adds new object from a obj file at path
         //! ## Parameter
         //! 'path': Path to the obj file
         //! ## Returns
         //! Result of either a reference to the new object or an error
-        let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
-        info!("{self}: Loading object from {}", path.display());
-        let result = OBJParser::parse(path.clone());
+        let parent_dir = auto_path.get_popped().expect("");
+        info!("{self}: Loading object from {}", auto_path.display());
+        let result = OBJParser::parse(auto_path.clone());
 
         match result {
             Ok(objs) => {
@@ -193,20 +194,27 @@ impl Scene {
 
                 if let Some(obj) = objs.material_path {
                     for i in obj {
-                        let mtl_path = parent_dir.join(&i);
-                        let parsed = mtl_parser::MTLParser::parse(mtl_path.to_str().unwrap_or(&i));
+                        let mtl_path = parent_dir.get_joined(&i);
+                        let parsed = mtl_parser::MTLParser::parse(
+                            mtl_path.unwrap_or(AutoPath::try_from(i)?),
+                        );
                         match parsed {
                             Ok(parsed) => parsed.iter().for_each(|mat| {
                                 // Load texture if present
                                 if let Some(tex_name) = &mat.map_kd {
-                                    let tex_path = parent_dir.join(tex_name);
-                                    let tex_key = tex_path.to_string_lossy().to_string();
+                                    let tex_path_opt = parent_dir.get_joined(tex_name);
+                                    if tex_path_opt.is_none() {
+                                        error!("{self}: Could not find texture {:?} referenced in material {:?}", tex_name, mat.name);
+                                        return;
+                                    }
+                                    let tex_path = tex_path_opt.unwrap();
+                                    let tex_key = tex_path.path().to_string_lossy().to_string();
 
                                     if let std::collections::hash_map::Entry::Vacant(e) =
                                         self.textures.entry(tex_key)
                                     {
                                         info!("Loading texture from {:?}", tex_path);
-                                        match image::open(&tex_path) {
+                                        match image::open(&tex_path.path()) {
                                             Ok(img) => {
                                                 let img = img.to_rgba8();
                                                 let (width, height) = img.dimensions();
@@ -224,7 +232,6 @@ impl Scene {
                                         }
                                     }
                                 }
-
                                 material_list.push(Material::new(
                                     mat.name.clone(),
                                     mat.ka.iter().map(|a| *a as f64).collect(),
@@ -233,13 +240,17 @@ impl Scene {
                                     mat.ke.iter().map(|a| *a as f64).collect(),
                                     mat.ns.into(),
                                     mat.d.into(),
-                                    mat.map_kd.clone().map(|name| {
-                                        parent_dir.join(name).to_string_lossy().to_string()
-                                    }),
+                                    match &mat.map_kd {
+                                        Some(map_kd) => match parent_dir.get_joined(map_kd) {
+                                            None => None,
+                                            Some(auto_path) => Some(auto_path.path().to_string_lossy().to_string()),
+                                        },
+                                        None => None,
+                                    }
                                 ))
                             }),
                             Err(error) => {
-                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
+                                info!("{self}: Parsing mtl resulted in error: {error}");
                             }
                         }
                     }
@@ -318,7 +329,7 @@ impl Scene {
                 let mut used_path: PathBuf = if let Some(relative_path) = relative_path {
                     relative_path
                 } else {
-                    path.clone()
+                    auto_path.path_buf()
                 };
                 let mesh = Mesh::new(
                     new_vertices,
@@ -335,7 +346,7 @@ impl Scene {
                 )?;
                 info!(
                     "Scene {self}: Successfully loaded object from {}",
-                    path.display()
+                    auto_path.display()
                 );
                 Ok(mesh)
             }
@@ -343,28 +354,28 @@ impl Scene {
             Err(error) => {
                 error!(
                     "{self}: Parsing obj from {} resulted in error: {error}",
-                    path.display()
+                    auto_path.display()
                 );
                 Err(error.into())
             }
         }
     }
 
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path, None)?;
+    pub fn load_object_from_file(&mut self, auto_path: AutoPath) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(auto_path, None)?;
         self.add_mesh(mesh);
         Ok(())
     }
 
     fn load_object_from_file_relative(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: PathBuf,
         translation: Vec3,
         rotation: Vec3,
         scale: Vec3,
     ) -> Result<(), Error> {
-        let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        let mut mesh = self.parse_obj_to_mesh(auto_path, Some(relative_path))?;
         mesh.scale(scale.x);
         mesh.rotate(rotation);
         mesh.translate(translation);
@@ -374,7 +385,7 @@ impl Scene {
 
     pub fn load_object_from_file_transformed(
         &mut self,
-        path: PathBuf,
+        path: AutoPath,
         translation: Vec3,
         rotation: Vec3,
         scale: f32,
@@ -389,33 +400,19 @@ impl Scene {
 
     // LOAD SCENES
 
-    pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
-        let mut scene = Self::_load_scene_from_path(path.clone());
+    pub fn load_scene_from_path(auto_path: AutoPath, detached: bool) -> anyhow::Result<Scene> {
+        let mut scene = Self::_load_scene_from_path(auto_path.clone());
         match scene {
             Ok(mut scene) => {
-                if let Some(extension) = path.extension()
+                if let Some(extension) = auto_path.path().extension()
                     && extension.to_string_lossy().as_str() != "rscn"
                     && !detached
+                    && matches!(auto_path, AutoPath::External { .. })
                 {
-                    scene.output_path = Some(path);
+                    scene.output_path = Some(auto_path.path_buf());
                 } else {
                     scene.output_path = None;
                 }
-                Ok(scene)
-            }
-            Err(error) => Err(error),
-        }
-    }
-
-    pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
-        let scene = parse_scene(PathBuf::new(), Some(json_string));
-        match scene {
-            Ok(scene_and_values) => {
-                let mut scene = scene_and_values.0;
-                let paths = scene_and_values.1;
-                let rotation = scene_and_values.2;
-                let translation = scene_and_values.3;
-                let scale = scene_and_values.4;
                 Ok(scene)
             }
             Err(error) => Err(error),
