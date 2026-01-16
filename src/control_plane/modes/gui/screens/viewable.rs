@@ -84,6 +84,122 @@ fn color_ui(ui: &mut Ui, color: &mut Color) -> bool {
     changed
 }
 
+impl Vec3d {
+    pub fn normalize(&self) -> Self {
+        let len = self.length();
+        if len > 0.0 {
+            Vec3d {
+                x: self.x / len,
+                y: self.y / len,
+                z: self.z / len,
+            }
+        } else {
+            Vec3d {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }
+        }
+    }
+
+    pub fn length(&self) -> f32 {
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+
+    pub fn cross(&self, other: &Vec3d) -> Vec3d {
+        Vec3d {
+            x: self.y * other.z - self.z * other.y,
+            y: self.z * other.x - self.x * other.z,
+            z: self.x * other.y - self.y * other.x,
+        }
+    }
+
+    pub fn scale(&self, scalar: f32) -> Vec3d {
+        Vec3d {
+            x: self.x * scalar,
+            y: self.y * scalar,
+            z: self.z * scalar,
+        }
+    }
+
+    pub fn add(&self, other: &Vec3d) -> Vec3d {
+        Vec3d {
+            x: self.x + other.x,
+            y: self.y + other.y,
+            z: self.z + other.z,
+        }
+    }
+}
+
+impl ProxyCamera {
+    pub fn handle_wasd_input(
+        &mut self,
+        ui: &mut Ui,
+        scene: &mut Arc<Mutex<Scene>>,
+        delta_time: f32,
+    ) {
+        let speed = 5.0;
+        let forward = Vec3d {
+            x: self.look_at.x - self.position.x,
+            y: self.look_at.y - self.position.y,
+            z: self.look_at.z - self.position.z,
+        }
+        .normalize();
+        let up = Vec3d {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        };
+        let right = forward.cross(&up).normalize();
+        let move_speed = speed * delta_time;
+        let mut movement = Vec3d {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+
+        // Check for keys
+        if ui.input(|i| i.key_down(egui::Key::W)) {
+            movement = movement.add(&forward.scale(move_speed));
+        }
+        if ui.input(|i| i.key_down(egui::Key::S)) {
+            movement = movement.add(&forward.scale(-move_speed));
+        }
+        if ui.input(|i| i.key_down(egui::Key::A)) {
+            movement = movement.add(&right.scale(move_speed));
+        }
+        if ui.input(|i| i.key_down(egui::Key::D)) {
+            movement = movement.add(&right.scale(-move_speed));
+        }
+        if ui.input(|i| i.key_down(egui::Key::PageUp)) {
+            movement.y += move_speed;
+        }
+        if ui.input(|i| i.key_down(egui::Key::PageDown)) {
+            movement.y -= move_speed;
+        }
+
+        // Apply movement if any key was pressed
+        if movement.length() > 0.001 {
+            self.position.x += movement.x;
+            self.position.y += movement.y;
+            self.position.z += movement.z;
+
+            self.look_at.x += movement.x;
+            self.look_at.y += movement.y;
+            self.look_at.z += movement.z;
+
+            // Update the actual scene camera
+            let mut scene_lock = scene.lock().unwrap();
+            scene_lock
+                .get_camera_mut()
+                .set_position(self.position.clone().into());
+            scene_lock
+                .get_camera_mut()
+                .set_look_at(self.look_at.clone().into());
+        }
+    }
+}
+
 impl Viewable for ProxyCamera {
     type RealSceneObject = Arc<Mutex<Scene>>;
 
@@ -173,6 +289,8 @@ impl Viewable for ProxyCamera {
                 .get_camera_mut()
                 .set_look_at(self.look_at.clone().into());
         }
+        let delta_time = ui.input(|i| i.stable_dt); // egui provides delta time
+        self.handle_wasd_input(ui, scene, delta_time);
     }
 }
 
