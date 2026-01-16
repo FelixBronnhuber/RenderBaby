@@ -1,0 +1,74 @@
+{
+  "scene_name": "scene",
+  "objects": [
+    {
+      "name": "ferris3d_v1.0.obj",
+      "path": "ferris_high_poly\\ferris3d_v1.0.obj",
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "translation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    }
+  ],
+  "lights": [
+    {
+      "name": "Light",
+      "type": "point",
+      "position": {
+        "x": 0.0,
+        "y": 2.0,
+        "z": 0.0
+      },
+      "luminosity": 100.0,
+      "color": {
+        "r": 1.0,
+        "g": 1.0,
+        "b": 1.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -1.0
+      }
+    }
+  ],
+  "camera": {
+    "position": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 3.0
+    },
+    "look_at": {
+      "x": 0.0,
+      "y": 1.2,
+      "z": 1.0
+    },
+    "up": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+    "pane_distance": 35.0,
+    "pane_width": 36.0,
+    "resolution": {
+      "x": 512,
+      "y": 512
+    }
+  },
+  "background_color": {
+    "r": 1.0,
+    "g": 1.0,
+    "b": 1.0
+  }
+}
