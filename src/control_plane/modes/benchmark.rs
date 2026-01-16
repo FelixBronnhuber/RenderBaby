@@ -30,8 +30,7 @@ impl BenchmarkApp {
     }
     fn benchmark(sample_count: u32, resolution: Resolution) -> std::time::Duration {
         let mut scene =
-            Scene::load_scene_from_path("fixtures/benchmark.json".parse().unwrap(), true)
-                .unwrap();
+            Scene::load_scene_from_path("fixtures/benchmark.json".parse().unwrap(), true).unwrap();
         scene.render().expect("Render failed");
         scene.get_camera_mut().set_resolution(resolution);
         scene.get_camera_mut().set_ray_samples(sample_count);
