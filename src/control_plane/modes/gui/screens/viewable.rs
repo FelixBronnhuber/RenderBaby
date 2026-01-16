@@ -353,10 +353,6 @@ impl Viewable for ProxyLight {
         if vec3_ui(ui, &mut self.position) {
             light.set_position(self.position.clone().into());
         }
-        ui.label("Rotation:");
-        if vec3_ui(ui, &mut self.rotation) {
-            light.rotate(self.rotation.clone().into()); // TODO: this is probably wrong!
-        }
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
             light.set_color(self.color.clone().into());
