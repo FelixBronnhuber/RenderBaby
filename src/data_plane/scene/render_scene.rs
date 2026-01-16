@@ -156,9 +156,9 @@ impl Scene {
         }
     }
 
-    pub fn export_scene(&self, path: PathBuf, extra_info_export: bool) -> Result<(), Error> {
+    pub fn export_scene(&self, path: PathBuf, export_misc: bool) -> Result<(), Error> {
         info!("{self}: Exporting scene");
-        let result = scene_exporter::serialize_scene(path.clone(), self, extra_info_export);
+        let result = scene_exporter::serialize_scene(path.clone(), self, export_misc);
         match result {
             Err(error) => {
                 error!(
@@ -414,9 +414,9 @@ impl Scene {
         }
     }
 
-    pub fn save(&mut self, extra_info_export: bool) -> anyhow::Result<()> {
+    pub fn save(&mut self, export_misc: bool) -> anyhow::Result<()> {
         if let Some(output_path) = self.output_path.clone() {
-            self.export_scene(output_path, extra_info_export)?;
+            self.export_scene(output_path, export_misc)?;
             Ok(())
         } else {
             Err(anyhow::Error::msg(

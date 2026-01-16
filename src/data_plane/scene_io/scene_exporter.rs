@@ -5,7 +5,7 @@ use scene_objects::light_source::*;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_io::scene_io_objects::*;
 
-pub fn serialize_scene(path: PathBuf, sc: &Scene, extra_info_export: bool) -> anyhow::Result<()> {
+pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::Result<()> {
     let mut objects: Vec<ParsingObject> = Vec::with_capacity(2);
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();
@@ -130,9 +130,9 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, extra_info_export: bool) -> an
                     b: bg[2],
                     a: None,
                 },
-            spheres: if extra_info_export { Some(file_spheres) } else { None },
-            ray_samples: if extra_info_export { Some(sc.get_camera().get_ray_samples()) } else { None },
-            hash_color: if extra_info_export { Some(sc.get_color_hash_enabled()) } else { None },
+            spheres: if export_misc { Some(file_spheres) } else { None },
+            ray_samples: if export_misc { Some(sc.get_camera().get_ray_samples()) } else { None },
+            hash_color: if export_misc { Some(sc.get_color_hash_enabled()) } else { None },
         };
         let output = File::create(path);
         match output {
