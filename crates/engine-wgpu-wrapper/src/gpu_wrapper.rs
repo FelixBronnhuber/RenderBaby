@@ -11,16 +11,30 @@ use pipeline::ComputePipeline;
 
 const SAMPLES_PER_PASS: u32 = 1;
 
+/// Helper struct for managing progressive rendering state.
+///
+/// It tracks the current pass, total passes, and sample counts to allow splitting
+/// a heavy rendering task into smaller, manageable work units. This struct is passed
+/// to the GPU as a uniform.
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct ProgressiveRenderHelper {
+    /// Total number of passes required to complete the render.
     pub total_passes: u32,
+    /// The current pass index (0-based).
     pub current_pass: u32,
+    /// Total samples to be accumulated.
     pub total_samples: u32,
+    /// Number of samples computed per pass.
     pub samples_per_pass: u32,
 }
 
 impl ProgressiveRenderHelper {
+    /// Creates a new helper instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `total_samples` - The total number of samples desired for the final image.
     pub fn new(total_samples: u32) -> Self {
         Self {
             total_passes: (total_samples.div_ceil(SAMPLES_PER_PASS)),
@@ -30,6 +44,7 @@ impl ProgressiveRenderHelper {
         }
     }
 
+    /// Updates the total sample count and recalculates the total passes.
     pub fn update(&mut self, total_samples: u32) -> Self {
         self.total_samples = total_samples;
         self.total_passes = self.total_samples.div_ceil(self.samples_per_pass);
@@ -37,6 +52,11 @@ impl ProgressiveRenderHelper {
     }
 }
 
+/// The main interface for WGPU-based rendering engines.
+///
+/// `GpuWrapper` orchestrates the interaction between the `RenderConfig` and the GPU.
+/// It manages the lifecycle of GPU resources (buffers, bind groups), the compute pipeline,
+/// and the execution of compute passes.
 pub struct GpuWrapper {
     buffer_wrapper: GpuBuffers,
     bind_group_wrapper: BindGroup,
@@ -50,7 +70,15 @@ pub struct GpuWrapper {
 }
 
 impl GpuWrapper {
-    ///initializes shared Config, deligated to Sub modules
+    /// Initializes the `GpuWrapper` and its sub-components.
+    ///
+    /// This delegates to `GpuDevice`, `GpuBuffers`, `BindGroupLayout`, and `ComputePipeline`
+    /// to set up the full rendering context.
+    ///
+    /// # Arguments
+    ///
+    /// * `rc` - The initial render configuration. Must contain `Change::Create` for all required fields.
+    /// * `path` - The path to the shader source file.
     pub fn new(rc: RenderConfig, path: &str) -> Result<Self> {
         let gpu = GpuDevice::new().unwrap();
         let initial_uniforms = match rc.uniforms {
@@ -76,6 +104,15 @@ impl GpuWrapper {
         })
     }
 
+    /// Updates the GPU resources based on the new render configuration.
+    ///
+    /// This method handles:
+    /// - Resizing buffers if the resolution changes.
+    /// - Updating, deleting, or recreating buffers for scene objects (spheres, meshes, etc.).
+    /// - Recreating the bind group if buffers are changed.
+    ///
+    /// It differentiates between the first initialization (where `Create` is expected)
+    /// and subsequent updates (where `Update`, `Keep`, or `Delete` are used).
     pub fn update(&mut self, new_rc: RenderConfig) -> Result<()> {
         if !self.initialized {
             // First render: require Create for all fields
@@ -321,6 +358,12 @@ impl GpuWrapper {
         &mut self.prh
     }
 
+    /// Dispatches a single compute pass for progressive rendering.
+    ///
+    /// # Arguments
+    ///
+    /// * `pass_index` - The current pass number.
+    /// * `total_passes` - The total number of passes.
     pub fn dispatch_compute_progressive(&self, pass_index: u32, total_passes: u32) -> Result<()> {
         let mut encoder = self
             .device
@@ -358,6 +401,10 @@ impl GpuWrapper {
         Ok(())
     }
 
+    /// Dispatches all compute passes sequentially.
+    ///
+    /// This is a blocking operation that executes the full rendering process.
+    /// It clears the accumulation buffer before starting.
     pub fn dispatch_compute(&mut self) -> Result<()> {
         self.queue.write_buffer(
             &self.buffer_wrapper.accumulation,
@@ -380,6 +427,10 @@ impl GpuWrapper {
         Ok(())
     }
 
+    /// Reads the rendered pixels from the staging buffer.
+    ///
+    /// This method maps the staging buffer, reads the data, and returns it as a `Vec<u8>`.
+    /// The returned data is in RGBA8 format (although the alpha channel is manually set to 255).
     pub fn read_pixels(&self) -> Result<Vec<u8>> {
         let buffer_slice = self.buffer_wrapper.staging.slice(..);
         let (sender, receiver) = std::sync::mpsc::channel();
@@ -411,6 +462,10 @@ impl GpuWrapper {
         Ok(result)
     }
 
+    /// Updates the data in the GPU buffers with the values from the current `RenderConfig`.
+    ///
+    /// This method writes the CPU-side data to the corresponding GPU buffers.
+    /// It should be called before dispatching compute shaders if the scene has changed.
     pub fn update_uniforms(&self) {
         let mut uniforms = match &self.rc.uniforms {
             Change::Create(u) | Change::Update(u) => *u,

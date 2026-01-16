@@ -15,12 +15,12 @@ glam = "0.30.9"
 engine-config = { version = "0.1.0", path = "crates/engine-config" }
 engine-pathtracer = { version = "0.1.0", path = "crates/engine-pathtracer" }
 engine-raytracer = { version = "0.1.0", path = "crates/engine-raytracer" }
-engine-bvh = {path = "crates/engine-bvh"}
+engine-bvh = { path = "crates/engine-bvh" }
 view-wrappers = { path = "crates/view-wrappers" }
 engine-wgpu-wrapper = { version = "0.1.0", path = "crates/engine-wgpu-wrapper" }
 log-buffer = { path = "crates/log-buffer" }
 clap = { version = "4.4.7", features = ["derive"] }
-scene-objects = { path = "crates/scene-objects"}
+scene-objects = { path = "crates/scene-objects" }
 image = "0.25.9"
 eframe-elements = { path = "crates/eframe-elements" }
 include_dir = "0.7.4"
@@ -40,5 +40,7 @@ members = [
     "crates/command-stack",
     "crates/log-buffer",
     "crates/scene-objects",
-    "crates/eframe-elements", "crates/engine-bvh", "crates/frame-buffer",
+    "crates/eframe-elements",
+    "crates/engine-bvh",
+    "crates/frame-buffer",
 ]
