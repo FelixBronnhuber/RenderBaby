@@ -102,9 +102,12 @@ fn camera_to_render_uniforms(
         bvh_node_count,
         bvh_triangle_count,
         RenderUniforms::default().ground_height, //Replace with correct values from GUI
-        RenderUniforms::default().ground_enabled,
+        RenderUniforms::GROUND_ENABLED,
+        RenderUniforms::CHECKERBOARD_ENABLED,
         RenderUniforms::default().sky_color,
         RenderUniforms::default().max_depth,
+        RenderUniforms::default().checkerboard_color_1,
+        RenderUniforms::default().checkerboard_color_2,
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)

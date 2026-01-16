@@ -28,9 +28,13 @@ struct Uniforms {
     bvh_root: u32,
     ground_height: f32,
     ground_enabled: u32,
-    _pad: u32,
+    checkerboard_enabled: u32,
     sky_color: vec3<f32>,
     max_depth: u32,
+    checkerboard_color_1: vec3<f32>,
+    _pad1: u32,
+    checkerboard_color_2: vec3<f32>,
+    _pad2: u32,
 };
 
 struct Sphere {
@@ -148,15 +152,20 @@ fn color_map(color: vec3<f32>) -> u32 {
 
 fn sample_texture(index: i32, uv: vec2<f32>) -> vec3<f32> {
     if (index < 0) {
-        // Missing texture pattern (Magenta/Black checkerboard)
-        let n = 10.0;
-        let u2 = i32(floor(uv.x * n));
-        let v2 = i32(floor(uv.y * n));
-        if ((u2 + v2) % 2 == 0) {
-            return vec3<f32>(0.0); // Black
+        if (uniforms.checkerboard_enabled > 0){
+            // Missing texture pattern (Magenta/Black checkerboard)
+            let n = 10.0;
+            let u2 = i32(floor(uv.x * n));
+            let v2 = i32(floor(uv.y * n));
+            if ((u2 + v2) % 2 == 0) {
+                return uniforms.checkerboard_color_1;
+            } else {
+                return uniforms.checkerboard_color_2;
+            }
         } else {
-            return vec3<f32>(1.0, 0.0, 1.0); // Magenta
+            return vec3(1.0, 1.0, 1.0);
         }
+        
     }
     let info = texture_info[u32(index)];
 
