@@ -40,7 +40,7 @@ The shader is dispatched as a compute shader with a 16×16 workgroup size. Each 
 
 #### Materials & Lighting
 
-- **`Material`**: Phong-style material with ambient, diffuse, specular, emissive, IOR, opacity, and texture index
+- **`Material`**: Material with ambient, diffuse, specular, emissive, IOR, opacity, and texture index
 - **`PointLight`**: Spherical light source with emissive material
 - **`HitRecord`**: Ray intersection result containing position, normal, UV coordinates, and material
 
@@ -133,22 +133,6 @@ Multi-pass accumulation system:
 - Checkerboard pattern for missing textures
 - UV coordinate interpolation using barycentric coordinates
 
-## Performance Considerations
-
-### Optimization Points
-
-- **BVH stack size**: 1024 elements may exceed limits on mobile/integrated GPUs
-- **Workgroup size**: 16×16 tuned for most desktop GPUs
-- **Ray depth**: Controlled by `max_depth` uniform (typically 4-8 bounces)
-- **Samples per pass**: Balance between responsiveness and convergence speed
-
-### Potential Bottlenecks
-
-- BVH traversal dominates for complex scenes
-- Random number generation overhead
-- Storage buffer bandwidth for large texture arrays
-- Accumulation buffer read-modify-write per pixel
-
 ## Color Management
 
 ### Gamma Correction
@@ -162,23 +146,11 @@ Multi-pass accumulation system:
 - Applied after averaging all samples
 - Prevents over-bright pixels
 
-## Extensions & Future Work
-
-Potential improvements:
-
-- Importance sampling for lights
-- Russian roulette path termination
-- Multiple importance sampling (MIS)
-- Denoising for faster convergence
-- Support for transparency/refraction
-- Volumetric rendering
-- GPU-based BVH construction
-
 ## Usage Example
 
 ```rust,ignore
 // Include this documentation
-#![doc = include_str!("path_tracer_shader.md")]
+#![doc = include_str!("shader_docs.md")]
 
 pub const SHADER_SOURCE: &str = include_str!("shader.wgsl");
 
