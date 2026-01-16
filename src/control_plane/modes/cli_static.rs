@@ -9,7 +9,7 @@ use crate::data_plane::scene::render_scene::Scene;
     name = "cli args",
     about = "Specify command line arguments for the application."
 )]
-struct Args {
+pub struct Args {
     #[arg(long, required = true, help = "Path to the scene json file.")]
     pub scene: PathBuf,
 
@@ -24,18 +24,13 @@ pub struct CliStaticApp {
     args: Args,
 }
 
-impl App for CliStaticApp {
-    fn new() -> Self {
-        let args = match Args::try_parse() {
-            Ok(args) => args,
-            Err(e) => {
-                error!("Error parsing command line arguments: {:?}, exiting...", e);
-                std::process::exit(1);
-            }
-        };
+impl CliStaticApp {
+    pub fn new(args: Args) -> Self {
         Self { args }
     }
+}
 
+impl App for CliStaticApp {
     fn show(self: Box<CliStaticApp>) {
         info!("Loading scene...");
 
