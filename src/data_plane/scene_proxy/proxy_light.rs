@@ -42,7 +42,7 @@ impl Default for ProxyLight {
                 g: 1.0,
                 b: 1.0,
             },
-            light_type: LightType::Directional.into(),
+            light_type: LightType::Point.into(),
             rotation: Vec3d {
                 x: 0.0,
                 y: 0.0,

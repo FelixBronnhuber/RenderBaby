@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 use egui::{CollapsingHeader, Color32, RichText, Ui};
 use scene_objects::camera::Resolution;
 use scene_objects::geometric_object::GeometricObject;
-use scene_objects::light_source::{LightSource, LightType};
+use scene_objects::light_source::LightSource;
 use scene_objects::material::Material;
 use scene_objects::mesh::Mesh;
 use scene_objects::sphere::Sphere;
@@ -659,11 +659,6 @@ impl Viewable for ProxyLight {
             light.set_position(self.position.clone().into());
             changed = true;
         }
-        ui.label("Rotation:");
-        if vec3_ui(ui, &mut self.rotation) {
-            light.rotate(self.rotation.clone().into()); // TODO: this is probably wrong!
-            changed = true;
-        }
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
             light.set_color(self.color.clone().into());
@@ -677,22 +672,6 @@ impl Viewable for ProxyLight {
             light.set_luminosity(self.luminosity);
             changed = true;
         }
-
-        let light_types: [String; 2] = [LightType::Ambient.into(), LightType::Point.into()];
-
-        egui::ComboBox::from_label("Type")
-            .selected_text(&self.light_type)
-            .show_ui(ui, |ui| {
-                for m in &light_types {
-                    if ui
-                        .selectable_value(&mut self.light_type, m.clone(), format!("{:?}", m))
-                        .changed()
-                    {
-                        light.set_light_type(self.light_type.clone().into());
-                        changed = true;
-                    }
-                }
-            });
         changed
     }
 }
