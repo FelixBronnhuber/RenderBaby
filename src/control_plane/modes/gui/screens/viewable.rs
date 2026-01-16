@@ -672,5 +672,6 @@ impl Viewable for ProxyLight {
             light.set_luminosity(self.luminosity);
             changed = true;
         }
+        changed
     }
 }
