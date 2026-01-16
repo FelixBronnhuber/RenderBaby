@@ -14,10 +14,14 @@ pub struct Uniforms {
     pub bvh_triangle_count: u32,
     pub bvh_root: u32,
     pub ground_height: f32,
-    pub ground_enabled: u32, //bool doesn't satisfy Pod
-    pub _pad: u32,
+    pub ground_enabled: u32,       //bool doesn't satisfy Pod
+    pub checkerboard_enabled: u32, //bool doesn't satisfy Pod
     pub sky_color: [f32; 3],
     pub max_depth: u32,
+    pub checkerboard_color_1: [f32; 3],
+    pub _pad1: u32,
+    pub checkerboard_color_2: [f32; 3],
+    pub _pad2: u32,
 }
 
 impl Default for Uniforms {
@@ -33,16 +37,23 @@ impl Default for Uniforms {
             bvh_node_count: 0,
             bvh_triangle_count: 0,
             bvh_root: 0,
-            ground_height: -5.0,
+            ground_height: -1.0,
             ground_enabled: 1,
-            _pad: 0,
+            checkerboard_enabled: 1,
             sky_color: [0.5, 0.7, 1.0],
             max_depth: 5,
+            checkerboard_color_1: [0.0; 3], //Black
+            _pad1: 0,
+            checkerboard_color_2: [1.0, 0.0, 1.0], //Magenta
+            _pad2: 0,
         }
     }
 }
 
 impl Uniforms {
+    pub const CHECKERBOARD_ENABLED: bool = true;
+    pub const GROUND_ENABLED: bool = true;
+
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         width: u32,
@@ -53,9 +64,12 @@ impl Uniforms {
         bvh_node_count: u32,
         bvh_triangle_count: u32,
         ground_height: f32,
-        ground_enabled: u32,
+        ground_enabled: bool,
+        checkerboard_enabled: bool,
         sky_color: [f32; 3],
         max_depth: u32,
+        checkerboard_color_1: [f32; 3],
+        checkerboard_color_2: [f32; 3],
     ) -> Self {
         Self {
             width,
@@ -66,9 +80,12 @@ impl Uniforms {
             bvh_node_count,
             bvh_triangle_count,
             ground_height,
-            ground_enabled,
+            ground_enabled: if ground_enabled { 1 } else { 0 },
+            checkerboard_enabled: if checkerboard_enabled { 1 } else { 0 },
             sky_color,
             max_depth,
+            checkerboard_color_1,
+            checkerboard_color_2,
             ..Default::default()
         }
     }
