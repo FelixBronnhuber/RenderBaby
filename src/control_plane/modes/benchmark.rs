@@ -76,8 +76,14 @@ impl App for BenchmarkApp {
         info!("CPU: {}", sys.cpus()[0].brand());
         info!("Cores: {}", sys.cpus().len());
 
-        info!("Total RAM: {} MB", sys.total_memory() / 1024);
-        info!("Available RAM: {} MB", sys.available_memory() / 1024);
+        info!(
+            "Total RAM: {:.2} GB",
+            sys.total_memory() as f64 / 1024.0 / 1024.0 / 1024.0
+        );
+        info!(
+            "Available RAM: {:.2} GB",
+            sys.available_memory() as f64 / 1024.0 / 1024.0 / 1024.0
+        );
 
         if let Some(os) = System::long_os_version() {
             info!("OS: {}", os);
