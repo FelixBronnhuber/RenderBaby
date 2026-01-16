@@ -513,9 +513,12 @@ impl Scene {
                         0,
                         0,
                         Uniforms::default().ground_height, //Leave or change to scene defaults
-                        Uniforms::default().ground_enabled,
+                        Uniforms::GROUND_ENABLED,
+                        Uniforms::CHECKERBOARD_ENABLED,
                         Uniforms::default().sky_color,
                         Uniforms::default().max_depth,
+                        Uniforms::default().checkerboard_color_1,
+                        Uniforms::default().checkerboard_color_2,
                     ))
                     .spheres_create(vec![])
                     .uvs_create(vec![])
