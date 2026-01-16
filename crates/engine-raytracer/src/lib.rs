@@ -17,6 +17,9 @@
 //! This crate implements the [`Renderer`] trait from `engine_config`. It encapsulates a
 //! [`GpuWrapper`] which manages the underlying GPU resources (buffers, bind groups, pipelines).
 //! The core ray tracing logic resides in the associated WGSL shader (`shader.wgsl`).
+//!
+//! Path Tracer Module
+#![doc = include_str!("shader_docs.md")]
 
 use anyhow::Result;
 pub use engine_config::RenderConfig;
