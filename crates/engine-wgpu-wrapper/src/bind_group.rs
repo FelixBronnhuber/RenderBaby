@@ -1,10 +1,30 @@
 use crate::GpuBuffers;
 
+/// Wrapper for the `wgpu::BindGroupLayout`.
+///
+/// This struct defines the interface between the CPU resources (buffers) and the GPU shader.
+/// It specifies the type, visibility, and binding index of each resource.
 pub struct BindGroupLayout {
     pub bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl BindGroupLayout {
+    /// Creates the specific bind group layout used by the rendering engines.
+    ///
+    /// The bindings are as follows:
+    /// - 0: Uniforms Buffer (Read-Only Uniform)
+    /// - 1: Output Buffer (Read-Write Storage)
+    /// - 2: Spheres Buffer (Read-Only Storage)
+    /// - 3: Accumulation Buffer (Read-Write Storage)
+    /// - 4: Progressive Render Buffer (Read-Only Uniform)
+    /// - 5: Pointlight Buffer (Read-Only Storage)
+    /// - 6: Meshes Buffer (Read-Only Storage)
+    /// - 7: BVH Nodes Buffer (Read-Only Storage)
+    /// - 8: BVH Indices Buffer (Read-Only Storage)
+    /// - 9: BVH Triangles Buffer (Read-Only Storage)
+    /// - 10: UV Buffer (Read-Only Storage)
+    /// - 11: Texture Data Buffer (Read-Only Storage)
+    /// - 12: Texture Info Buffer (Read-Only Storage)
     pub fn new(device: &wgpu::Device) -> Self {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Main Bind Group Layout"),
@@ -161,11 +181,15 @@ impl BindGroupLayout {
     }
 }
 
+/// Wrapper for the `wgpu::BindGroup`.
+///
+/// This struct holds the actual resource bindings for a pipeline.
 pub struct BindGroup {
     pub bind_group: wgpu::BindGroup,
 }
 
 impl BindGroup {
+    /// Creates a new bind group by binding the provided `GpuBuffers` to the `BindGroupLayout`.
     pub fn new(
         device: &wgpu::Device,
         buffers: &GpuBuffers,
