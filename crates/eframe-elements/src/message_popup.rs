@@ -2,6 +2,8 @@ use std::sync::{Arc, Mutex};
 use egui::{Context, Window};
 use log::info;
 
+const MAX_MESSAGE_LENGTH: usize = 150;
+
 #[derive(Clone)]
 pub struct Message {
     title: String,
@@ -12,14 +14,22 @@ impl Message {
     pub fn new(title: &str, message: &str) -> Self {
         Self {
             title: title.to_string(),
-            message: message.to_string(),
+            message: Self::cut_length(message.to_string()),
         }
     }
 
     pub fn from_error(error: anyhow::Error) -> Self {
         Self {
             title: "Error".to_string(),
-            message: format!("{:?}", error),
+            message: Self::cut_length(format!("{:?}", error)),
+        }
+    }
+
+    pub fn cut_length(message: String) -> String {
+        if message.chars().count() <= MAX_MESSAGE_LENGTH {
+            message
+        } else {
+            message.chars().take(MAX_MESSAGE_LENGTH).collect::<String>() + "..."
         }
     }
 }

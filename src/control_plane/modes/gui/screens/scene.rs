@@ -17,6 +17,7 @@ static FRAME_DURATION_FPS24: Duration = Duration::from_millis(1000 / 24);
 pub struct SceneScreen {
     model: Model,
     bottom_visible: bool,
+    render_on_change: bool,
     file_dialog_obj: ThreadedNativeFileDialog,
     file_dialog_export: ThreadedNativeFileDialog,
     file_dialog_save: ThreadedNativeFileDialog,
@@ -30,6 +31,7 @@ impl SceneScreen {
         Self {
             model,
             bottom_visible: false,
+            render_on_change: false,
             file_dialog_obj: ThreadedNativeFileDialog::new(
                 FileDialog::new().add_filter("OBJ", &["obj"]),
             ),
@@ -218,21 +220,35 @@ impl Screen for SceneScreen {
                 let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
 
                 ui.label("Camera");
-                proxy_tmp.camera.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.camera.ui_with_settings(
+                    ui,
+                    &mut self.model.scene.clone(),
+                    &mut self.render_on_change,
+                ) && self.render_on_change
+                {
+                    self.do_render();
+                }
 
                 ui.separator();
 
-                proxy_tmp.misc.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
+                    self.do_render();
+                }
 
                 ui.separator();
 
                 ui.label("Objects");
-                proxy_tmp.objects.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) && self.render_on_change
+                {
+                    self.do_render();
+                }
 
                 ui.separator();
 
                 ui.label("Lights");
-                proxy_tmp.lights.ui(ui, &mut self.model.scene.clone());
+                if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
+                    self.do_render();
+                }
 
                 self.model.proxy = proxy_tmp;
             });
