@@ -423,9 +423,7 @@ impl Scene {
             self.export_scene(output_path)?;
             Ok(())
         } else {
-            Err(anyhow::Error::msg(
-                "No valid output path set for this scene",
-            ))
+            Err(Error::msg("No valid output path set for this scene"))
         }
     }
 

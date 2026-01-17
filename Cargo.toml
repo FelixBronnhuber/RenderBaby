@@ -24,12 +24,12 @@ scene-objects = { path = "crates/scene-objects" }
 image = "0.25.9"
 eframe-elements = { path = "crates/eframe-elements" }
 include_dir = "0.7.4"
-jsonschema = "0.37.4"
+jsonschema = "0.39.0"
 frame-buffer = { path = "crates/frame-buffer" }
 zip = "7.0.0"
 chrono = "0.4.42"
 sysinfo = "0.37.2"
-wgpu = "27.0.1"
+wgpu = "28.0.0"
 pollster = "0.4.0"
 
 [workspace]
