@@ -21,12 +21,12 @@ pub struct Sphere {
 }
 #[allow(dead_code)]
 impl Sphere {
-    pub fn scale_to(&mut self, scale: f32) {
+    pub fn scale_to(&mut self, scale: Vec3) {
         //! scales the sphere so that the given scale is the new scale
         //! ## Parameter
         //! 'scale': new absolute scale
-        let factor = self.scale.x * scale;
-        if factor != 0.0 {
+        let factor = self.scale * scale;
+        if factor != Vec3::ZERO {
             self.scale(factor);
         }
     }
@@ -35,7 +35,7 @@ impl Sphere {
         //! translates the sphere so that the given translation is the new absolute translation
         //! ## Parameter
         //! 'translation': new absolute translation as glam::Vec3
-        self.translate(self.translation - translation);
+        self.translate(translation - self.translation);
     }
     pub fn set_color(&mut self, color: [f32; 3]) {
         //! Sets the LightSource color
@@ -133,12 +133,12 @@ impl SceneObject for Sphere {
     }
 }
 impl GeometricObject for Sphere {
-    fn scale(&mut self, factor: f32) {
+    fn scale(&mut self, factor: Vec3) {
         //! scales the radius of the sphere
         //! ## Parameter
         //! 'factor': scale factor
-        self.radius *= factor;
-        self.scale *= factor;
+        self.radius *= factor.x;
+        self.scale *= factor.x;
     }
     fn translate(&mut self, vec: Vec3) {
         //! Moves the center of the sphere

@@ -64,7 +64,7 @@ impl Model {
                 ferris_path,
                 Vec3::new(3.5, -0.2, -1.0),
                 Vec3::new(-90.0, 250.0, 0.0),
-                1.0,
+                Vec3::new(1.0, 1.0, 1.0),
             ) {
                 log::error!("Failed to load ferris fixture: {}", e);
             }

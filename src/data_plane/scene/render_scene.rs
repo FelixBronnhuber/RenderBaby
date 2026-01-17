@@ -291,7 +291,7 @@ impl Scene {
         scale: Vec3,
     ) -> Result<(), Error> {
         let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
-        mesh.scale(scale.x);
+        mesh.scale(scale);
         mesh.rotate(rotation);
         mesh.translate(translation);
         self.add_mesh(mesh);
@@ -303,7 +303,7 @@ impl Scene {
         path: PathBuf,
         translation: Vec3,
         rotation: Vec3,
-        scale: f32,
+        scale: Vec3,
     ) -> Result<(), Error> {
         let mut mesh = self.parse_obj_to_mesh(path, None)?;
         mesh.scale(scale);
