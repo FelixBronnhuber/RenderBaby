@@ -74,6 +74,30 @@ impl Mesh {
             ))),
         }
     }
+
+    pub fn rotate_to(&mut self, rotation: Vec3) {
+        //! rotates the mesh so that the given vector is the new rotation
+        //! ## Parameter
+        //! 'rotation': new absolute rotation as glam::Vec3
+        self.rotate(self.rotation - rotation);
+    }
+
+    pub fn scale_to(&mut self, scale: f32) {
+        //! scales the mesh so that the given scale is the new scale
+        //! ## Parameter
+        //! 'scale': new absolute scale
+        let factor = self.scale.x * scale;
+        if factor != 0.0 {
+            self.scale(factor);
+        }
+    }
+
+    pub fn translate_to(&mut self, translation: Vec3) {
+        //! translates the mesh so that the given translation is the new absolute translation
+        //! ## Parameter
+        //! 'translation': new absolute translation as glam::Vec3
+        self.translate(self.translation - translation);
+    }
     pub(crate) fn calculate_centroid(vertices: &[f32]) -> Result<Vec3, Error> {
         //! Calculates the centroid for a sclice of vertices, where 3 entries in the sclice are x, y, z of one point
         //! ## Parameter
