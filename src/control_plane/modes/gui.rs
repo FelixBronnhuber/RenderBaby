@@ -11,8 +11,8 @@ pub struct GuiApp {
     view: view::View,
 }
 
-impl App for GuiApp {
-    fn new() -> Self {
+impl GuiApp {
+    pub fn new() -> Self {
         // fixes device creation bug on Windows AMD:
         let _ = GpuDevice::new();
 
@@ -20,7 +20,9 @@ impl App for GuiApp {
 
         GuiApp { view }
     }
+}
 
+impl App for GuiApp {
     fn show(self: Box<GuiApp>) {
         self.view.open();
     }
