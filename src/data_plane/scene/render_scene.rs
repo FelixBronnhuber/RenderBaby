@@ -1,13 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
-use std::fs;
-use std::fs::File;
-use std::time::{SystemTime, UNIX_EPOCH};
-use egui::TextBuffer;
 use glam::Vec3;
-use log::{info, error};
+use log::{info, error, debug};
 use frame_buffer::frame_iterator::Frame;
 use scene_objects::{
     camera::{Camera, Resolution},
@@ -46,96 +42,35 @@ impl Default for Scene {
     }
 }
 
-fn get_path_prefix(path: &Path) -> Option<&str> {
-    path.file_name()
-        .unwrap_or_default()
-        .to_str()?
-        .split(".")
-        .next()
-}
-
 #[allow(unused)]
 impl Scene {
     fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
-        let mut directory_path = PathBuf::with_capacity(50);
-        // todo: i want to murder myself when i see this type. please just add a struct like "SceneParseResult"
-        #[allow(clippy::type_complexity)]
-        let mut scene_and_path: Result<
-            (Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>),
-            Error,
-        > = Err(Error::msg("uninitialized scene and obj path used"));
-        let mut temp_dir = PathBuf::with_capacity(50);
-        if let Some(extension) = path.extension().unwrap_or_default().to_str() {
-            match extension {
-                "rscn" => {
-                    let randomized_temp_name = format!(
-                        "render{}",
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .subsec_nanos()
-                    );
-                    temp_dir = std::env::temp_dir().join(PathBuf::from(randomized_temp_name));
-                    let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
-                    archive.extract(temp_dir.clone());
-                    info!("using temporary directory {:?}", temp_dir);
 
-                    if let Some(temp_directory_prefix) = get_path_prefix(&path) {
-                        directory_path = temp_dir.join(temp_directory_prefix);
-                    } else {
-                        return Err(Error::msg("Scene: invalid rscn prefix"));
-                    }
-                    scene_and_path = parse_scene(directory_path.join("scene.json"), None);
-                }
-                "json" => {
-                    directory_path = path.clone();
-                    directory_path.pop();
-                    scene_and_path = parse_scene(path.clone(), None);
-                }
-                _ => {
-                    return Err(Error::msg("Incorrect file extension found"));
-                }
-            }
-        } else {
-            return Err(Error::msg("no file extension found"));
+        let loaded_data = parse_scene(path.clone(), None)?;
+
+        let mut scene = loaded_data.scene;
+        let paths = loaded_data.paths;
+        let rotation = loaded_data.rotations;
+        let translation = loaded_data.translations;
+        let scale = loaded_data.scales;
+
+        debug!("Scene: Loading {} objects...", paths.len());
+        for (i, p_str) in paths.iter().enumerate() {
+            let p = PathBuf::from(p_str);
+            debug!("Scene: Loading object {} from {:?}", i, p);
+            scene.load_object_from_file_relative(
+                p.clone(),
+                p,
+                translation[i],
+                rotation[i],
+                scale[i],
+            )?;
         }
-        match scene_and_path {
-            Ok(scene_and_path) => {
-                let mut scene = scene_and_path.0;
-                let mut paths = scene_and_path.1;
-                let rotation = scene_and_path.2;
-                let translation = scene_and_path.3;
-                let scale = scene_and_path.4;
-                let mut absolute_path = Vec::with_capacity(1);
-                paths
-                    .iter()
-                    .for_each(|path| absolute_path.push(directory_path.join(path)));
-                for (i, v) in absolute_path.iter().enumerate() {
-                    scene.load_object_from_file_relative(
-                        v.clone(),
-                        PathBuf::from(paths[i].clone()),
-                        rotation[i],
-                        translation[i],
-                        scale[i],
-                    )?;
-                }
-                if !temp_dir.as_os_str().is_empty() {
-                    info!("removing temporary directory: {:?}", temp_dir);
-                    fs::remove_dir_all(temp_dir);
-                }
-                Ok(scene)
-            }
-            Err(error) => {
-                if !temp_dir.as_os_str().is_empty() {
-                    info!("removing temporary directory: {:?}", temp_dir);
-                    fs::remove_dir_all(temp_dir);
-                }
-                error!("Scene: Importing Scene resulted in error: {error}");
-                Err(error)
-            }
-        }
+
+        info!("Scene: Successfully loaded scene.");
+        Ok(scene)
     }
 
     pub fn export_scene(&self, path: PathBuf) -> Result<(), Error> {
@@ -174,6 +109,11 @@ impl Scene {
 
         match result {
             Ok(objs) => {
+                debug!(
+                    "{self}: Parsed OBJ with {} faces, {} vertices",
+                    objs.faces.len(),
+                    objs.vertices.len()
+                );
                 let mut material_name_list: Vec<String> = Vec::new();
                 let mut material_list: Vec<Material> = Vec::new();
 
@@ -379,14 +319,22 @@ impl Scene {
         let mut scene = Self::_load_scene_from_path(path.clone());
         match scene {
             Ok(mut scene) => {
-                if let Some(extension) = path.extension()
-                    && extension.to_string_lossy().as_str() != "rscn"
-                    && !detached
-                {
+                let is_rscn = path
+                    .extension()
+                    .map(|s| s.to_string_lossy() == "rscn")
+                    .unwrap_or(false);
+
+                if !is_rscn && !detached {
                     scene.output_path = Some(path);
                 } else {
                     scene.output_path = None;
                 }
+
+                // TODO: Why is this always enabled in the first place?
+                if is_rscn {
+                    scene.set_color_hash_enabled(false);
+                }
+
                 Ok(scene)
             }
             Err(error) => Err(error),
@@ -396,12 +344,12 @@ impl Scene {
     pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
         let scene = parse_scene(PathBuf::new(), Some(json_string));
         match scene {
-            Ok(scene_and_values) => {
-                let mut scene = scene_and_values.0;
-                let paths = scene_and_values.1;
-                let rotation = scene_and_values.2;
-                let translation = scene_and_values.3;
-                let scale = scene_and_values.4;
+            Ok(loaded_data) => {
+                let mut scene = loaded_data.scene;
+                let paths = loaded_data.paths;
+                let rotation = loaded_data.rotations;
+                let translation = loaded_data.translations;
+                let scale = loaded_data.scales;
                 Ok(scene)
             }
             Err(error) => Err(error),
@@ -484,7 +432,15 @@ impl Scene {
 
     pub fn new() -> Self {
         //! ## Returns
-        //! A new scene with default values
+        //! A new scene with default values.
+        //!
+        //! If the `CI` or `RENDERBABY_HEADLESS` environment variable is set,
+        //! the render engine will not be initialized, allowing usage in headless environments.
+        let headless = std::env::var("CI").is_ok() || std::env::var("RENDERBABY_HEADLESS").is_ok();
+        Self::new_with_options(!headless)
+    }
+
+    pub fn new_with_options(load_engine: bool) -> Self {
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
@@ -502,32 +458,36 @@ impl Scene {
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
-            render_engine: Option::from(Engine::new(
-                RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(
-                        *width,
-                        *height,
-                        render_camera,
-                        cam.get_ray_samples(),
-                        0,
-                        0,
-                        0,
-                        Uniforms::default().ground_height, //Leave or change to scene defaults
-                        Uniforms::GROUND_ENABLED,
-                        Uniforms::CHECKERBOARD_ENABLED,
-                        Uniforms::default().sky_color,
-                        Uniforms::default().max_depth,
-                        Uniforms::default().checkerboard_color_1,
-                        Uniforms::default().checkerboard_color_2,
-                    ))
-                    .spheres_create(vec![])
-                    .uvs_create(vec![])
-                    .meshes_create(vec![])
-                    .lights_create(vec![])
-                    .textures_create(vec![])
-                    .build(),
-                RenderEngine::Raytracer,
-            )),
+            render_engine: if load_engine {
+                Option::from(Engine::new(
+                    RenderConfigBuilder::new()
+                        .uniforms_create(Uniforms::new(
+                            *width,
+                            *height,
+                            render_camera,
+                            cam.get_ray_samples(),
+                            0,
+                            0,
+                            0,
+                            Uniforms::default().ground_height, //Leave or change to scene defaults
+                            Uniforms::GROUND_ENABLED,
+                            Uniforms::CHECKERBOARD_ENABLED,
+                            Uniforms::default().sky_color,
+                            Uniforms::default().max_depth,
+                            Uniforms::default().checkerboard_color_1,
+                            Uniforms::default().checkerboard_color_2,
+                        ))
+                        .spheres_create(vec![])
+                        .uvs_create(vec![])
+                        .meshes_create(vec![])
+                        .lights_create(vec![])
+                        .textures_create(vec![])
+                        .build(),
+                    RenderEngine::Raytracer,
+                ))
+            } else {
+                None
+            },
             first_render: true,
             last_frame: None,
             color_hash_enabled: true,
