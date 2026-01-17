@@ -169,7 +169,7 @@ impl ProxyCamera {
 
         ui.separator();
 
-        self.ui(ui, scene);
+        changed |= self.ui(ui, scene);
 
         let delta_time = ui.input(|i| i.stable_dt);
         let speed = 5.0;

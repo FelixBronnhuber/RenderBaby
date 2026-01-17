@@ -120,28 +120,32 @@ fn vec3_from_slice_f32(v: &[f64]) -> [f32; 3] {
     ]
 }
 
+fn vec3_to_f32_with_color(v: &[f64], color: Option<&[f32; 3]>) -> [f32; 3] {
+    if let Some(color) = color {
+        let v = vec3_from_slice_f32(v);
+        [v[0] * color[0], v[1] * color[1], v[2] * color[2]]
+    } else {
+        vec3_from_slice_f32(v)
+    }
+}
+
 fn material_to_render_material(
     mat: &scene_objects::material::Material,
     color: Option<&[f32; 3]>,
     texture_map: &HashMap<String, i32>,
 ) -> engine_config::Material {
     let ambient = vec3_from_slice_f32(&mat.ambient_reflectivity);
-    let diffuse_vec = vec3_from_slice_f32(&mat.diffuse_reflectivity);
-    let diffuse = if let Some(color) = color {
-        engine_config::Vec3::new(
-            diffuse_vec[0] * color[0],
-            diffuse_vec[1] * color[1],
-            diffuse_vec[2] * color[2],
+    let diffuse = vec3_to_f32_with_color(&mat.diffuse_reflectivity, color);
+    let diffuse = engine_config::Vec3::new(diffuse[0], diffuse[1], diffuse[2]);
+
+    let specular = vec3_to_f32_with_color(&mat.specular_reflectivity, color);
+    let emissive = if let Some(color) = color {
+        vec3_to_f32_with_color(
+            &mat.emissive,
+            Some(&[color[0] * 500.0, color[1] * 500.0, color[2] * 500.0]),
         )
     } else {
-        engine_config::Vec3::new(diffuse_vec[0], diffuse_vec[1], diffuse_vec[2])
-    };
-
-    let specular = vec3_from_slice_f32(&mat.specular_reflectivity);
-    let emissive = if mat.emissive.len() == 3 {
         vec3_from_slice_f32(&mat.emissive)
-    } else {
-        [0.0, 0.0, 0.0]
     };
 
     let texture_index = if let Some(path) = &mat.texture_path {
