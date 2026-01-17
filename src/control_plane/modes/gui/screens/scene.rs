@@ -1,6 +1,7 @@
 use std::time::Duration;
 use std::sync::atomic::Ordering;
 use eframe::emath::Align;
+use egui::{Color32, RichText};
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
@@ -212,6 +213,21 @@ impl Screen for SceneScreen {
                 self.model.consume_proxy_dirty_and_reload();
 
                 let mut export_misc_loaded = self.model.export_misc.load(Ordering::SeqCst);
+
+                if !export_misc_loaded {
+                    ui.label(
+                        RichText::new("⚠ Currently not exporting misc objects.")
+                            .color(Color32::ORANGE)
+                            .strong(),
+                    );
+                    ui.label(
+                        RichText::new(
+                            "Enable to also export: Spheres, Ray Samples and Color Hash to rscn.",
+                        )
+                        .small(),
+                    );
+                }
+
                 if ui
                     .checkbox(&mut export_misc_loaded, "Export Additional Data")
                     .clicked()
@@ -220,6 +236,8 @@ impl Screen for SceneScreen {
                         .export_misc
                         .store(export_misc_loaded, Ordering::SeqCst);
                 }
+
+                ui.separator();
 
                 if self.model.frame_buffer.has_provider() {
                     if ui.button("Cancel Render").clicked() {
