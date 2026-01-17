@@ -1,5 +1,5 @@
 use std::time::Duration;
-use eframe::emath::Align;
+use egui::Color32;
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
@@ -53,14 +53,24 @@ impl SceneScreen {
             .min_height(30.0)
             .show(ctx, |ui| {
                 ui.heading("Log-view");
+
+                let log_rect = ui.available_rect_before_wrap();
+                ui.painter().rect_filled(log_rect, 0.0, Color32::BLACK);
+
                 egui::ScrollArea::vertical()
                     .stick_to_bottom(true)
                     .show(ui, |ui| {
-                        let logs = log_buffer::get_logs();
-                        ui.add_sized(
-                            ui.available_size(),
-                            egui::Label::new(logs).halign(Align::LEFT).selectable(false),
-                        );
+                        let mut logs = log_buffer::get_logs();
+                        let widget = egui::TextEdit::multiline(&mut logs)
+                            .font(egui::TextStyle::Monospace)
+                            .text_color(Color32::WHITE)
+                            .frame(false)
+                            .code_editor()
+                            .lock_focus(true)
+                            .interactive(false)
+                            .desired_width(f32::INFINITY);
+
+                        widget.show(ui);
                     });
             });
     }
