@@ -17,6 +17,9 @@
 //! This crate implements the [`Renderer`] trait from `engine_config`. It encapsulates a
 //! [`GpuWrapper`] which manages the underlying GPU resources (buffers, bind groups, pipelines).
 //! The core ray tracing logic resides in the associated WGSL shader (`shader.wgsl`).
+//!
+//! Path Tracer Module
+#![doc = include_str!("shader_docs.md")]
 
 use anyhow::Result;
 pub use engine_config::RenderConfig;
@@ -106,6 +109,9 @@ impl Engine {
     ///
     /// * `Self` - A new instance of the ray tracing engine.
     pub fn new(rc: RenderConfig) -> Self {
+        //! Path Tracer Module
+        #![doc = include_str!("shader_docs.md")]
+
         // TODO: The shader path is currently hardcoded relative to the project root.
         // This might need to be made more robust for different execution contexts.
         let wrapper = GpuWrapper::new(rc, "engine-raytracer/src/shader.wgsl").unwrap();
