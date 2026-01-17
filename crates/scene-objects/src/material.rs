@@ -4,9 +4,8 @@ use anyhow::anyhow;
 
 static PLASTIC: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Plastic));
 static METAL: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Metal));
-static GLASS: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Glass));
 static MIRROR: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Mirror));
-static MATTE: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Matte));
+static LIGHT: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Light));
 
 #[derive(Debug, PartialEq)]
 pub struct Material {
@@ -71,24 +70,22 @@ impl Default for Material {
 pub enum MaterialPresets {
     Plastic,
     Metal,
-    Glass,
     #[default]
     Mirror,
-    Matte,
+    Light,
 }
 
 impl MaterialPresets {
-    pub const fn list() -> [&'static str; 5] {
-        ["plastic", "metal", "glass", "mirror", "matte"]
+    pub const fn list() -> [&'static str; 4] {
+        ["plastic", "metal", "mirror", "light"]
     }
 
-    pub const fn list_enum() -> [MaterialPresets; 5] {
+    pub const fn list_enum() -> [MaterialPresets; 4] {
         [
             MaterialPresets::Plastic,
             MaterialPresets::Metal,
-            MaterialPresets::Glass,
             MaterialPresets::Mirror,
-            MaterialPresets::Matte,
+            MaterialPresets::Light,
         ]
     }
 }
@@ -100,9 +97,8 @@ impl TryFrom<&str> for MaterialPresets {
         match string {
             "plastic" => Ok(MaterialPresets::Plastic),
             "metal" => Ok(MaterialPresets::Metal),
-            "glass" => Ok(MaterialPresets::Glass),
             "mirror" => Ok(MaterialPresets::Mirror),
-            "matte" => Ok(MaterialPresets::Matte),
+            "light" => Ok(MaterialPresets::Light),
             _ => Err(anyhow!("Invalid material preset: {}", string)),
         }
     }
@@ -113,21 +109,21 @@ impl From<MaterialPresets> for Material {
         match preset {
             MaterialPresets::Plastic => Material::new(
                 "plastic".to_string(),
-                vec![0.02, 0.02, 0.02],
-                vec![1.0, 1.0, 1.0],
-                vec![0.04, 0.04, 0.04],
                 vec![0.0, 0.0, 0.0],
-                50.0,
+                vec![1.0, 1.0, 1.0],
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                0.0,
                 1.0,
                 None,
             ),
-            MaterialPresets::Matte => Material::new(
-                "matte".to_string(),
-                vec![0.05, 0.05, 0.05],
-                vec![0.8, 0.8, 0.8],
-                vec![0.02, 0.02, 0.02],
+            MaterialPresets::Light => Material::new(
+                "light".to_string(),
                 vec![0.0, 0.0, 0.0],
-                10.0,
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                vec![100.0, 100.0, 100.0],
+                0.0,
                 1.0,
                 None,
             ),
@@ -135,29 +131,19 @@ impl From<MaterialPresets> for Material {
                 "mirror".to_string(),
                 vec![0.0, 0.0, 0.0],
                 vec![0.0, 0.0, 0.0],
+                vec![1.0, 1.0, 1.0],
                 vec![0.0, 0.0, 0.0],
-                vec![0.0, 0.0, 0.0],
-                0.0,
-                0.0,
-                None,
-            ),
-            MaterialPresets::Glass => Material::new(
-                "glass".to_string(),
-                vec![0.0, 0.0, 0.0],
-                vec![0.0, 0.0, 0.0],
-                vec![0.9, 0.9, 0.9],
-                vec![0.0, 0.0, 0.0],
-                300.0,
+                1000.0,
                 0.0,
                 None,
             ),
             MaterialPresets::Metal => Material::new(
                 "metal".to_string(),
                 vec![0.0, 0.0, 0.0],
-                vec![0.5, 0.5, 0.5],
+                vec![0.0, 0.0, 0.0],
                 vec![0.5, 0.5, 0.5],
                 vec![0.0, 0.0, 0.0],
-                50.0,
+                500.0,
                 1.0,
                 None,
             ),
@@ -183,9 +169,8 @@ impl MaterialRef {
             MaterialRef::Preset(preset) => match preset {
                 MaterialPresets::Plastic => &PLASTIC,
                 MaterialPresets::Metal => &METAL,
-                MaterialPresets::Glass => &GLASS,
                 MaterialPresets::Mirror => &MIRROR,
-                MaterialPresets::Matte => &MATTE,
+                MaterialPresets::Light => &LIGHT,
             },
             MaterialRef::Custom(mtl) => mtl,
         }
