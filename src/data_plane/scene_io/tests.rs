@@ -64,7 +64,7 @@ fn test_json_export_import_integrity() {
 
     // Export
     original_scene
-        .export_scene(file_path.clone())
+        .export_scene(file_path.clone(), false)
         .expect("Failed to export JSON scene");
 
     // Import
@@ -104,7 +104,7 @@ fn test_rscn_export_import_with_mesh() {
 
     // Export to .rscn
     scene
-        .export_scene(export_path.clone())
+        .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
     assert!(export_path.exists());
 
@@ -179,7 +179,7 @@ fn test_idempotency() {
         LightType::Ambient,
     ));
 
-    scene.export_scene(export_path.clone()).unwrap();
+    scene.export_scene(export_path.clone(), false).unwrap();
 
     let s1 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
     let s2 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
@@ -199,14 +199,14 @@ fn test_scene_save_method() {
     let mut scene = create_test_scene("SaveMethodTest");
 
     // Initially no output path, save should fail
-    assert!(scene.save().is_err());
+    assert!(scene.save(false).is_err());
 
     // Set path
     scene.set_output_path(Some(save_path.clone())).unwrap();
     assert_eq!(scene.get_output_path(), Some(save_path.clone()));
 
     // Save should work now
-    scene.save().expect("Scene::save() failed");
+    scene.save(false).expect("Scene::save() failed");
 
     assert!(save_path.exists());
 
@@ -224,7 +224,7 @@ fn test_rscn_import_disables_color_hash() {
     // Default should be true
     assert!(scene.get_color_hash_enabled());
 
-    scene.export_scene(export_path.clone()).unwrap();
+    scene.export_scene(export_path.clone(), false).unwrap();
 
     // Load it back
     let loaded = Scene::load_scene_from_path(export_path, false).unwrap();
@@ -257,7 +257,7 @@ fn test_rscn_export_with_mtl() {
 
     // Export
     scene
-        .export_scene(export_path.clone())
+        .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
 
     // Verify content by unzipping manually (using FileManager)

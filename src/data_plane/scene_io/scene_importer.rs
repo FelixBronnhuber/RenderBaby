@@ -6,6 +6,8 @@ use scene_objects::{
     camera,
     camera::Camera,
     light_source::{LightSource, LightType},
+    sphere::Sphere,
+    material::Material,
 };
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
@@ -107,6 +109,46 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
         .iter()
         .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
         .collect();
+
+    //Spheres
+    if let Some(file_spheres) = file.spheres {
+        file_spheres.iter().for_each(|file_sphere| {
+            scene.add_sphere(Sphere::new(
+                Vec3::new(
+                    file_sphere.center.x,
+                    file_sphere.center.y,
+                    file_sphere.center.z,
+                ),
+                file_sphere.radius,
+                Material::new(
+                    file_sphere.material.name.clone(),
+                    file_sphere.material.ambient_reflectivity.clone(),
+                    file_sphere.material.diffuse_reflectivity.clone(),
+                    file_sphere.material.specular_reflectivity.clone(),
+                    file_sphere.material.emissive.clone(),
+                    file_sphere.material.shininess,
+                    file_sphere.material.transparency,
+                    None,
+                ),
+                [
+                    file_sphere.color.r,
+                    file_sphere.color.g,
+                    file_sphere.color.b,
+                ],
+            ))
+        })
+    };
+
+    //set ray_samples
+    if let Some(samples) = file.ray_samples {
+        scene.get_camera_mut().set_ray_samples(samples);
+    }
+
+    //set hash_coloring
+    if let Some(coloring) = file.hash_color {
+        scene.set_color_hash_enabled(coloring);
+    }
+
     Ok(LoadedSceneData {
         scene,
         paths,

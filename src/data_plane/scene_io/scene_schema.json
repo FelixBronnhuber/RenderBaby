@@ -33,6 +33,18 @@
             "items": {
                 "$ref": "#/$defs/light"
             }
+        },
+        "spheres": {
+            "type": "array",
+            "items": {
+                "$ref": "#/$defs/sphere"
+            }
+        },
+        "ray_samples": {
+            "type": "number"
+        },
+        "hash_color": {
+            "type": "boolean"
         }
     },
     "$defs": {
@@ -202,6 +214,86 @@
                     "$ref": "#/$defs/color"
                 }
             }
+        },
+        "sphere": {
+            "type": "object",
+            "required": [
+                "center",
+                "radius",
+                "material",
+                "color",
+                "name",
+                "scale",
+                "translation",
+                "rotation"
+            ],
+            "properties": {
+                "center": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "radius": {
+                    "type": "number"
+                },
+                "material": {
+                    "$ref": "#/$defs/sphereMaterial"
+                },
+                "color": {
+                    "$ref": "#/$defs/color"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scale": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "translation": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "rotation": {
+                    "$ref": "#/$defs/vec3"
+                }
+            },
+            "additionalProperties": false
+        },
+        "sphereMaterial": {
+            "type": "object",
+            "required": [
+                "name",
+                "ambient_reflectivity",
+                "diffuse_reflectivity",
+                "specular_reflectivity",
+                "emissive",
+                "shininess",
+                "transparency"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "ambient_reflectivity": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "diffuse_reflectivity": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "specular_reflectivity": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "emissive": {
+                    "type": "array",
+                    "items": { "type": "number" }
+                },
+                "shininess": {
+                    "type": "number"
+                },
+                "transparency": {
+                    "type": "number"
+                }
+            },
+            "additionalProperties": false
         }
     }
 }

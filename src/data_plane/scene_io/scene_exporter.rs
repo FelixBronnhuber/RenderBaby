@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static EXPORT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
+pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::Result<()> {
     info!(
         "SceneExporter: Exporting scene '{}' to {:?}",
         sc.get_name(),
@@ -106,6 +106,14 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 .strip_prefix(&base_dir)
             {
                 written_path = relative_path.to_string_lossy().to_string();
+            } else if let Ok(relative_path) = object
+                .get_path()
+                .unwrap_or_default()
+                .strip_prefix(base_dir.parent().unwrap())
+            {
+                let mut path = PathBuf::from("../");
+                path.push(relative_path);
+                written_path = path.to_string_lossy().to_string();
             } else {
                 written_path = object
                     .get_path()
@@ -163,6 +171,38 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     //background
     let bg = sc.get_background_color();
 
+    //spheres
+    let spheres = sc.get_spheres();
+    let mut file_spheres = Vec::new();
+    if !spheres.is_empty() {
+        spheres.iter().for_each(|sphere| {
+            let material = sphere.get_material();
+            file_spheres.push(FileSphere {
+                center: sphere.get_center().into(),
+                radius: sphere.get_radius(),
+                material: FileMaterial {
+                    name: material.name.clone(),
+                    ambient_reflectivity: material.ambient_reflectivity.clone(), //Ka
+                    diffuse_reflectivity: material.diffuse_reflectivity.clone(), //Kd
+                    specular_reflectivity: material.specular_reflectivity.clone(), //Ks
+                    emissive: material.emissive.clone(),                         //Ke
+                    shininess: material.shininess,                               //Ns
+                    transparency: material.transparency,                         //d
+                },
+                color: FileColor {
+                    r: sphere.get_color()[0],
+                    g: sphere.get_color()[1],
+                    b: sphere.get_color()[2],
+                    a: None,
+                },
+                name: "Sphere".to_owned(),
+                scale: sphere.get_scale().into(),
+                translation: sphere.get_translation().into(),
+                rotation: sphere.get_rotation().into(),
+            })
+        });
+    }
+
     let final_scene = SceneFile {
         scene_name,
         objects,
@@ -173,6 +213,21 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
             g: bg[1],
             b: bg[2],
             a: None,
+        },
+        spheres: if export_misc {
+            Some(file_spheres)
+        } else {
+            None
+        },
+        ray_samples: if export_misc {
+            Some(sc.get_camera().get_ray_samples())
+        } else {
+            None
+        },
+        hash_color: if export_misc {
+            Some(sc.get_color_hash_enabled())
+        } else {
+            None
         },
     };
 

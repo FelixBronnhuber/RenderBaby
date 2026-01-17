@@ -7,3 +7,5 @@ pub mod scene_importer;
 mod scene_io_objects;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_additional_export;
