@@ -432,7 +432,15 @@ impl Scene {
 
     pub fn new() -> Self {
         //! ## Returns
-        //! A new scene with default values
+        //! A new scene with default values.
+        //!
+        //! If the `CI` or `RENDERBABY_HEADLESS` environment variable is set,
+        //! the render engine will not be initialized, allowing usage in headless environments.
+        let headless = std::env::var("CI").is_ok() || std::env::var("RENDERBABY_HEADLESS").is_ok();
+        Self::new_with_options(!headless)
+    }
+
+    pub fn new_with_options(load_engine: bool) -> Self {
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
@@ -450,32 +458,36 @@ impl Scene {
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
-            render_engine: Option::from(Engine::new(
-                RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(
-                        *width,
-                        *height,
-                        render_camera,
-                        cam.get_ray_samples(),
-                        0,
-                        0,
-                        0,
-                        Uniforms::default().ground_height, //Leave or change to scene defaults
-                        Uniforms::GROUND_ENABLED,
-                        Uniforms::CHECKERBOARD_ENABLED,
-                        Uniforms::default().sky_color,
-                        Uniforms::default().max_depth,
-                        Uniforms::default().checkerboard_color_1,
-                        Uniforms::default().checkerboard_color_2,
-                    ))
-                    .spheres_create(vec![])
-                    .uvs_create(vec![])
-                    .meshes_create(vec![])
-                    .lights_create(vec![])
-                    .textures_create(vec![])
-                    .build(),
-                RenderEngine::Raytracer,
-            )),
+            render_engine: if load_engine {
+                Option::from(Engine::new(
+                    RenderConfigBuilder::new()
+                        .uniforms_create(Uniforms::new(
+                            *width,
+                            *height,
+                            render_camera,
+                            cam.get_ray_samples(),
+                            0,
+                            0,
+                            0,
+                            Uniforms::default().ground_height, //Leave or change to scene defaults
+                            Uniforms::GROUND_ENABLED,
+                            Uniforms::CHECKERBOARD_ENABLED,
+                            Uniforms::default().sky_color,
+                            Uniforms::default().max_depth,
+                            Uniforms::default().checkerboard_color_1,
+                            Uniforms::default().checkerboard_color_2,
+                        ))
+                        .spheres_create(vec![])
+                        .uvs_create(vec![])
+                        .meshes_create(vec![])
+                        .lights_create(vec![])
+                        .textures_create(vec![])
+                        .build(),
+                    RenderEngine::Raytracer,
+                ))
+            } else {
+                None
+            },
             first_render: true,
             last_frame: None,
             color_hash_enabled: true,

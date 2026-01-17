@@ -47,6 +47,8 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Run Tests
+        env:
+          RENDERBABY_HEADLESS: true
         run: cargo test --all --verbose
 
       - name: Build
