@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use egui::{CollapsingHeader, Color32, RichText, Ui};
 use scene_objects::camera::Resolution;
+use scene_objects::geometric_object::GeometricObject;
 use scene_objects::light_source::LightSource;
 use scene_objects::material::Material;
 use scene_objects::mesh::Mesh;
@@ -490,19 +491,19 @@ impl Viewable for ProxyMesh {
 
         ui.label("Rotation:");
         if vec3_ui(ui, &mut self.rotation) {
-            mesh.rotate_to(self.rotation.clone().into()); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
+            mesh.rotate(self.rotation.clone().into()); // TODO MICHAEL: this is probably wrong? Check bitte diese Rotations ab. Falls das hier korrekt ist, einfach die todo kommentare entfernen.
             changed = true;
         }
 
         ui.label("Scale:");
         if vec3_ui(ui, &mut self.scale) {
-            mesh.scale_to(self.scale.clone().into());
+            mesh.scale(self.scale.x);
             changed = true;
         }
 
         ui.label("Translation:");
         if vec3_ui(ui, &mut self.translation) {
-            mesh.translate_to(self.translation.clone().into());
+            mesh.translate(self.translation.clone().into());
             changed = true;
         }
         changed

@@ -79,15 +79,15 @@ impl Mesh {
         //! rotates the mesh so that the given vector is the new rotation
         //! ## Parameter
         //! 'rotation': new absolute rotation as glam::Vec3
-        self.rotate(rotation - self.rotation);
+        self.rotate(self.rotation - rotation);
     }
 
-    pub fn scale_to(&mut self, scale: Vec3) {
+    pub fn scale_to(&mut self, scale: f32) {
         //! scales the mesh so that the given scale is the new scale
         //! ## Parameter
-        //! 'scale': new absolute scale as glam::Vec3
-        let factor = scale / self.scale.x;
-        if factor != Vec3::ZERO {
+        //! 'scale': new absolute scale
+        let factor = self.scale.x * scale;
+        if factor != 0.0 {
             self.scale(factor);
         }
     }
@@ -96,7 +96,7 @@ impl Mesh {
         //! translates the mesh so that the given translation is the new absolute translation
         //! ## Parameter
         //! 'translation': new absolute translation as glam::Vec3
-        self.translate(translation - self.translation);
+        self.translate(self.translation - translation);
     }
     pub(crate) fn calculate_centroid(vertices: &[f32]) -> Result<Vec3, Error> {
         //! Calculates the centroid for a sclice of vertices, where 3 entries in the sclice are x, y, z of one point
@@ -153,18 +153,18 @@ impl Mesh {
 
 #[allow(unused)]
 impl GeometricObject for Mesh {
-    fn scale(&mut self, factor: Vec3) {
+    fn scale(&mut self, factor: f32) {
         //! scales the geometry by the given factor
         //! ## Parameter
         //! 'factor': factor for scale
         self.update_centroid();
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] =
-                self.centroid.x + (self.vertices[i * 3] - self.centroid.x) * factor.x;
+                self.centroid.x + (self.vertices[i * 3] - self.centroid.x) * factor;
             self.vertices[i * 3 + 1] =
-                self.centroid.y + (self.vertices[i * 3 + 1] - self.centroid.y) * factor.y;
+                self.centroid.y + (self.vertices[i * 3 + 1] - self.centroid.y) * factor;
             self.vertices[i * 3 + 2] =
-                self.centroid.z + (self.vertices[i * 3 + 2] - self.centroid.z) * factor.z;
+                self.centroid.z + (self.vertices[i * 3 + 2] - self.centroid.z) * factor;
         }
         // if switch to 3d transformation: use factor.x, factor.y, factor.z
         self.scale *= factor;

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 #[allow(dead_code)]
 ///Defines some basic geometric functions that all Render Objects should offer
 pub trait GeometricObject {
-    fn scale(&mut self, factor: Vec3); // TODO: scale 3d?
+    fn scale(&mut self, factor: f32); // TODO: scale 3d?
     fn translate(&mut self, vec: Vec3);
     fn rotate(&mut self, vec: Vec3);
 }
