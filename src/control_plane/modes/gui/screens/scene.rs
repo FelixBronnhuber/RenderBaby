@@ -195,7 +195,15 @@ impl Screen for SceneScreen {
             .show(ctx, |ui| {
                 self.model.consume_proxy_dirty_and_reload();
 
-                ui.checkbox(&mut self.model.export_misc, "Export Additional Data");
+                let mut export_misc_loaded = self.model.export_misc.load(Ordering::SeqCst);
+                if ui
+                    .checkbox(&mut export_misc_loaded, "Export Additional Data")
+                    .clicked()
+                {
+                    self.model
+                        .export_misc
+                        .store(export_misc_loaded, Ordering::SeqCst);
+                }
 
                 if self.model.frame_buffer.has_provider() {
                     if ui.button("Cancel Render").clicked() {

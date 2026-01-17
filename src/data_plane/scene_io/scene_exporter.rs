@@ -10,7 +10,7 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
     let mut lightarr: Vec<FileLightSource> = Vec::new();
     let scene_name = sc.get_name().clone();
 
-    let mut path_error : bool = false;
+    let mut path_error: bool = false;
     if let Some(directory) = path.parent() {
         //objects
         sc.get_meshes().iter().for_each(|object| {
@@ -26,9 +26,8 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
             } else if let Ok(relative_path) = object
                 .get_path()
                 .unwrap_or_default()
-                .strip_prefix(directory
-                    .parent()
-                    .unwrap()){
+                .strip_prefix(directory.parent().unwrap())
+            {
                 let mut path = PathBuf::from("../");
                 path.push(relative_path);
                 written_path = path.to_string_lossy().to_string();
@@ -120,19 +119,31 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
         }
 
         let final_scene = SceneFile {
-                scene_name,
-                objects,
-                lights: lightarr,
-                camera: file_camera,
-                background_color: FileColor {
-                    r: bg[0],
-                    g: bg[1],
-                    b: bg[2],
-                    a: None,
-                },
-            spheres: if export_misc { Some(file_spheres) } else { None },
-            ray_samples: if export_misc { Some(sc.get_camera().get_ray_samples()) } else { None },
-            hash_color: if export_misc { Some(sc.get_color_hash_enabled()) } else { None },
+            scene_name,
+            objects,
+            lights: lightarr,
+            camera: file_camera,
+            background_color: FileColor {
+                r: bg[0],
+                g: bg[1],
+                b: bg[2],
+                a: None,
+            },
+            spheres: if export_misc {
+                Some(file_spheres)
+            } else {
+                None
+            },
+            ray_samples: if export_misc {
+                Some(sc.get_camera().get_ray_samples())
+            } else {
+                None
+            },
+            hash_color: if export_misc {
+                Some(sc.get_color_hash_enabled())
+            } else {
+                None
+            },
         };
         let output = File::create(path);
         match output {

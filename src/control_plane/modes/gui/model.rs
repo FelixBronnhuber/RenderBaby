@@ -15,7 +15,7 @@ pub struct Model {
     // flag to indicate whether the real scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
     pub frame_buffer: FrameBuffer,
-    pub export_misc: bool,
+    pub export_misc: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]
