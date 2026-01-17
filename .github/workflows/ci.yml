@@ -49,7 +49,7 @@ jobs:
       - name: Run Tests
         env:
           RENDERBABY_HEADLESS: true
-        run: cargo test --all --verbose
+        run: cargo test --workspace --verbose
 
       - name: Build
         run: cargo build --release
