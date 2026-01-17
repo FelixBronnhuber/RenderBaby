@@ -49,16 +49,15 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
     //! ## Returns
     //! engine_config::Sphere based on the given sphere
     let center = sphere.get_center();
-    let color = sphere.get_color();
 
     RenderSphere::new(
         engine_config::Vec3::new(center.x, center.y, center.z),
         sphere.get_radius(),
-        engine_config::Material {
-            diffuse: engine_config::Vec3::new(0.0, 0.0, 0.0),
-            specular: [color[0], color[1], color[2]],
-            ..Default::default()
-        },
+        material_to_render_material(
+            sphere.get_material(),
+            Some(&sphere.get_color()),
+            &HashMap::new(),
+        ),
     )
     .unwrap()
     //todo error handling
@@ -112,31 +111,35 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
+
+fn vec3_from_slice_f32(v: &[f64]) -> [f32; 3] {
+    [
+        v.first().copied().unwrap_or(0.0) as f32,
+        v.get(1).copied().unwrap_or(0.0) as f32,
+        v.get(2).copied().unwrap_or(0.0) as f32,
+    ]
+}
+
 fn material_to_render_material(
     mat: &scene_objects::material::Material,
+    color: Option<&[f32; 3]>,
     texture_map: &HashMap<String, i32>,
 ) -> engine_config::Material {
-    let ambient = [
-        mat.ambient_reflectivity[0] as f32,
-        mat.ambient_reflectivity[1] as f32,
-        mat.ambient_reflectivity[2] as f32,
-    ];
-    let diffuse = engine_config::Vec3::new(
-        mat.diffuse_reflectivity[0] as f32,
-        mat.diffuse_reflectivity[1] as f32,
-        mat.diffuse_reflectivity[2] as f32,
-    );
-    let specular = [
-        mat.specular_reflectivity.first().copied().unwrap_or(0.0) as f32,
-        mat.specular_reflectivity.get(1).copied().unwrap_or(0.0) as f32,
-        mat.specular_reflectivity.get(2).copied().unwrap_or(0.0) as f32,
-    ];
+    let ambient = vec3_from_slice_f32(&mat.ambient_reflectivity);
+    let diffuse_vec = vec3_from_slice_f32(&mat.diffuse_reflectivity);
+    let diffuse = if let Some(color) = color {
+        engine_config::Vec3::new(
+            diffuse_vec[0] * color[0],
+            diffuse_vec[1] * color[1],
+            diffuse_vec[2] * color[2],
+        )
+    } else {
+        engine_config::Vec3::new(diffuse_vec[0], diffuse_vec[1], diffuse_vec[2])
+    };
+
+    let specular = vec3_from_slice_f32(&mat.specular_reflectivity);
     let emissive = if mat.emissive.len() == 3 {
-        [
-            mat.emissive[0] as f32,
-            mat.emissive[1] as f32,
-            mat.emissive[2] as f32,
-        ]
+        vec3_from_slice_f32(&mat.emissive)
     } else {
         [0.0, 0.0, 0.0]
     };
@@ -153,9 +156,9 @@ fn material_to_render_material(
         specular,
         mat.shininess as f32,
         emissive,
-        1.0,                           // ior
-        1.0 - mat.transparency as f32, // opacity
-        2,                             // illum (default to specular)
+        1.0,
+        1.0 - mat.transparency as f32,
+        2,
         texture_index,
     )
     .unwrap_or_default()
@@ -253,7 +256,7 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
         let mut result = Vec::new();
         for (mat_idx, (verts, inds, uvs)) in sub_meshes {
             let material = if mat_idx < mats.len() {
-                material_to_render_material(&mats[mat_idx], texture_map)
+                material_to_render_material(&mats[mat_idx], None, texture_map)
             } else {
                 engine_config::Material::default()
             };
@@ -272,7 +275,7 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
 
     let material = if let Some(mats) = materials {
         if !mats.is_empty() {
-            material_to_render_material(&mats[0], texture_map)
+            material_to_render_material(&mats[0], None, texture_map)
         } else {
             engine_config::Material::default()
         }

@@ -1,4 +1,14 @@
-#[derive(Debug)]
+use std::cmp::PartialEq;
+use std::sync::LazyLock;
+use anyhow::anyhow;
+
+static PLASTIC: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Plastic));
+static METAL: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Metal));
+static GLASS: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Glass));
+static MIRROR: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Mirror));
+static MATTE: LazyLock<Material> = LazyLock::new(|| Material::from(MaterialPresets::Matte));
+
+#[derive(Debug, PartialEq)]
 pub struct Material {
     pub name: String,
     pub ambient_reflectivity: Vec<f64>,  //Ka
@@ -9,6 +19,7 @@ pub struct Material {
     pub transparency: f64,               //d
     pub texture_path: Option<String>,    //map_Kd
 }
+
 #[allow(dead_code)]
 impl Material {
     #[allow(clippy::too_many_arguments)]
@@ -34,6 +45,7 @@ impl Material {
         }
     }
 }
+
 impl Clone for Material {
     fn clone(&self) -> Material {
         Material {
@@ -51,15 +63,156 @@ impl Clone for Material {
 
 impl Default for Material {
     fn default() -> Self {
-        Material {
-            name: String::new(),
-            ambient_reflectivity: vec![0.0, 0.0, 0.0],
-            diffuse_reflectivity: vec![0.0, 0.0, 0.0],
-            specular_reflectivity: vec![0.0, 0.0, 0.0],
-            emissive: vec![0.0, 0.0, 0.0],
-            shininess: 0.0,
-            transparency: 0.0,
-            texture_path: None,
+        MaterialPresets::default().into()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub enum MaterialPresets {
+    Plastic,
+    Metal,
+    Glass,
+    #[default]
+    Mirror,
+    Matte,
+}
+
+impl MaterialPresets {
+    pub const fn list() -> [&'static str; 5] {
+        ["plastic", "metal", "glass", "mirror", "matte"]
+    }
+
+    pub const fn list_enum() -> [MaterialPresets; 5] {
+        [
+            MaterialPresets::Plastic,
+            MaterialPresets::Metal,
+            MaterialPresets::Glass,
+            MaterialPresets::Mirror,
+            MaterialPresets::Matte,
+        ]
+    }
+}
+
+impl TryFrom<&str> for MaterialPresets {
+    type Error = anyhow::Error;
+
+    fn try_from(string: &str) -> Result<Self, Self::Error> {
+        match string {
+            "plastic" => Ok(MaterialPresets::Plastic),
+            "metal" => Ok(MaterialPresets::Metal),
+            "glass" => Ok(MaterialPresets::Glass),
+            "mirror" => Ok(MaterialPresets::Mirror),
+            "matte" => Ok(MaterialPresets::Matte),
+            _ => Err(anyhow!("Invalid material preset: {}", string)),
         }
+    }
+}
+
+impl From<MaterialPresets> for Material {
+    fn from(preset: MaterialPresets) -> Self {
+        match preset {
+            MaterialPresets::Plastic => Material::new(
+                "plastic".to_string(),
+                vec![0.02, 0.02, 0.02],
+                vec![1.0, 1.0, 1.0],
+                vec![0.04, 0.04, 0.04],
+                vec![0.0, 0.0, 0.0],
+                50.0,
+                1.0,
+                None,
+            ),
+            MaterialPresets::Matte => Material::new(
+                "matte".to_string(),
+                vec![0.05, 0.05, 0.05],
+                vec![0.8, 0.8, 0.8],
+                vec![0.02, 0.02, 0.02],
+                vec![0.0, 0.0, 0.0],
+                10.0,
+                1.0,
+                None,
+            ),
+            MaterialPresets::Mirror => Material::new(
+                "mirror".to_string(),
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                0.0,
+                0.0,
+                None,
+            ),
+            MaterialPresets::Glass => Material::new(
+                "glass".to_string(),
+                vec![0.0, 0.0, 0.0],
+                vec![0.0, 0.0, 0.0],
+                vec![0.9, 0.9, 0.9],
+                vec![0.0, 0.0, 0.0],
+                300.0,
+                0.0,
+                None,
+            ),
+            MaterialPresets::Metal => Material::new(
+                "metal".to_string(),
+                vec![0.0, 0.0, 0.0],
+                vec![0.5, 0.5, 0.5],
+                vec![0.5, 0.5, 0.5],
+                vec![0.0, 0.0, 0.0],
+                50.0,
+                1.0,
+                None,
+            ),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum MaterialRef {
+    Preset(MaterialPresets),
+    Custom(Material),
+}
+
+impl Default for MaterialRef {
+    fn default() -> Self {
+        MaterialRef::Preset(MaterialPresets::default())
+    }
+}
+
+impl MaterialRef {
+    pub fn get_material(&self) -> &Material {
+        match self {
+            MaterialRef::Preset(preset) => match preset {
+                MaterialPresets::Plastic => &PLASTIC,
+                MaterialPresets::Metal => &METAL,
+                MaterialPresets::Glass => &GLASS,
+                MaterialPresets::Mirror => &MIRROR,
+                MaterialPresets::Matte => &MATTE,
+            },
+            MaterialRef::Custom(mtl) => mtl,
+        }
+    }
+}
+
+impl PartialEq<Material> for &Material {
+    fn eq(&self, other: &Material) -> bool {
+        self.name == other.name
+            && self.ambient_reflectivity == other.ambient_reflectivity
+            && self.diffuse_reflectivity == other.diffuse_reflectivity
+            && self.specular_reflectivity == other.specular_reflectivity
+            && self.emissive == other.emissive
+            && self.shininess == other.shininess
+            && self.transparency == other.transparency
+            && self.texture_path == other.texture_path
+    }
+}
+
+impl From<Material> for MaterialRef {
+    fn from(mtl: Material) -> Self {
+        for def_mtl_name in MaterialPresets::list() {
+            let def_mtl = MaterialPresets::try_from(def_mtl_name).unwrap();
+            if mtl == Material::from(def_mtl) {
+                return MaterialRef::Preset(def_mtl);
+            }
+        }
+        MaterialRef::Custom(mtl)
     }
 }
