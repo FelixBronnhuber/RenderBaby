@@ -38,7 +38,9 @@ impl SceneScreen {
                 FileDialog::new().add_filter("IMAGE", &["png"]),
             ),
             file_dialog_save: ThreadedNativeFileDialog::new(
-                FileDialog::new().add_filter("JSON", &["json"]),
+                FileDialog::new()
+                    .add_filter("RenderBaby Scene", &["rscn"])
+                    .add_filter("JSON Scene", &["json"]),
             ),
             image_area: ImageArea::new(Default::default()),
             message_popup_pipe: MessagePopupPipe::new(),
@@ -100,14 +102,26 @@ impl Screen for SceneScreen {
 
         egui::TopBottomPanel::top("Toolbar").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                let save_as_clicked = ui.button("Save As").clicked();
-                let save_clicked = ui.button("Save").clicked();
+                let save_as_clicked = ui.button("Export to Scene File (.rscn)").clicked();
+
                 let output_path = self.model.scene.lock().unwrap().get_output_path();
+
+                // Can only be true if the button is shown and clicked.
+                let mut save_clicked = false;
+                if let Some(path) = output_path {
+                    let previous_file_name = match &path.file_name() {
+                        Some(name) => name.to_string_lossy(),
+                        None => "?".into(),
+                    };
+                    save_clicked = ui
+                        .button(format!("Quick Export ({})", previous_file_name))
+                        .clicked();
+                }
 
                 let scene_clone = self.model.scene.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
 
-                if save_clicked && output_path.is_some() {
+                if save_clicked {
                     message_pipe_clone.default_handle(scene_clone.lock().unwrap().save());
                 } else if save_as_clicked || save_clicked {
                     self.file_dialog_save.save_file(move |res| {
