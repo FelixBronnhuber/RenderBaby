@@ -146,7 +146,7 @@ impl std::fmt::Display for Camera {
         write!(f, "Camera at {}", self.get_position())
     }
 }
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Resolution {
     pub width: u32,
     pub height: u32,
