@@ -1,4 +1,4 @@
-# engine-wgpu-wrapper
+# scene-objects
 
 This crate provides geometric objects that can be used as elements in a ray tracer
 
@@ -35,6 +35,9 @@ use scene_objects::{
     - Directional Light
     - Point Light
 - Includes fields for material and texture
+- Trait GeometricObject: Any GeometricObject offers functions scale, rotate, translate
+- Trait SceneObjects: Any SceneObject offers a path, and the current values for scale, rotation, translation
+
 
 ## Example
 
