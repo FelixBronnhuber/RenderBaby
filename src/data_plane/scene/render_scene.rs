@@ -16,9 +16,9 @@ use scene_objects::{
 use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
-        scene::scene_graph::SceneGraph,
+        scene::{render_parameter::RenderParameter, scene_graph::SceneGraph},
         scene_io::{
-            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
+            img_export::export_img_png, obj_parser::OBJParser, scene_importer::parse_scene,
         },
     },
 };
@@ -27,14 +27,14 @@ use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
-    background_color: [f32; 3],
+    //background_color: [f32; 3],
     name: String,
     render_engine: Option<Engine>,
     first_render: bool,
     last_frame: Option<Frame>,
-    color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
     output_path: Option<PathBuf>,
+    render_params: RenderParameter,
 }
 impl Default for Scene {
     fn default() -> Self {
@@ -441,6 +441,9 @@ impl Scene {
     }
 
     pub fn new_with_options(load_engine: bool) -> Self {
+        //! Creates a new scene
+        //! ## Parameter
+        //! 'load_engine': if a render engine is to be loaded. See also function new
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
@@ -453,11 +456,12 @@ impl Scene {
             [position.x, position.y, position.z],
             rotation,
         );
+        let render_param = RenderParameter::default();
         Self {
             scene_graph: SceneGraph::new(),
-            // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
-            background_color: [1.0, 1.0, 1.0],
+            //background_color: [1.0, 1.0, 1.0],
+            render_params: render_param,
             render_engine: if load_engine {
                 Option::from(Engine::new(
                     RenderConfigBuilder::new()
@@ -469,13 +473,13 @@ impl Scene {
                             0,
                             0,
                             0,
-                            Uniforms::default().ground_height, //Leave or change to scene defaults
-                            Uniforms::GROUND_ENABLED,
-                            Uniforms::CHECKERBOARD_ENABLED,
-                            Uniforms::default().sky_color,
-                            Uniforms::default().max_depth,
-                            Uniforms::default().checkerboard_color_1,
-                            Uniforms::default().checkerboard_color_2,
+                            render_param.ground_height, //Leave or change to scene defaults
+                            render_param.ground_enabled,
+                            render_param.checkerboard_enabled,
+                            render_param.sky_color,
+                            render_param.max_depth,
+                            render_param.checkerboard_colors.0,
+                            render_param.checkerboard_colors.1,
                         ))
                         .spheres_create(vec![])
                         .uvs_create(vec![])
@@ -490,7 +494,6 @@ impl Scene {
             },
             first_render: true,
             last_frame: None,
-            color_hash_enabled: true,
             textures: HashMap::new(),
             output_path: None,
         }
@@ -598,12 +601,12 @@ impl Scene {
     }
 
     pub fn set_color_hash_enabled(&mut self, enabled: bool) {
-        self.color_hash_enabled = enabled;
+        self.render_params.color_hash_enabled = enabled;
         info!("{self}: set color hash enabled to {enabled}");
     }
 
     pub fn get_color_hash_enabled(&self) -> bool {
-        self.color_hash_enabled
+        self.render_params.color_hash_enabled
     }
 
     pub fn get_name(&self) -> &String {
@@ -623,13 +626,13 @@ impl Scene {
     pub fn get_background_color(&self) -> [f32; 3] {
         //! ## Returns
         //! Background color rgb as array of f32
-        self.background_color
+        self.render_params.sky_color
     }
 
     pub fn set_background_color(&mut self, color: [f32; 3]) {
         //! ## Parameters
         //! New background color as array of f32
-        self.background_color = color;
+        self.render_params.sky_color = color;
         info!(
             "Scene {self}: set background color to [{}, {}, {}]",
             color[0], color[1], color[2]
