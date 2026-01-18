@@ -5,10 +5,6 @@ use std::io::{Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
 use include_dir::{include_dir, Dir, File as IncludeFile};
 
-/* Functions to include files from the binary in the executable - instead of relying on the path.
-This makes the executable more reliable. Disagree?
- */
-
 static INCLUDED_FILES: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/included");
 const INCLUDED_PREFIX: &str = "$INCLUDED/";
 
@@ -26,6 +22,12 @@ pub enum AutoPath<'a> {
 }
 
 impl<'a> AutoPath<'a> {
+    #[inline]
+    fn with_include_prefix(path: &Path) -> PathBuf {
+        let mut pb = PathBuf::from(INCLUDED_PREFIX);
+        pb.push(path);
+        pb
+    }
     fn get_included_files_with_extensions(
         dir: &'static Dir<'static>,
         extensions: &[&str],
@@ -106,16 +108,17 @@ impl<'a> AutoPath<'a> {
 
     pub fn path_buf(&self) -> PathBuf {
         match self {
-            AutoPath::Included(path, _, _) => path.to_path_buf(),
+            AutoPath::Included(path, _, _) => Self::with_include_prefix(path),
             AutoPath::External(path) => path.clone(),
         }
     }
 
     pub fn get_popped(&self) -> Option<AutoPath<'a>> {
         match self {
-            AutoPath::Included(path, _, _) => path
-                .parent()
-                .map(|p| AutoPath::try_from(p.to_path_buf()).unwrap()),
+            AutoPath::Included(path, _, _) => path.parent().map(|p| {
+                let prefixed = Self::with_include_prefix(p);
+                AutoPath::try_from(prefixed).unwrap()
+            }),
             AutoPath::External(path) => {
                 let mut new_path = path.clone();
                 if new_path.pop() {
@@ -128,8 +131,16 @@ impl<'a> AutoPath<'a> {
     }
 
     pub fn get_joined(&self, other: &str) -> Option<AutoPath<'a>> {
-        let joined = self.path().join(other);
-        AutoPath::try_from(joined).ok()
+        match self {
+            AutoPath::Included(path, _, _) => {
+                let joined = Self::with_include_prefix(path).join(other);
+                AutoPath::try_from(joined).ok()
+            }
+            AutoPath::External(_) => {
+                let joined = self.path().join(other);
+                AutoPath::try_from(joined).ok()
+            }
+        }
     }
 
     pub fn extension(&self) -> Option<&str> {
@@ -195,7 +206,7 @@ impl<'a> AutoPath<'a> {
 
 impl Display for AutoPath<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.path().to_string_lossy())
+        write!(f, "{}", self.path_buf().to_string_lossy())
     }
 }
 
@@ -282,7 +293,8 @@ fn strip_include_path(path: &Path) -> &Path {
 
 fn get_included_file(path: &Path) -> Option<&'static IncludeFile<'static>> {
     if is_include_path(path) {
-        INCLUDED_FILES.get_file(strip_include_path(path))
+        let path = strip_include_path(path);
+        INCLUDED_FILES.get_file(path)
     } else {
         None
     }
