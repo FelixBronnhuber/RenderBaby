@@ -1,21 +1,36 @@
 use egui::{vec2, Area, Color32, Context, Id, LayerId, Order, Sense, Ui};
 
+/// Effect trait that should be drawn on top of any ui element.
 pub trait Effect {
+    /// Reset effect to its initial state.
     fn reset(&mut self) {}
+
+    /// Apply the effect to an [`Ui`] element.
     fn ui(&mut self, ui: &mut Ui);
+
+    /// Apply the effect to the entire window.
     fn update(&mut self, ctx: &Context);
 }
 
+/// Function that is called to draw additional content on top of a [`FillEffect`].
+///
+/// Receives the [`Ui`] and the filled [`egui::Rect`].
 type FillEffectAdditionalFn = Box<dyn FnMut(&mut Ui, egui::Rect)>;
 
+/// Fills the UI with a solid rgba color.
 pub struct FillEffect {
+    /// The layer id of the fill effect.
     pub id: LayerId,
+    /// Color used to fill the UI.
     pub rgba: Color32,
+    /// Whether the fill effect should be click-through.
     pub click_through: bool,
+    /// Optional function that can be called to draw additional content on top of the fill effect.
     pub additional_fn: Option<FillEffectAdditionalFn>,
 }
 
 impl FillEffect {
+    /// Create a new [`FillEffect`].
     pub fn new(
         id: Id,
         rgba: Color32,
@@ -31,6 +46,7 @@ impl FillEffect {
         }
     }
 
+    /// Internal helper function that draws the fill effect to the given [`egui::Rect`].
     fn _update(&mut self, ctx: &Context, rect: egui::Rect) {
         Area::new(self.id.id)
             .order(Order::Middle)
@@ -59,11 +75,16 @@ impl Effect for FillEffect {
     }
 }
 
+/// Fill effect extension that draws a spinner/loading animation.
 pub struct LoadingEffect {
+    /// Owns a [`FillEffect`] that draws the spinner.
     fill_effect: FillEffect,
 }
 
 impl LoadingEffect {
+    /// Create a new [`LoadingEffect`].
+    ///
+    /// Receives an effect [`Id`] and the spinner size in pixels ([`f32`]).
     pub fn new(id: Id, spinner_size: f32) -> Self {
         let mut temp_self = Self {
             fill_effect: FillEffect::new(
