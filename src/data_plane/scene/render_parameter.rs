@@ -20,7 +20,7 @@ impl Default for RenderParameter {
             checkerboard_colors: (uniform.checkerboard_color_1, uniform.checkerboard_color_2),
             max_depth: uniform.max_depth,
             sky_color: uniform.sky_color,
-            color_hash_enabled: false,
+            color_hash_enabled: true,
         }
     }
 }
