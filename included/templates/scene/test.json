@@ -1,0 +1,110 @@
+{
+  "scene_name": "scene",
+  "objects": [
+    {
+      "name": "capsule.obj",
+      "path": "../capsule/capsule.obj",
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "translation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      },
+      "rotation": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+      }
+    },
+    {
+      "name": "rustacean-3d.obj",
+      "path": "../ferris_low_poly/rustacean-3d.obj",
+      "scale": {
+        "x": 1.0,
+        "y": 1.0,
+        "z": 1.0
+      },
+      "translation": {
+        "x": 3.5,
+        "y": -0.2,
+        "z": -1.0
+      },
+      "rotation": {
+        "x": -90.0,
+        "y": 250.0,
+        "z": 0.0
+      }
+    }
+  ],
+  "lights": [],
+  "camera": {
+    "position": {
+      "x": 0.0,
+      "y": 2.0,
+      "z": 4.0
+    },
+    "look_at": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "up": {
+      "x": 0.0,
+      "y": 1.0,
+      "z": 0.0
+    },
+    "pane_distance": 35.0,
+    "pane_width": 36.0,
+    "resolution": {
+      "x": 256,
+      "y": 256
+    }
+  },
+  "background_color": {
+    "r": 1.0,
+    "g": 1.0,
+    "b": 1.0
+  },
+  "misc": {
+    "tts": [
+      {
+        "center": {
+          "x": 2.0,
+          "y": 0.0,
+          "z": 2.0
+        },
+        "radius": 1.0,
+        "material": {
+          "preset": "light"
+        },
+        "color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0
+        },
+        "name": "Sphere",
+        "scale": {
+          "x": 1.0,
+          "y": 1.0,
+          "z": 1.0
+        },
+        "translation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "rotation": {
+          "x": 0.0,
+          "y": 0.0,
+          "z": 0.0
+        }
+      }
+    ],
+    "ray_samples": 1,
+    "hash_color": false
+  }
+}

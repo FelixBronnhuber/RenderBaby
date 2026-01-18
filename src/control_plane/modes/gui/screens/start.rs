@@ -19,7 +19,7 @@ pub struct StartScreen {
 impl StartScreen {
     pub(crate) fn new() -> Self {
         let templates = match AutoPath::try_from("$INCLUDED/templates/scene") {
-            Ok(dir) => dir.all_from_extensions(&["json"]),
+            Ok(dir) => dir.all_from_extensions(&["json", "rscn"]),
             Err(err) => {
                 warn!("Failed to load templates: {}", err);
                 Vec::new()
