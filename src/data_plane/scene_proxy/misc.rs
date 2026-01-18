@@ -1,12 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::data_plane::{scene::render_scene::Scene, scene_proxy::proxy_sphere::ProxySphere};
+use crate::data_plane::{
+    scene::{render_parameter::RenderParameter, render_scene::Scene},
+    scene_proxy::proxy_sphere::ProxySphere,
+};
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Misc {
-    pub ray_samples: u32,
-    pub color_hash_enabled: bool,
-    pub spheres: Vec<ProxySphere>,
+pub(crate) struct Misc {
+    pub(crate) ray_samples: u32,
+    pub(crate) spheres: Vec<ProxySphere>,
+    pub(crate) render_param: RenderParameter,
 }
 impl Misc {
     pub fn new_from_scene(scene: &Scene) -> Self {
@@ -16,8 +19,8 @@ impl Misc {
         }
         Self {
             ray_samples: scene.get_camera().get_ray_samples(),
-            color_hash_enabled: scene.get_color_hash_enabled(),
             spheres,
+            render_param: scene.get_render_parameter(),
         }
     }
 }
@@ -25,8 +28,8 @@ impl Default for Misc {
     fn default() -> Self {
         Self {
             ray_samples: 50,
-            color_hash_enabled: false,
             spheres: vec![],
+            render_param: RenderParameter::default(),
         }
     }
 }
