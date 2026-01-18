@@ -52,7 +52,6 @@
     "lights": [
         {
             "name": "light 1",
-            "type": "point",
             "luminosity": 1000.0,
             "position": {
                 "x": -2.0,
@@ -67,7 +66,6 @@
         },
         {
             "name": "light 2",
-            "type": "point",
             "luminosity": 300.0,
             "position": {
                 "x": 7.8,
@@ -82,7 +80,6 @@
         },
         {
             "name": "light 3",
-            "type": "point",
             "luminosity": 100.0,
             "position": {
                 "x": 3.0,

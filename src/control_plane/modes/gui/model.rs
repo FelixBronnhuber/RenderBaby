@@ -12,9 +12,10 @@ use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 pub struct Model {
     pub scene: Arc<Mutex<Scene>>,
     pub proxy: ProxyScene,
-    // flag to indicate whether the scene has been modified without also modifying the proxy
+    // flag to indicate whether the real scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
     pub frame_buffer: FrameBuffer,
+    pub export_misc: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]
@@ -103,6 +104,7 @@ impl Model {
             proxy,
             proxy_dirty: Arc::new(AtomicBool::new(false)),
             frame_buffer: FrameBuffer::new(true),
+            export_misc: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -113,7 +115,10 @@ impl Model {
 
     pub fn save(&self) -> anyhow::Result<()> {
         // throws an error if an output path isn't set
-        self.scene.lock().unwrap().save()
+        self.scene
+            .lock()
+            .unwrap()
+            .save(self.export_misc.load(Ordering::SeqCst))
     }
 
     pub fn render(&self) -> anyhow::Result<()> {

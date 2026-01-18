@@ -72,8 +72,11 @@ impl FileManager {
     }
 
     /// Recursively finds the first scene.json in the directory.
+    /// If not found, returns the first .json file found.
     pub fn find_scene_json(root: &Path) -> Result<PathBuf> {
         let mut queue = vec![root.to_path_buf()];
+        let mut first_json_fallback: Option<PathBuf> = None;
+
         while let Some(dir) = queue.pop() {
             if dir.is_dir() {
                 for entry in fs::read_dir(dir)? {
@@ -81,14 +84,26 @@ impl FileManager {
                     let path = entry.path();
                     if path.is_dir() {
                         queue.push(path);
-                    } else if path.file_name().map(|s| s == "scene.json").unwrap_or(false) {
-                        debug!("FileManager: Found scene.json at {:?}", path);
-                        return Ok(path);
+                    } else if let Some(name) = path.file_name() {
+                        if name == "scene.json" {
+                            debug!("FileManager: Found scene.json at {:?}", path);
+                            return Ok(path);
+                        } else if path.extension().map(|e| e == "json").unwrap_or(false)
+                            && first_json_fallback.is_none()
+                        {
+                            first_json_fallback = Some(path);
+                        }
                     }
                 }
             }
         }
-        Err(anyhow::anyhow!("scene.json not found in archive"))
+
+        if let Some(path) = first_json_fallback {
+            debug!("FileManager: Falling back to found json at {:?}", path);
+            Ok(path)
+        } else {
+            Err(anyhow::anyhow!("No scene json file found in archive"))
+        }
     }
 
     /// Zips a staging directory to the output path.
