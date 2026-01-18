@@ -2,7 +2,6 @@ use std::fs::{self, File};
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use scene_objects::geometric_object::SceneObject;
-use scene_objects::light_source::*;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_io::scene_io_objects::*;
 use crate::data_plane::scene_io::file_manager::FileManager;
@@ -12,7 +11,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 static EXPORT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
+pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::Result<()> {
     info!(
         "SceneExporter: Exporting scene '{}' to {:?}",
         sc.get_name(),
@@ -53,7 +52,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
         let written_path;
 
         if is_rscn {
-            // Copy file to staging/scene/obj/
             let src = object.get_path().unwrap_or_default();
 
             let filename = src
@@ -69,8 +67,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 fs::create_dir_all(p)?;
             }
 
-            // It's possible the file doesn't exist if it was procedural or moved.
-            // We attempt copy.
             if src.exists() {
                 debug!(
                     "SceneExporter: Copying asset from {:?} to {:?}",
@@ -78,7 +74,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 );
                 fs::copy(&src, &dest_abs)?;
 
-                // Recursively copy dependencies (MTL, textures)
                 if let Err(e) = copy_obj_dependencies(&src, &dest_abs) {
                     warn!(
                         "SceneExporter: Error copying dependencies for {:?}: {}",
@@ -92,27 +87,31 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
                 );
             }
 
-            // Path in JSON should be relative to scene.json (which is in base_dir)
             let p_str = dest_rel.to_string_lossy().to_string();
             #[cfg(windows)]
             let p_str = p_str.replace('\\', "/");
 
             written_path = p_str;
+        } else if let Ok(relative_path) = object
+            .get_path()
+            .unwrap_or_default()
+            .strip_prefix(&base_dir)
+        {
+            written_path = relative_path.to_string_lossy().to_string();
+        } else if let Ok(relative_path) = object
+            .get_path()
+            .unwrap_or_default()
+            .strip_prefix(base_dir.parent().unwrap())
+        {
+            let mut path = PathBuf::from("../");
+            path.push(relative_path);
+            written_path = path.to_string_lossy().to_string();
         } else {
-            // if path is absolute (obj_import) or else path is relative (scene_import)
-            if let Ok(relative_path) = object
+            written_path = object
                 .get_path()
                 .unwrap_or_default()
-                .strip_prefix(&base_dir)
-            {
-                written_path = relative_path.to_string_lossy().to_string();
-            } else {
-                written_path = object
-                    .get_path()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string();
-            }
+                .to_string_lossy()
+                .to_string();
         }
 
         objects.push(ParsingObject {
@@ -129,19 +128,10 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
         let colors = light_source.get_color();
         lightarr.push(FileLightSource {
             name: light_source.get_name().clone(),
-            r#type: match light_source.get_light_type() {
-                LightType::Ambient => "ambient".to_owned(),
-                LightType::Point => "point".to_owned(),
-                LightType::Directional => "directional".to_owned(),
-            },
+            r#type: "point".to_string(),
             position: light_source.get_position().into(),
             luminosity: light_source.get_luminositoy(),
-            color: FileColor {
-                r: colors[0],
-                g: colors[1],
-                b: colors[2],
-                a: None,
-            },
+            color: (&colors).into(),
             rotation: Some(light_source.get_rotation().into()),
         })
     });
@@ -163,6 +153,25 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
     //background
     let bg = sc.get_background_color();
 
+    //spheres
+    let spheres = sc.get_spheres();
+    let mut file_spheres = Vec::new();
+    if !spheres.is_empty() {
+        spheres.iter().for_each(|sphere| {
+            let material = sphere.get_material();
+            file_spheres.push(FileSphere {
+                center: sphere.get_center().into(),
+                radius: sphere.get_radius(),
+                material: FileMaterialRef::try_from(material).ok(),
+                color: (&sphere.get_color()).into(),
+                name: "Sphere".to_owned(),
+                scale: sphere.get_scale().into(),
+                translation: sphere.get_translation().into(),
+                rotation: sphere.get_rotation().into(),
+            })
+        });
+    }
+
     let final_scene = SceneFile {
         scene_name,
         objects,
@@ -173,6 +182,15 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene) -> anyhow::Result<()> {
             g: bg[1],
             b: bg[2],
             a: None,
+        },
+        misc: if export_misc {
+            Some(SceneFileMisc {
+                spheres: Some(file_spheres),
+                ray_samples: Some(sc.get_camera().get_ray_samples()),
+                hash_color: Some(sc.get_color_hash_enabled()),
+            })
+        } else {
+            None
         },
     };
 
@@ -263,7 +281,6 @@ fn resolve_and_copy(
         fs::copy(&src_path, &dest_path)?;
     }
 
-    // Look for textures inside mtl
     if is_mtl {
         let file = File::open(&src_path)?;
         let reader = std::io::BufReader::new(file);

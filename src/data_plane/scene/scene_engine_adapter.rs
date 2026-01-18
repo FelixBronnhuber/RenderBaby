@@ -30,15 +30,12 @@ fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
     //! 'light': LightSource that is to be converted
     //! ## Returns
     //! Options of engine_config::PointLight: Some if light has Type Point
-    match light.get_light_type() {
-        scene_objects::light_source::LightType::Point => Some(RenderLight::new(
-            light.get_position().into(),
-            0.5,
-            light.get_luminositoy(),
-            light.get_color(),
-        )),
-        _ => None,
-    }
+    Some(RenderLight::new(
+        light.get_position().into(),
+        0.5,
+        light.get_luminositoy(),
+        light.get_color(),
+    ))
 }
 
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {

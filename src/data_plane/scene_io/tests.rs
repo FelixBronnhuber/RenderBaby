@@ -1,10 +1,11 @@
-use crate::data_plane::{scene::render_scene::Scene, scene_io::file_manager::FileManager};
+use crate::data_plane::{
+    scene::render_scene::Scene,
+    scene_io::file_manager::FileManager,
+    scene_io::{scene_exporter, scene_importer},
+};
 use glam::Vec3;
 use scene_objects::{
-    camera::Camera,
-    light_source::{LightSource, LightType},
-    material::Material,
-    sphere::Sphere,
+    camera::Camera, light_source::LightSource, material::Material, sphere::Sphere,
     geometric_object::SceneObject,
 };
 use std::fs;
@@ -29,7 +30,7 @@ fn create_test_scene(name: &str) -> Scene {
         [1.0, 1.0, 1.0],
         "TestLight".to_string(),
         Vec3::ZERO,
-        LightType::Point,
+        //LightType::Point,
     ));
 
     // Setup camera
@@ -64,7 +65,7 @@ fn test_json_export_import_integrity() {
 
     // Export
     original_scene
-        .export_scene(file_path.clone())
+        .export_scene(file_path.clone(), false)
         .expect("Failed to export JSON scene");
 
     // Import
@@ -104,7 +105,7 @@ fn test_rscn_export_import_with_mesh() {
 
     // Export to .rscn
     scene
-        .export_scene(export_path.clone())
+        .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
     assert!(export_path.exists());
 
@@ -176,10 +177,10 @@ fn test_idempotency() {
         [1.0, 1.0, 1.0],
         "L".into(),
         Vec3::ZERO,
-        LightType::Ambient,
+        //LightType::Ambient,
     ));
 
-    scene.export_scene(export_path.clone()).unwrap();
+    scene.export_scene(export_path.clone(), false).unwrap();
 
     let s1 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
     let s2 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
@@ -199,14 +200,14 @@ fn test_scene_save_method() {
     let mut scene = create_test_scene("SaveMethodTest");
 
     // Initially no output path, save should fail
-    assert!(scene.save().is_err());
+    assert!(scene.save(false).is_err());
 
     // Set path
     scene.set_output_path(Some(save_path.clone())).unwrap();
     assert_eq!(scene.get_output_path(), Some(save_path.clone()));
 
     // Save should work now
-    scene.save().expect("Scene::save() failed");
+    scene.save(false).expect("Scene::save() failed");
 
     assert!(save_path.exists());
 
@@ -224,7 +225,7 @@ fn test_rscn_import_disables_color_hash() {
     // Default should be true
     assert!(scene.get_color_hash_enabled());
 
-    scene.export_scene(export_path.clone()).unwrap();
+    scene.export_scene(export_path.clone(), false).unwrap();
 
     // Load it back
     let loaded = Scene::load_scene_from_path(export_path, false).unwrap();
@@ -257,7 +258,7 @@ fn test_rscn_export_with_mtl() {
 
     // Export
     scene
-        .export_scene(export_path.clone())
+        .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
 
     // Verify content by unzipping manually (using FileManager)
@@ -276,4 +277,80 @@ fn test_rscn_export_with_mtl() {
     // Clean up
     let _ = fs::remove_dir_all(temp_dir);
     let _ = fs::remove_dir_all(unzipped_path);
+}
+
+#[test]
+fn test_export_import_misc_data() {
+    let temp_dir = setup_temp_dir();
+    let file_path = temp_dir.join("test_scene.json");
+
+    let mut scene = Scene::new();
+    scene.set_name("Test Scene".to_string());
+
+    // Add a sphere
+    let sphere = Sphere::new(
+        Vec3::new(1.0, 2.0, 3.0),
+        1.5,
+        Material::default(),
+        [1.0, 0.0, 0.0],
+    );
+    scene.add_sphere(sphere);
+
+    // Set ray samples and hash color
+    scene.get_camera_mut().set_ray_samples(10);
+    scene.set_color_hash_enabled(false);
+
+    // Export with export_misc = true
+    scene_exporter::serialize_scene(file_path.clone(), &scene, true).expect("Export failed");
+
+    // Import back
+    let loaded_data = scene_importer::parse_scene(file_path.clone(), None).expect("Import failed");
+    let loaded_scene = loaded_data.scene;
+
+    // Verify sphere
+    assert_eq!(loaded_scene.get_spheres().len(), 1);
+    let loaded_sphere = &loaded_scene.get_spheres()[0];
+    assert_eq!(loaded_sphere.get_center(), Vec3::new(1.0, 2.0, 3.0));
+    assert_eq!(loaded_sphere.get_radius(), 1.5);
+
+    // Verify ray samples
+    assert_eq!(loaded_scene.get_camera().get_ray_samples(), 10);
+
+    // Verify hash color
+    assert!(!loaded_scene.get_color_hash_enabled());
+}
+
+#[test]
+fn test_export_misc_data_disabled() {
+    let temp_dir = setup_temp_dir();
+    let file_path = temp_dir.join("test_scene_no_misc.json");
+
+    let mut scene = Scene::new();
+    scene.set_name("Test Scene No Misc".to_string());
+
+    let sphere = Sphere::new(
+        Vec3::new(1.0, 2.0, 3.0),
+        1.5,
+        Material::default(),
+        [1.0, 0.0, 0.0],
+    );
+    scene.add_sphere(sphere);
+    scene.get_camera_mut().set_ray_samples(10);
+    scene.set_color_hash_enabled(false);
+
+    // Export with export_misc = false
+    scene_exporter::serialize_scene(file_path.clone(), &scene, false).expect("Export failed");
+
+    // Import back
+    let loaded_data = scene_importer::parse_scene(file_path.clone(), None).expect("Import failed");
+    let loaded_scene = loaded_data.scene;
+
+    // Verify sphere NOT present
+    assert_eq!(loaded_scene.get_spheres().len(), 0);
+
+    // Verify ray samples (should be default, which is 1)
+    assert_ne!(loaded_scene.get_camera().get_ray_samples(), 10);
+
+    // Verify hash color (should be default, which is true)
+    assert!(loaded_scene.get_color_hash_enabled());
 }
