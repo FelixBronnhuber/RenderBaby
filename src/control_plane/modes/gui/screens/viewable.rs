@@ -198,10 +198,10 @@ impl ProxyCamera {
         if ui.input(|i| i.key_down(egui::Key::S)) {
             movement = movement.add(&forward.scale(-move_speed));
         }
-        if ui.input(|i| i.key_down(egui::Key::A)) {
+        if ui.input(|i| i.key_down(egui::Key::D)) {
             movement = movement.add(&right.scale(move_speed));
         }
-        if ui.input(|i| i.key_down(egui::Key::D)) {
+        if ui.input(|i| i.key_down(egui::Key::A)) {
             movement = movement.add(&right.scale(-move_speed));
         }
         if ui.input(|i| i.key_down(egui::Key::PageUp) || i.key_down(egui::Key::E)) {
@@ -312,7 +312,7 @@ impl Viewable for ProxyCamera {
         });
         ui.separator();
 
-        ui.label("Camera Position:");
+        ui.label("Camera Origin:");
         if vec3_ui(ui, &mut self.position) {
             // TODO MICHAEL:
             scene
@@ -323,7 +323,7 @@ impl Viewable for ProxyCamera {
             changed = true;
         }
 
-        ui.label("Camera Direction:");
+        ui.label("Camera Look At Point:");
         if vec3_ui(ui, &mut self.look_at) {
             // TODO MICHAEL:
             scene
@@ -493,14 +493,17 @@ impl Viewable for Misc {
     fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) -> bool {
         let mut changed = false;
         if ui
-            .checkbox(&mut self.color_hash_enabled, "Enable Color Hash")
+            .checkbox(
+                &mut self.render_param.color_hash_enabled,
+                "Enable Color Hash",
+            )
             .changed()
         {
             // TODO MICHAEL: die Methode wird zwar aufgerufen ändert aber tatsächlich nichts - schau das bitte an, kann aber auch sein, dass das bereits gefixt wurde.
             scene
                 .lock()
                 .unwrap()
-                .set_color_hash_enabled(self.color_hash_enabled);
+                .set_color_hash_enabled(self.render_param.color_hash_enabled);
             changed = true;
         }
 
