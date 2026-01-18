@@ -5,9 +5,9 @@ use glam::Vec3;
 use scene_objects::{
     camera,
     camera::Camera,
-    light_source::{LightSource, LightType},
+    light_source::{LightSource},
     sphere::Sphere,
-    material::Material,
+    material::*,
 };
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
@@ -48,12 +48,6 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
                 } else {
                     Vec3::new(0.0, 0.0, 0.0)
                 }
-            },
-            match light.r#type.as_str() {
-                "ambient" => LightType::Ambient,
-                "point" => LightType::Point,
-                "directional" => LightType::Directional,
-                _ => LightType::Ambient,
             },
         ))
     }
@@ -110,43 +104,36 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
         .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
         .collect();
 
-    //Spheres
-    if let Some(file_spheres) = file.spheres {
-        file_spheres.iter().for_each(|file_sphere| {
-            scene.add_sphere(Sphere::new(
-                Vec3::new(
-                    file_sphere.center.x,
-                    file_sphere.center.y,
-                    file_sphere.center.z,
-                ),
-                file_sphere.radius,
-                Material::new(
-                    file_sphere.material.name.clone(),
-                    file_sphere.material.ambient_reflectivity.clone(),
-                    file_sphere.material.diffuse_reflectivity.clone(),
-                    file_sphere.material.specular_reflectivity.clone(),
-                    file_sphere.material.emissive.clone(),
-                    file_sphere.material.shininess,
-                    file_sphere.material.transparency,
-                    None,
-                ),
-                [
-                    file_sphere.color.r,
-                    file_sphere.color.g,
-                    file_sphere.color.b,
-                ],
-            ))
-        })
-    };
+    if let Some(misc) = &file.misc {
+        if let Some(spheres) = &misc.spheres {
+            for sphere in spheres {
+                let material = match &sphere.material {
+                    Some(material) => match material {
+                        FileMaterialRef::Preset { preset: _ } => {
+                            todo!("presets are not supported yet. coming in new pr")
+                        }
+                        FileMaterialRef::Path { path: _ } => {
+                            todo!()
+                        }
+                    },
+                    None => Material::default(),
+                };
+                scene.add_sphere(Sphere::new(
+                    Vec3::new(sphere.center.x, sphere.center.y, sphere.center.z),
+                    sphere.radius,
+                    material,
+                    (&sphere.color).into(),
+                ));
+            }
+        }
 
-    //set ray_samples
-    if let Some(samples) = file.ray_samples {
-        scene.get_camera_mut().set_ray_samples(samples);
-    }
+        if let Some(ray_samples) = &misc.ray_samples {
+            scene.get_camera_mut().set_ray_samples(*ray_samples);
+        }
 
-    //set hash_coloring
-    if let Some(coloring) = file.hash_color {
-        scene.set_color_hash_enabled(coloring);
+        if let Some(hash_color) = &misc.hash_color {
+            scene.set_color_hash_enabled(*hash_color);
+        }
     }
 
     Ok(LoadedSceneData {

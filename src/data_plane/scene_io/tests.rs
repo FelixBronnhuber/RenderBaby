@@ -5,10 +5,7 @@ use crate::data_plane::{
 };
 use glam::Vec3;
 use scene_objects::{
-    camera::Camera,
-    light_source::{LightSource, LightType},
-    material::Material,
-    sphere::Sphere,
+    camera::Camera, light_source::LightSource, material::Material, sphere::Sphere,
     geometric_object::SceneObject,
 };
 use std::fs;
@@ -33,7 +30,7 @@ fn create_test_scene(name: &str) -> Scene {
         [1.0, 1.0, 1.0],
         "TestLight".to_string(),
         Vec3::ZERO,
-        LightType::Point,
+        //LightType::Point,
     ));
 
     // Setup camera
@@ -180,7 +177,7 @@ fn test_idempotency() {
         [1.0, 1.0, 1.0],
         "L".into(),
         Vec3::ZERO,
-        LightType::Ambient,
+        //LightType::Ambient,
     ));
 
     scene.export_scene(export_path.clone(), false).unwrap();

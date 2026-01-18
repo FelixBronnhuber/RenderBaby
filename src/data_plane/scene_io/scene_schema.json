@@ -34,20 +34,35 @@
                 "$ref": "#/$defs/light"
             }
         },
-        "spheres": {
-            "type": "array",
-            "items": {
-                "$ref": "#/$defs/sphere"
-            }
-        },
-        "ray_samples": {
-            "type": "number"
-        },
-        "hash_color": {
-            "type": "boolean"
+        "misc": {
+            "$ref": "#/$defs/misc"
         }
     },
     "$defs": {
+        "materialRef": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": ["preset"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "preset": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": ["path"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
+        },
         "vec3": {
             "type": "object",
             "required": [
@@ -195,14 +210,6 @@
                 "name": {
                     "type": "string"
                 },
-                "type": {
-                    "type": "string",
-                    "enum": [
-                        "ambient",
-                        "point",
-                        "directional"
-                    ]
-                },
                 "luminosity": {
                     "type": "number",
                     "exclusiveMinimum": 0
@@ -220,7 +227,6 @@
             "required": [
                 "center",
                 "radius",
-                "material",
                 "color",
                 "name",
                 "scale",
@@ -235,7 +241,8 @@
                     "type": "number"
                 },
                 "material": {
-                    "$ref": "#/$defs/sphereMaterial"
+                    "$ref": "#/$defs/materialRef",
+                    "default": { "preset": "default" }
                 },
                 "color": {
                     "$ref": "#/$defs/color"
@@ -255,45 +262,24 @@
             },
             "additionalProperties": false
         },
-        "sphereMaterial": {
+        "misc": {
             "type": "object",
-            "required": [
-                "name",
-                "ambient_reflectivity",
-                "diffuse_reflectivity",
-                "specular_reflectivity",
-                "emissive",
-                "shininess",
-                "transparency"
-            ],
+            "additionalProperties": false,
             "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "ambient_reflectivity": {
+                "spheres": {
                     "type": "array",
-                    "items": { "type": "number" }
+                    "items": {
+                        "$ref": "#/$defs/sphere"
+                    }
                 },
-                "diffuse_reflectivity": {
-                    "type": "array",
-                    "items": { "type": "number" }
+                "ray_samples": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
                 },
-                "specular_reflectivity": {
-                    "type": "array",
-                    "items": { "type": "number" }
-                },
-                "emissive": {
-                    "type": "array",
-                    "items": { "type": "number" }
-                },
-                "shininess": {
-                    "type": "number"
-                },
-                "transparency": {
-                    "type": "number"
+                "hash_color": {
+                    "type": "boolean"
                 }
-            },
-            "additionalProperties": false
+            }
         }
     }
 }
