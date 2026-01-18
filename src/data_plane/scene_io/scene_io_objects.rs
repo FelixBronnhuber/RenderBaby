@@ -36,6 +36,7 @@ pub struct ParsingObject {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileLightSource {
     pub name: String,
+    pub r#type: String,
     pub position: Vec3d,
     pub luminosity: f32,
     pub color: FileColor,

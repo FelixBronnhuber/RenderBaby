@@ -128,14 +128,10 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
         let colors = light_source.get_color();
         lightarr.push(FileLightSource {
             name: light_source.get_name().clone(),
+            r#type: "point".to_string(),
             position: light_source.get_position().into(),
             luminosity: light_source.get_luminositoy(),
-            color: FileColor {
-                r: colors[0],
-                g: colors[1],
-                b: colors[2],
-                a: None,
-            },
+            color: (&colors).into(),
             rotation: Some(light_source.get_rotation().into()),
         })
     });
