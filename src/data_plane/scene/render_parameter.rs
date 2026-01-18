@@ -1,13 +1,14 @@
 use engine_config::Uniforms;
-#[derive(Copy, Clone, Debug)]
-pub(super) struct RenderParameter {
-    pub(super) ground_height: f32,
-    pub(super) ground_enabled: bool,
-    pub(super) checkerboard_enabled: bool,
-    pub(super) checkerboard_colors: ([f32; 3], [f32; 3]),
-    pub(super) max_depth: u32,
-    pub(super) sky_color: [f32; 3],
-    pub(super) color_hash_enabled: bool,
+use serde::{Deserialize, Serialize};
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub(crate) struct RenderParameter {
+    pub(crate) ground_height: f32,
+    pub(crate) ground_enabled: bool,
+    pub(crate) checkerboard_enabled: bool,
+    pub(crate) checkerboard_colors: ([f32; 3], [f32; 3]),
+    pub(crate) max_depth: u32,
+    pub(crate) sky_color: [f32; 3],
+    pub(crate) color_hash_enabled: bool,
 }
 
 impl Default for RenderParameter {

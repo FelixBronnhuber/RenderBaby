@@ -3,7 +3,7 @@ use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
 use glam::Vec3;
-use log::{info, error, debug};
+use log::{debug, error, info, warn};
 use frame_buffer::frame_iterator::Frame;
 use scene_objects::{
     camera::{Camera, Resolution},
@@ -637,6 +637,86 @@ impl Scene {
             "Scene {self}: set background color to [{}, {}, {}]",
             color[0], color[1], color[2]
         );
+    }
+    pub fn get_ground_height(&self) -> f32 {
+        //! ## Returns
+        //! Scene ground height as f32
+        self.render_params.ground_height
+    }
+
+    pub fn set_ground_height(&mut self, height: f32) {
+        //! ## Parameters
+        //! New background color as array of f32
+        self.render_params.ground_height = height;
+        info!("Scene {self}: set ground height to {}", height);
+    }
+
+    pub fn get_ground_enabled(&self) -> bool {
+        //! ## Returns
+        //! If ground is anabled
+        self.render_params.ground_enabled
+    }
+
+    pub fn set_ground_enabled(&mut self, enabled: bool) {
+        //! ## Parameters
+        //! 'enabled': bool representing if ground should be enabled or not
+        self.render_params.ground_enabled = enabled;
+        info!("Scene {self}: set ground enabled  to {}", enabled);
+    }
+
+    pub fn get_checkerboard_enabled(&self) -> bool {
+        //! ## Returns
+        //! If checkerboard is anabled
+        self.render_params.checkerboard_enabled
+    }
+
+    pub fn set_checkerboard_enabled(&mut self, enabled: bool) {
+        //! ## Parameters
+        //! 'enabled': bool representing if checkerboard should be enabled or not
+        self.render_params.checkerboard_enabled = enabled;
+        info!("Scene {self}: set checkerboard enabled  to {}", enabled);
+    }
+    pub fn get_checkerboard_colors(&self) -> ([f32; 3], [f32; 3]) {
+        //! ## Returns
+        //! checkerboard colors as pair of [f32;3]
+        self.render_params.checkerboard_colors
+    }
+
+    pub fn set_checkerboared_colors(&mut self, colors: ([f32; 3], [f32; 3])) {
+        //! ## Parameters
+        //! 'colors': pair of [f32;3] represesnting rgb colors
+        self.render_params.checkerboard_colors = colors;
+        info!("Scene {self}: set ground enabled  to {:?}", colors);
+    }
+
+    pub fn get_max_depth(&self) -> u32 {
+        //! ## Returns
+        //! Max depth of render recursion
+        self.render_params.max_depth
+    }
+
+    pub fn set_max_depth(&mut self, depth: u32) {
+        //! ## Parameters
+        //! 'depth': new maximum depth of render recursions
+        // todo maybe specify valid values? is 1 ok?
+        if depth > 0 {
+            self.render_params.max_depth = depth;
+            info!("Scene {self}: set maximum depth  to {}", depth);
+        } else {
+            warn!("{self}: ignoring invalid render depth {depth}")
+        }
+    }
+    pub fn get_render_parameter(&self) -> RenderParameter {
+        //! ## Returns
+        //! RenderParameter of the scene
+        self.render_params
+    }
+
+    pub fn set_render_parameter(&mut self, param: RenderParameter) {
+        //! ## Parameters
+        //! 'param': new RenderParameter
+        self.render_params = param;
+        info!("Scene {self}: set render parameter  to {:?}", param);
     }
 
     pub fn set_last_render(&mut self, frame: Frame) {
