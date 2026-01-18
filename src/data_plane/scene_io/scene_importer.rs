@@ -13,6 +13,7 @@ use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 use crate::data_plane::scene_io::file_manager::FileManager;
 use log::{info, debug, error};
+use crate::data_plane::scene_io::mtl_parser::load_mtl_with_name;
 
 pub struct LoadedSceneData {
     pub scene: Scene,
@@ -109,11 +110,14 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
             for sphere in spheres {
                 let material = match &sphere.material {
                     Some(material) => match material {
-                        FileMaterialRef::Preset { preset: _ } => {
-                            todo!("presets are not supported yet. coming in new pr")
+                        FileMaterialRef::Preset { preset } => {
+                            match MaterialPresets::try_from(preset.as_str()) {
+                                Ok(preset) => preset.into(),
+                                Err(_) => Material::default(),
+                            }
                         }
-                        FileMaterialRef::Path { path: _ } => {
-                            todo!()
+                        FileMaterialRef::Path { path, name } => {
+                            load_mtl_with_name(PathBuf::from(path), name.clone())?
                         }
                     },
                     None => Material::default(),

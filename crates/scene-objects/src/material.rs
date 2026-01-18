@@ -94,6 +94,18 @@ impl MaterialPresets {
     }
 }
 
+impl From<MaterialPresets> for String {
+    fn from(preset: MaterialPresets) -> Self {
+        match preset {
+            MaterialPresets::Plastic => "plastic",
+            MaterialPresets::Metal => "metal",
+            MaterialPresets::Mirror => "mirror",
+            MaterialPresets::Light => "light",
+        }
+        .to_string()
+    }
+}
+
 impl TryFrom<&str> for MaterialPresets {
     type Error = anyhow::Error;
 
@@ -156,6 +168,19 @@ impl From<MaterialPresets> for Material {
                 None,
             ),
         }
+    }
+}
+
+impl TryFrom<&Material> for MaterialPresets {
+    type Error = anyhow::Error;
+
+    fn try_from(mtl: &Material) -> anyhow::Result<Self> {
+        for preset in MaterialPresets::list_enum() {
+            if *mtl == Material::from(preset) {
+                return Ok(preset);
+            }
+        }
+        Err(anyhow!("Material {:?} is not a preset", mtl))
     }
 }
 

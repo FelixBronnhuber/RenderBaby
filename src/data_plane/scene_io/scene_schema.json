@@ -58,6 +58,9 @@
                     "properties": {
                         "path": {
                             "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
                         }
                     }
                 }
