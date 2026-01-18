@@ -432,27 +432,29 @@ impl GpuWrapper {
     pub fn read_pixels(&self) -> Result<Vec<u8>> {
         let buffer_slice = self.buffer_wrapper.staging.slice(..);
         let (sender, receiver) = std::sync::mpsc::channel();
-
         buffer_slice.map_async(wgpu::MapMode::Read, move |res| {
             let _ = sender.send(res);
         });
-
         self.device
             .poll(wgpu::PollType::wait_indefinitely())
             .map_err(|e| anyhow!("Device poll failed: {:?}", e))?;
-
         receiver
             .recv()
             .map_err(|_| anyhow!("Failed to receive map_async result"))??;
 
         let data_slice = buffer_slice.get_mapped_range();
-        let mut result = Vec::with_capacity((self.get_image_buffer_size() * 4) as usize);
+        let width = self.get_width() as usize;
+        let height = self.get_height() as usize;
+        let mut result = Vec::with_capacity(width * height * 4);
 
-        for chunk in data_slice.chunks_exact(4) {
-            result.push(chunk[0]);
-            result.push(chunk[1]);
-            result.push(chunk[2]);
-            result.push(255u8);
+        for y in 0..height {
+            for x in (0..width).rev() {
+                let idx = (y * width + x) * 4;
+                result.push(data_slice[idx]);
+                result.push(data_slice[idx + 1]);
+                result.push(data_slice[idx + 2]);
+                result.push(255u8);
+            }
         }
 
         drop(data_slice);

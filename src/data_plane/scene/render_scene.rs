@@ -78,6 +78,10 @@ impl Scene {
         for (i, p_str) in paths.iter().enumerate() {
             let p = AutoPath::try_from(p_str.to_string())?;
             debug!("Scene: Loading object {} from {:?}", i, p);
+            info!(
+                "Scene: Applying transformations: translation={:?}, rotation={:?}, scale={:?}",
+                translation[i], rotation[i], scale[i]
+            );
             scene.load_object_from_file_relative(
                 p.clone(),
                 p.path_buf(),
