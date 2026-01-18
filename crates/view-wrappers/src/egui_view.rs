@@ -2,9 +2,12 @@ use crate::ViewWrapper;
 use eframe::egui::Context;
 use eframe::{App, CreationContext, Frame};
 
+/// Trait for wrappers around views that can be opened with eframe
 pub trait EframeViewWrapper: ViewWrapper + App + 'static {
+    /// Called in the first [`App::update`] cycle.
     fn on_start(&mut self, ctx: &Context, frame: &mut Frame);
 
+    /// Opens the view using eframe (native settings, Wgpu renderer for stability).
     fn open_native(self, app_name: &str) {
         let options = eframe::NativeOptions {
             renderer: eframe::Renderer::Wgpu,
