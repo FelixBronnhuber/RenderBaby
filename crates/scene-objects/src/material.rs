@@ -17,6 +17,7 @@ pub struct Material {
     pub shininess: f64,                  //Ns
     pub transparency: f64,               //d
     pub texture_path: Option<String>,    //map_Kd
+    pub ref_path: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -31,6 +32,7 @@ impl Material {
         shininess: f64,
         transparency: f64,
         texture_path: Option<String>,
+        ref_path: Option<String>,
     ) -> Self {
         Material {
             name,
@@ -41,6 +43,7 @@ impl Material {
             shininess,
             transparency,
             texture_path,
+            ref_path,
         }
     }
 }
@@ -56,6 +59,7 @@ impl Clone for Material {
             shininess: self.shininess,
             transparency: self.transparency,
             texture_path: self.texture_path.clone(),
+            ref_path: self.ref_path.clone(),
         }
     }
 }
@@ -116,6 +120,7 @@ impl From<MaterialPresets> for Material {
                 0.0,
                 1.0,
                 None,
+                None,
             ),
             MaterialPresets::Light => Material::new(
                 "light".to_string(),
@@ -125,6 +130,7 @@ impl From<MaterialPresets> for Material {
                 vec![100.0, 100.0, 100.0],
                 0.0,
                 1.0,
+                None,
                 None,
             ),
             MaterialPresets::Mirror => Material::new(
@@ -136,6 +142,7 @@ impl From<MaterialPresets> for Material {
                 1000.0,
                 0.0,
                 None,
+                None,
             ),
             MaterialPresets::Metal => Material::new(
                 "metal".to_string(),
@@ -145,6 +152,7 @@ impl From<MaterialPresets> for Material {
                 vec![0.0, 0.0, 0.0],
                 500.0,
                 1.0,
+                None,
                 None,
             ),
         }

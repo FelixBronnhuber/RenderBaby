@@ -1,5 +1,7 @@
+use anyhow::anyhow;
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
+use scene_objects::material::Material;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SceneFile {
@@ -8,6 +10,12 @@ pub struct SceneFile {
     pub lights: Vec<FileLightSource>,
     pub camera: FileCamera,
     pub background_color: FileColor,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub misc: Option<SceneFileMisc>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SceneFileMisc {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub spheres: Option<Vec<FileSphere>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -51,7 +59,24 @@ pub struct FileColor {
     pub g: f32,
     pub b: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub a: Option<f32>, //ungenutzt
+    pub a: Option<f32>, // ungenutzt
+}
+
+impl From<&FileColor> for [f32; 3] {
+    fn from(c: &FileColor) -> [f32; 3] {
+        [c.r, c.g, c.b]
+    }
+}
+
+impl From<&[f32; 3]> for FileColor {
+    fn from(value: &[f32; 3]) -> Self {
+        FileColor {
+            r: value[0],
+            g: value[1],
+            b: value[2],
+            a: None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -67,24 +92,36 @@ pub struct Resolution {
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileSphere {
-    pub center: Vec3,
+    pub center: Vec3d,
     pub radius: f32,
-    pub material: FileMaterial,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub material: Option<FileMaterialRef>,
     pub color: FileColor,
     pub name: String,
-    pub scale: Vec3,
-    pub translation: Vec3,
-    pub rotation: Vec3,
+    pub scale: Vec3d,
+    pub translation: Vec3d,
+    pub rotation: Vec3d,
 }
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FileMaterial {
-    pub name: String,
-    pub ambient_reflectivity: Vec<f64>,  //Ka
-    pub diffuse_reflectivity: Vec<f64>,  //Kd
-    pub specular_reflectivity: Vec<f64>, //Ks
-    pub emissive: Vec<f64>,              //Ke
-    pub shininess: f64,                  //Ns
-    pub transparency: f64,               //d
+#[serde(untagged)]
+pub enum FileMaterialRef {
+    Preset { preset: String },
+    Path { path: String },
+}
+
+impl TryFrom<&Material> for FileMaterialRef {
+    type Error = anyhow::Error;
+    fn try_from(mat: &Material) -> anyhow::Result<Self> {
+        if let Some(ref_path) = &mat.ref_path {
+            Ok(FileMaterialRef::Path {
+                path: ref_path.clone(),
+            })
+        } else {
+            Err(anyhow!("Material has no path"))
+        }
+        // TODO: implement presets
+    }
 }
 
 impl From<Vec3> for Vec3d {

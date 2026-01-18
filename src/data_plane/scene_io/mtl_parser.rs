@@ -1,4 +1,8 @@
 use std::fs;
+use std::path::PathBuf;
+use scene_objects::material::Material;
+use std::path::Path;
+
 #[derive(Debug)]
 pub enum MTLParseError {
     Path(std::io::Error),
@@ -179,4 +183,30 @@ impl MTLParser {
         });
         Ok(returnmats)
     }
+}
+
+pub fn load_mtl(path: PathBuf) -> anyhow::Result<Vec<Material>> {
+    let materials = MTLParser::parse(path.to_string_lossy().as_ref())?;
+    let parent = Path::new(&path).parent().map(|p| p.to_path_buf());
+    let result = materials
+        .into_iter()
+        .map(|mat| {
+            let texture_path = mat.map_kd.as_ref().map(|name| match &parent {
+                Some(p) => p.join(name).to_string_lossy().to_string(),
+                None => name.clone(),
+            });
+            Material::new(
+                mat.name,
+                mat.ka.iter().map(|a| *a as f64).collect(),
+                mat.kd.iter().map(|a| *a as f64).collect(),
+                mat.ks.iter().map(|a| *a as f64).collect(),
+                mat.ke.iter().map(|a| *a as f64).collect(),
+                mat.ns as f64,
+                mat.d as f64,
+                texture_path,
+                Some(path.to_string_lossy().to_string()),
+            )
+        })
+        .collect();
+    Ok(result)
 }

@@ -1,18 +1,14 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use anyhow::Error;
 use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
 use std::collections::HashMap;
-use std::fs;
-use std::fs::File;
-use std::time::{SystemTime, UNIX_EPOCH};
-use egui::TextBuffer;
 use glam::Vec3;
-use log::{info, error};
+use log::{info, error, debug};
 use frame_buffer::frame_iterator::Frame;
 use scene_objects::{
     camera::{Camera, Resolution},
     geometric_object::GeometricObject,
-    light_source::{LightSource, LightType},
+    light_source::{LightSource},
     material::Material,
     mesh::Mesh,
     sphere::Sphere,
@@ -21,21 +17,22 @@ use crate::{
     compute_plane::{engine::Engine, render_engine::RenderEngine},
     data_plane::{
         scene::scene_graph::SceneGraph,
-        scene_io::{
-            obj_parser::OBJParser, scene_importer::parse_scene, img_export::export_img_png,
-        },
+        scene_io::{obj_parser::load_obj, scene_importer::parse_scene, img_export::export_img_png},
     },
 };
-use crate::data_plane::scene_io::{mtl_parser, scene_exporter};
+use crate::data_plane::scene_io::scene_exporter;
+use crate::data_plane::scene_io::texture_loader::TextureCache;
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
     scene_graph: SceneGraph,
     background_color: [f32; 3],
     name: String,
+
     render_engine: Option<Engine>,
-    first_render: bool,
     last_frame: Option<Frame>,
+
+    first_render: bool,
     color_hash_enabled: bool,
     pub textures: HashMap<String, TextureData>,
     output_path: Option<PathBuf>,
@@ -46,114 +43,54 @@ impl Default for Scene {
     }
 }
 
-fn get_path_prefix(path: &Path) -> Option<&str> {
-    path.file_name()
-        .unwrap_or_default()
-        .to_str()?
-        .split(".")
-        .next()
-}
-
 #[allow(unused)]
 impl Scene {
+    fn ensure_texture_loaded(&mut self, path: &str) {
+        let key = std::path::Path::new(path).to_string_lossy().to_string();
+        if self.textures.contains_key(&key) {
+            return;
+        }
+        match image::open(&key) {
+            Ok(img) => {
+                let img = img.to_rgba8();
+                let (width, height) = img.dimensions();
+                let data: Vec<u32> = img.pixels().map(|p| u32::from_le_bytes(p.0)).collect();
+                self.textures
+                    .insert(key, TextureData::new(width, height, data));
+            }
+            Err(e) => {
+                error!("Failed to load texture {}: {}", path, e);
+            }
+        }
+    }
+
     fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", path.display());
-        let mut directory_path = PathBuf::with_capacity(50);
-        let mut scene_parse_result;
-        let mut temp_dir = PathBuf::with_capacity(50);
-        if let Some(extension) = path.extension().unwrap_or_default().to_str() {
-            match extension {
-                "rscn" => {
-                    let randomized_temp_name = format!(
-                        "render{}",
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap_or_default()
-                            .subsec_nanos()
-                    );
-                    temp_dir = std::env::temp_dir().join(PathBuf::from(randomized_temp_name));
-                    let mut archive = zip::ZipArchive::new(File::open(path.clone())?)?;
-                    archive.extract(temp_dir.clone());
-                    info!("using temporary directory {:?}", temp_dir);
 
-                    if let Some(temp_directory_prefix) = get_path_prefix(&path) {
-                        directory_path = temp_dir.join(temp_directory_prefix);
-                    } else {
-                        return Err(Error::msg("Scene: invalid rscn prefix"));
-                    }
+        let loaded_data = parse_scene(path.clone(), None)?;
 
-                    //standard scene name
-                    let mut scene_path = directory_path.join("scene.json");
+        let mut scene = loaded_data.scene;
+        let paths = loaded_data.paths;
+        let rotation = loaded_data.rotations;
+        let translation = loaded_data.translations;
+        let scale = loaded_data.scales;
 
-                    //find arbitrary scene name
-                    let mut dir = fs::read_dir(&directory_path);
-
-                    //check if files were directly zipped
-                    if dir.is_err() {
-                        if directory_path.parent().is_some() {
-                            directory_path = directory_path.parent().unwrap().into();
-                            dir = fs::read_dir(&directory_path);
-                        } else {
-                            return Err(Error::msg("Scene: rscn archive could not be read"));
-                        }
-                    }
-                    if dir.is_err() {
-                        return Err(Error::msg("Scene: rscn archive could not be read"));
-                    }
-
-                    for x in dir? {
-                        let path = x?.path();
-                        if path.extension().unwrap_or_default() == "json" {
-                            scene_path = path;
-                        }
-                    }
-
-                    scene_parse_result = parse_scene(scene_path, None);
-                }
-                "json" => {
-                    directory_path = path.clone();
-                    directory_path.pop();
-                    scene_parse_result = parse_scene(path.clone(), None);
-                }
-                _ => {
-                    return Err(Error::msg("Incorrect file extension found"));
-                }
-            }
-        } else {
-            return Err(Error::msg("no file extension found"));
+        debug!("Scene: Loading {} objects...", paths.len());
+        for (i, p_str) in paths.iter().enumerate() {
+            let p = PathBuf::from(p_str);
+            debug!("Scene: Loading object {} from {:?}", i, p);
+            scene.load_object_from_file_relative(
+                p.clone(),
+                p,
+                translation[i],
+                rotation[i],
+                scale[i],
+            )?;
         }
-        match scene_parse_result {
-            Ok(mut scene_parse_result) => {
-                let mut absolute_path = Vec::with_capacity(1);
-                scene_parse_result
-                    .obj_paths
-                    .iter()
-                    .for_each(|path| absolute_path.push(directory_path.join(path)));
-                for (i, v) in absolute_path.iter().enumerate() {
-                    scene_parse_result.scene.load_object_from_file_relative(
-                        v.clone(),
-                        PathBuf::from(scene_parse_result.obj_paths[i].clone()),
-                        scene_parse_result.rotation[i],
-                        scene_parse_result.translation[i],
-                        scene_parse_result.scale[i],
-                    )?;
-                }
-                if !temp_dir.as_os_str().is_empty() {
-                    info!("removing temporary directory: {:?}", temp_dir);
-                    fs::remove_dir_all(temp_dir);
-                }
-                Ok(scene_parse_result.scene)
-            }
-            Err(error) => {
-                if !temp_dir.as_os_str().is_empty() {
-                    info!("removing temporary directory: {:?}", temp_dir);
-                    fs::remove_dir_all(temp_dir);
-                }
-                error!("Scene: Importing Scene resulted in error: {error}");
-                Err(error)
-            }
-        }
+
+        info!("Scene: Successfully loaded scene.");
+        Ok(scene)
     }
 
     pub fn export_scene(&self, path: PathBuf, export_misc: bool) -> Result<(), Error> {
@@ -181,170 +118,35 @@ impl Scene {
         path: PathBuf,
         relative_path: Option<PathBuf>,
     ) -> Result<Mesh, Error> {
-        //! Adds new object from a obj file at path
-        //! ## Parameter
-        //! 'path': Path to the obj file
-        //! ## Returns
-        //! Result of either a reference to the new object or an error
-        let parent_dir = path.parent().unwrap_or(std::path::Path::new("."));
+        //! Adds new object from a obj file at path using obj_parser::load_obj
         info!("{self}: Loading object from {}", path.display());
-        let result = OBJParser::parse(path.clone());
-
-        match result {
-            Ok(objs) => {
-                let mut material_name_list: Vec<String> = Vec::new();
-                let mut material_list: Vec<Material> = Vec::new();
-
-                if let Some(obj) = objs.material_path {
-                    for i in obj {
-                        let mtl_path = parent_dir.join(&i);
-                        let parsed = mtl_parser::MTLParser::parse(mtl_path.to_str().unwrap_or(&i));
-                        match parsed {
-                            Ok(parsed) => parsed.iter().for_each(|mat| {
-                                // Load texture if present
-                                if let Some(tex_name) = &mat.map_kd {
-                                    let tex_path = parent_dir.join(tex_name);
-                                    let tex_key = tex_path.to_string_lossy().to_string();
-
-                                    if let std::collections::hash_map::Entry::Vacant(e) =
-                                        self.textures.entry(tex_key)
-                                    {
-                                        info!("Loading texture from {:?}", tex_path);
-                                        match image::open(&tex_path) {
-                                            Ok(img) => {
-                                                let img = img.to_rgba8();
-                                                let (width, height) = img.dimensions();
-                                                let data: Vec<u32> = img
-                                                    .pixels()
-                                                    .map(|p| u32::from_le_bytes(p.0))
-                                                    .collect();
-
-                                                e.insert(TextureData::new(width, height, data));
-                                            }
-                                            Err(e) => error!(
-                                                "Failed to load texture {:?}: {}",
-                                                tex_path, e
-                                            ),
-                                        }
-                                    }
-                                }
-
-                                material_list.push(Material::new(
-                                    mat.name.clone(),
-                                    mat.ka.iter().map(|a| *a as f64).collect(),
-                                    mat.kd.iter().map(|a| *a as f64).collect(),
-                                    mat.ks.iter().map(|a| *a as f64).collect(),
-                                    mat.ke.iter().map(|a| *a as f64).collect(),
-                                    mat.ns.into(),
-                                    mat.d.into(),
-                                    mat.map_kd.clone().map(|name| {
-                                        parent_dir.join(name).to_string_lossy().to_string()
-                                    }),
-                                ))
-                            }),
-                            Err(error) => {
-                                info!("{self}: Parsing mtl from {i} resulted in error: {error}");
-                            }
-                        }
-                    }
-
-                    material_list
-                        .iter()
-                        .for_each(|mat| material_name_list.push(mat.name.clone()));
-                }
-
-                let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
-                let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
-                let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
-                let mut material_index = Vec::with_capacity(objs.faces.len());
-
-                let mut vertex_count = 0;
-
-                for face in objs.faces {
-                    let leng = face.v.len();
-                    for i in 1..(leng - 1) {
-                        // Get indices for the triangle (0, i, i+1)
-                        let v_indices = [0, i, i + 1];
-
-                        for &idx in &v_indices {
-                            // Position
-                            let v_idx = face.v[idx] as usize - 1;
-                            if v_idx * 3 + 2 < objs.vertices.len() {
-                                new_vertices.push(objs.vertices[v_idx * 3]);
-                                new_vertices.push(objs.vertices[v_idx * 3 + 1]);
-                                new_vertices.push(objs.vertices[v_idx * 3 + 2]);
-                            } else {
-                                // Fallback if index is out of bounds (shouldn't happen with valid OBJ)
-                                new_vertices.push(0.0);
-                                new_vertices.push(0.0);
-                                new_vertices.push(0.0);
-                            }
-
-                            // UV
-                            if !face.vt.is_empty() && idx < face.vt.len() {
-                                let vt_val = face.vt[idx] as usize;
-                                if vt_val > 0 {
-                                    let vt_idx = vt_val - 1;
-                                    if let Some(tex_coords) = &objs.texture_coordinate {
-                                        if vt_idx * 2 + 1 < tex_coords.len() {
-                                            new_uvs.push(tex_coords[vt_idx * 2]);
-                                            new_uvs.push(tex_coords[vt_idx * 2 + 1]);
-                                        } else {
-                                            new_uvs.push(0.0);
-                                            new_uvs.push(0.0);
-                                        }
-                                    } else {
-                                        new_uvs.push(0.0);
-                                        new_uvs.push(0.0);
-                                    }
-                                } else {
-                                    new_uvs.push(0.0);
-                                    new_uvs.push(0.0);
-                                }
-                            } else {
-                                new_uvs.push(0.0);
-                                new_uvs.push(0.0);
-                            }
-
-                            // Index
-                            new_tris.push(vertex_count);
-                            vertex_count += 1;
-                        }
-
-                        if let Some(m) = material_list
-                            .iter()
-                            .position(|x| x.name == face.material_name.clone())
-                        {
-                            material_index.push(m);
-                        }
+        let mut cache = TextureCache::new();
+        match load_obj(path.clone(), &mut cache) {
+            Ok(mut res) => {
+                // Ensure any textures referenced by materials are present in self.textures
+                for m in &res.materials {
+                    if let Some(tex_path) = &m.texture_path {
+                        self.ensure_texture_loaded(tex_path);
                     }
                 }
-                let mesh = Mesh::new(
-                    new_vertices,
-                    new_tris,
-                    if !new_uvs.is_empty() {
-                        Some(new_uvs)
-                    } else {
-                        None
-                    },
-                    Some(material_list),
-                    Some(material_index),
-                    Some(objs.name),
-                    Some(path.clone()),
-                )?;
+
+                // If a relative path is provided, override mesh path to keep exported scene clean
+                if let Some(rel) = relative_path {
+                    res.mesh.set_path(rel);
+                }
+
                 info!(
                     "Scene {self}: Successfully loaded object from {}",
                     path.display()
                 );
-                Ok(mesh)
+                Ok(res.mesh)
             }
-
             Err(error) => {
                 error!(
                     "{self}: Parsing obj from {} resulted in error: {error}",
                     path.display()
                 );
-                Err(error.into())
+                Err(error)
             }
         }
     }
@@ -392,14 +194,22 @@ impl Scene {
         let mut scene = Self::_load_scene_from_path(path.clone());
         match scene {
             Ok(mut scene) => {
-                if let Some(extension) = path.extension()
-                    && extension.to_string_lossy().as_str() != "rscn"
-                    && !detached
-                {
+                let is_rscn = path
+                    .extension()
+                    .map(|s| s.to_string_lossy() == "rscn")
+                    .unwrap_or(false);
+
+                if !is_rscn && !detached {
                     scene.output_path = Some(path);
                 } else {
                     scene.output_path = None;
                 }
+
+                // TODO: Why is this always enabled in the first place?
+                if is_rscn {
+                    scene.set_color_hash_enabled(false);
+                }
+
                 Ok(scene)
             }
             Err(error) => Err(error),
@@ -407,15 +217,24 @@ impl Scene {
     }
 
     pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
-        let scene_parse_result = parse_scene(PathBuf::new(), Some(json_string));
-        match scene_parse_result {
-            Ok(scene_parse_result) => Ok(scene_parse_result.scene),
+        let scene = parse_scene(PathBuf::new(), Some(json_string));
+        match scene {
+            Ok(loaded_data) => {
+                let mut scene = loaded_data.scene;
+                let paths = loaded_data.paths;
+                let rotation = loaded_data.rotations;
+                let translation = loaded_data.translations;
+                let scale = loaded_data.scales;
+                Ok(scene)
+            }
             Err(error) => Err(error),
         }
     }
 
     pub fn save(&mut self, export_misc: bool) -> anyhow::Result<()> {
-        if let Some(output_path) = self.output_path.clone() {
+        if let Some(output_path) = self.output_path.clone()
+        // && output_path.exists() TODO: why would the path already need to exist?
+        {
             self.export_scene(output_path, export_misc)?;
             Ok(())
         } else {
@@ -453,7 +272,7 @@ impl Scene {
             [1.0, 1.0, 1.0],
             "proto_light".to_owned(),
             Vec3::default(),
-            LightType::Ambient,
+            //LightType::Ambient,
         );
         let point_light = LightSource::new(
             Vec3::new(2.0, 4.0, 1.0),
@@ -461,7 +280,7 @@ impl Scene {
             [1.0, 0.9, 0.8],
             "point_light".to_owned(),
             Vec3::default(),
-            LightType::Point,
+            //LightType::Point,
         );
         self.add_sphere(sphere0);
         self.add_sphere(sphere1);
@@ -488,7 +307,15 @@ impl Scene {
 
     pub fn new() -> Self {
         //! ## Returns
-        //! A new scene with default values
+        //! A new scene with default values.
+        //!
+        //! If the `CI` or `RENDERBABY_HEADLESS` environment variable is set,
+        //! the render engine will not be initialized, allowing usage in headless environments.
+        let headless = std::env::var("CI").is_ok() || std::env::var("RENDERBABY_HEADLESS").is_ok();
+        Self::new_with_options(!headless)
+    }
+
+    pub fn new_with_options(load_engine: bool) -> Self {
         let cam = Camera::default();
         let Resolution { width, height } = cam.get_resolution();
         let position = cam.get_position();
@@ -506,35 +333,39 @@ impl Scene {
             // action_stack: ActionStack::new(),
             name: "scene".to_owned(),
             background_color: [1.0, 1.0, 1.0],
-            render_engine: Option::from(Engine::new(
-                RenderConfigBuilder::new()
-                    .uniforms_create(Uniforms::new(
-                        *width,
-                        *height,
-                        render_camera,
-                        cam.get_ray_samples(),
-                        0,
-                        0,
-                        0,
-                        Uniforms::default().ground_height, //Leave or change to scene defaults
-                        Uniforms::GROUND_ENABLED,
-                        Uniforms::CHECKERBOARD_ENABLED,
-                        Uniforms::default().sky_color,
-                        Uniforms::default().max_depth,
-                        Uniforms::default().checkerboard_color_1,
-                        Uniforms::default().checkerboard_color_2,
-                    ))
-                    .spheres_create(vec![])
-                    .uvs_create(vec![])
-                    .meshes_create(vec![])
-                    .lights_create(vec![])
-                    .textures_create(vec![])
-                    .build(),
-                RenderEngine::Raytracer,
-            )),
+            color_hash_enabled: true,
+            render_engine: if load_engine {
+                Option::from(Engine::new(
+                    RenderConfigBuilder::new()
+                        .uniforms_create(Uniforms::new(
+                            *width,
+                            *height,
+                            render_camera,
+                            cam.get_ray_samples(),
+                            0,
+                            0,
+                            0,
+                            Uniforms::default().ground_height, //Leave or change to scene defaults
+                            Uniforms::GROUND_ENABLED,
+                            Uniforms::CHECKERBOARD_ENABLED,
+                            Uniforms::default().sky_color,
+                            Uniforms::default().max_depth,
+                            Uniforms::default().checkerboard_color_1,
+                            Uniforms::default().checkerboard_color_2,
+                        ))
+                        .spheres_create(vec![])
+                        .uvs_create(vec![])
+                        .meshes_create(vec![])
+                        .lights_create(vec![])
+                        .textures_create(vec![])
+                        .build(),
+                    RenderEngine::Raytracer,
+                ))
+            } else {
+                None
+            },
             first_render: true,
             last_frame: None,
-            color_hash_enabled: true,
             textures: HashMap::new(),
             output_path: None,
         }
