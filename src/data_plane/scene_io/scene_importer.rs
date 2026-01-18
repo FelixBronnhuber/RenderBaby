@@ -2,13 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use anyhow::Context;
 use glam::Vec3;
-use scene_objects::{
-    camera,
-    camera::Camera,
-    light_source::{LightSource},
-    sphere::Sphere,
-    material::*,
-};
+use scene_objects::{camera, camera::Camera, light_source::LightSource, sphere::Sphere, material::*};
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 use crate::data_plane::scene_io::file_manager::FileManager;

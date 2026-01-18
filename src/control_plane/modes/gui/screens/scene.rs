@@ -121,8 +121,8 @@ impl Screen for SceneScreen {
                 }
 
                 let scene_clone = self.model.scene.clone();
-                let export_misc_clone = self.model.export_misc.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
+                let export_misc_clone = self.model.export_misc.clone();
 
                 if save_clicked {
                     message_pipe_clone.default_handle(
