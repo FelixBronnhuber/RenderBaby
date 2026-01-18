@@ -1,6 +1,11 @@
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
+use scene_objects::material::Material;
+use scene_objects::mesh::Mesh;
+use crate::data_plane::scene_io::texture_loader::TextureCache;
+use crate::data_plane::scene_io::mtl_parser::load_mtl;
+use std::path::Path;
 
 #[derive(Debug)]
 pub enum OBJParseError {
@@ -168,4 +173,116 @@ impl OBJParser {
             },
         })
     }
+}
+
+pub struct ObjLoadResult {
+    pub mesh: Mesh,
+    pub materials: Vec<Material>,
+}
+
+pub fn load_obj(path: PathBuf, texture_cache: &mut TextureCache) -> anyhow::Result<ObjLoadResult> {
+    let objs = OBJParser::parse(path.clone())?;
+
+    let mut materials: Vec<Material> = Vec::new();
+    let mut material_name_list: Vec<String> = Vec::new();
+    let parent_dir = Path::new(&path)
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or(Path::new(".").to_path_buf());
+
+    if let Some(mtl_paths) = objs.material_path.clone() {
+        for rel in mtl_paths {
+            let mtl_path = parent_dir.join(&rel);
+            match load_mtl(mtl_path.clone()) {
+                Ok(mut mats) => {
+                    for m in &mut mats {
+                        if let Some(tex) = &m.texture_path {
+                            let _ = texture_cache.load(tex);
+                        }
+                    }
+                    material_name_list.extend(mats.iter().map(|m| m.name.clone()));
+                    materials.extend(mats.into_iter());
+                }
+                Err(_e) => {}
+            }
+        }
+    }
+
+    let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
+    let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
+    let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
+    let mut material_index = Vec::with_capacity(objs.faces.len());
+
+    let mut vertex_count: u32 = 0;
+    for face in objs.faces {
+        let mat_idx = material_name_list
+            .iter()
+            .position(|n| n == &face.material_name)
+            .unwrap_or(0);
+
+        let leng = face.v.len();
+        for i in 1..(leng - 1) {
+            let v_indices = [0usize, i, i + 1];
+
+            for &idx in &v_indices {
+                let v_idx = face.v[idx] as usize - 1;
+                if v_idx * 3 + 2 < objs.vertices.len() {
+                    new_vertices.push(objs.vertices[v_idx * 3]);
+                    new_vertices.push(objs.vertices[v_idx * 3 + 1]);
+                    new_vertices.push(objs.vertices[v_idx * 3 + 2]);
+                } else {
+                    new_vertices.extend_from_slice(&[0.0, 0.0, 0.0]);
+                }
+
+                if !face.vt.is_empty() && idx < face.vt.len() {
+                    let vt_val = face.vt[idx] as usize;
+                    if vt_val > 0 {
+                        let vt_idx = vt_val - 1;
+                        if let Some(tex_coords) = &objs.texture_coordinate {
+                            if vt_idx * 2 + 1 < tex_coords.len() {
+                                new_uvs.push(tex_coords[vt_idx * 2]);
+                                new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                            } else {
+                                new_uvs.extend_from_slice(&[0.0, 0.0]);
+                            }
+                        } else {
+                            new_uvs.extend_from_slice(&[0.0, 0.0]);
+                        }
+                    } else {
+                        new_uvs.extend_from_slice(&[0.0, 0.0]);
+                    }
+                } else {
+                    new_uvs.extend_from_slice(&[0.0, 0.0]);
+                }
+
+                new_tris.push(vertex_count);
+                vertex_count += 1;
+            }
+            material_index.push(mat_idx);
+        }
+    }
+
+    let mesh = Mesh::new(
+        new_vertices,
+        new_tris,
+        if new_uvs.is_empty() {
+            None
+        } else {
+            Some(new_uvs)
+        },
+        if materials.is_empty() {
+            None
+        } else {
+            Some(materials.clone())
+        },
+        if material_index.is_empty() {
+            None
+        } else {
+            Some(material_index)
+        },
+        Some(objs.name.clone()),
+        Some(path.clone()),
+    )?;
+
+    Ok(ObjLoadResult { mesh, materials })
 }

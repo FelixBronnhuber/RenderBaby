@@ -8,6 +8,7 @@ pub struct Material {
     pub shininess: f64,                  //Ns
     pub transparency: f64,               //d
     pub texture_path: Option<String>,    //map_Kd
+    pub ref_path: Option<String>,
 }
 #[allow(dead_code)]
 impl Material {
@@ -21,6 +22,7 @@ impl Material {
         shininess: f64,
         transparency: f64,
         texture_path: Option<String>,
+        ref_path: Option<String>,
     ) -> Self {
         Material {
             name,
@@ -31,6 +33,7 @@ impl Material {
             shininess,
             transparency,
             texture_path,
+            ref_path,
         }
     }
 }
@@ -45,6 +48,7 @@ impl Clone for Material {
             shininess: self.shininess,
             transparency: self.transparency,
             texture_path: self.texture_path.clone(),
+            ref_path: self.ref_path.clone(),
         }
     }
 }
@@ -60,6 +64,7 @@ impl Default for Material {
             shininess: 0.0,
             transparency: 0.0,
             texture_path: None,
+            ref_path: None,
         }
     }
 }
