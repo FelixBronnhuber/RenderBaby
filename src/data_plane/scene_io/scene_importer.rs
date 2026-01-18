@@ -1,19 +1,28 @@
 use glam::Vec3;
-use scene_objects::{
-    camera,
-    camera::Camera,
-    light_source::{LightSource, LightType},
-};
-use serde_json::json;
+use scene_objects::{camera, camera::Camera, light_source::LightSource, sphere::Sphere, material::*};
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 use crate::included_files::AutoPath;
 
+use crate::data_plane::scene_io::file_manager::FileManager;
+use log::{info, debug, error};
+use crate::data_plane::scene_io::mtl_parser::load_mtl_with_name;
+
+pub struct LoadedSceneData {
+    pub scene: Scene,
+    pub paths: Vec<String>,
+    pub rotations: Vec<Vec3>,
+    pub translations: Vec<Vec3>,
+    pub scales: Vec<Vec3>,
+}
+
 #[allow(dead_code)]
 #[allow(clippy::type_complexity)]
-fn transform_to_scene(
-    file: SceneFile,
-) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
+fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
+    debug!(
+        "SceneImporter: Transforming parsed SceneFile to Scene object. Name: {}",
+        file.scene_name
+    );
     let mut scene = Scene::new();
 
     //name
@@ -33,12 +42,6 @@ fn transform_to_scene(
                 } else {
                     Vec3::new(0.0, 0.0, 0.0)
                 }
-            },
-            match light.r#type.as_str() {
-                "ambient" => LightType::Ambient,
-                "point" => LightType::Point,
-                "directional" => LightType::Directional,
-                _ => LightType::Ambient,
             },
         ))
     }
@@ -94,170 +97,120 @@ fn transform_to_scene(
         .iter()
         .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
         .collect();
-    Ok((scene, paths, rotation, translation, scale))
+
+    if let Some(misc) = &file.misc {
+        if let Some(spheres) = &misc.spheres {
+            for sphere in spheres {
+                let material = match &sphere.material {
+                    Some(material) => match material {
+                        FileMaterialRef::Preset { preset } => {
+                            match MaterialPresets::try_from(preset.as_str()) {
+                                Ok(preset) => preset.into(),
+                                Err(_) => Material::default(),
+                            }
+                        }
+                        FileMaterialRef::Path { path, name } => {
+                            load_mtl_with_name(AutoPath::try_from(path.to_string())?, name.clone())?
+                        }
+                    },
+                    None => Material::default(),
+                };
+                scene.add_sphere(Sphere::new(
+                    Vec3::new(sphere.center.x, sphere.center.y, sphere.center.z),
+                    sphere.radius,
+                    material,
+                    (&sphere.color).into(),
+                ));
+            }
+        }
+
+        if let Some(ray_samples) = &misc.ray_samples {
+            scene.get_camera_mut().set_ray_samples(*ray_samples);
+        }
+
+        if let Some(hash_color) = &misc.hash_color {
+            scene.set_color_hash_enabled(*hash_color);
+        }
+    }
+
+    Ok(LoadedSceneData {
+        scene,
+        paths,
+        rotations: rotation,
+        translations: translation,
+        scales: scale,
+    })
 }
 
 #[allow(clippy::type_complexity)]
 pub fn parse_scene(
     scene_path: AutoPath,
-) -> anyhow::Result<(Scene, Vec<String>, Vec<Vec3>, Vec<Vec3>, Vec<Vec3>)> {
-    let mut _json_content: String = scene_path.contents()?;
-
-    let schema = json!({
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "required": [
-        "scene_name",
-        "objects",
-        "background_color",
-        "camera",
-        "lights"
-        ],
-        "additionalProperties": false,
-
-        "properties": {
-            "scene_name": {
-                "type": "string",
-                "minLength": 0
-            },
-
-            "objects": {
-                "type": "array",
-                "minItems": 0,
-                "items": { "$ref": "#/$defs/object" }
-            },
-
-            "background_color": {
-                "$ref": "#/$defs/color"
-            },
-
-            "camera": {
-                "$ref": "#/$defs/camera"
-            },
-
-            "lights": {
-                "type": "array",
-                "minItems": 0,
-                "items": { "$ref": "#/$defs/light" }
-            }
-        },
-
-        "$defs": {
-            "vec3": {
-                "type": "object",
-                "required": ["x", "y", "z"],
-                "additionalProperties": false,
-                "properties": {
-                    "x": { "type": "number" },
-                    "y": { "type": "number" },
-                    "z": { "type": "number" }
-                }
-            },
-
-            "color": {
-                "type": "object",
-                "required": ["r", "g", "b"],
-                "additionalProperties": {"a":{"type":  "number", "minimum": 0.0, "maximum":  1.0}},
-                "properties": {
-                    "r": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-                    "g": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
-                    "b": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
-                }
-            },
-
-            "object": {
-                "type": "object",
-                "required": [
-                "name",
-                "path",
-                "scale",
-                "rotation",
-                "translation"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                    "name": { "type": "string" },
-                    "path": { "type": "string" },
-                    "scale": { "$ref": "#/$defs/vec3" },
-                    "rotation": { "$ref": "#/$defs/vec3" },
-                    "translation": { "$ref": "#/$defs/vec3" }
-                }
-            },
-
-            "camera": {
-                "type": "object",
-                "required": [
-                "position",
-                "look_at",
-                "up",
-                "pane_distance",
-                "pane_width",
-                "resolution"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                    "position": { "$ref": "#/$defs/vec3" },
-                    "look_at": { "$ref": "#/$defs/vec3" },
-                    "up": { "$ref": "#/$defs/vec3" },
-
-                    "pane_distance": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                    },
-
-                    "pane_width": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                    },
-
-                    "resolution": {
-                        "type": "object",
-                        "required": ["x", "y"],
-                        "additionalProperties": false,
-                        "properties": {
-                            "x": { "type": "integer", "minimum": 1 },
-                            "y": { "type": "integer", "minimum": 1 }
-                        }
-                    }
-                }
-            },
-
-            "light": {
-                "type": "object",
-                "required": [
-                "name",
-                "type",
-                "luminosity",
-                "position",
-                "color"
-                ],
-                "additionalProperties": {"rotation": {"$ref": "#/$defs/vec3"}},
-                "properties": {
-                    "name": { "type": "string" },
-
-                    "type": {
-                        "type": "string",
-                        "enum": ["ambient", "point", "directional"]
-                    },
-
-                    "luminosity": {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                    },
-
-                    "position": { "$ref": "#/$defs/vec3" },
-
-                    "color": { "$ref": "#/$defs/color" }
-                }
-            }
-        }
-    });
-    let json_value = serde_json::from_str(_json_content.clone().as_str())?;
-    if jsonschema::is_valid(&schema, &json_value) {
-        let read = serde_json::from_str::<SceneFile>(&_json_content)?;
-        let res = transform_to_scene(read)?;
-        Ok(res)
+    json_string: Option<String>,
+) -> anyhow::Result<LoadedSceneData> {
+    if json_string.is_some() {
+        info!("SceneImporter: Parsing scene from JSON string.");
     } else {
+        info!("SceneImporter: Parsing scene from file: {:?}", scene_path);
+    }
+
+    let is_rscn = scene_path.extension().map(|s| s == "rscn").unwrap_or(false);
+
+    let (json_content, base_path) = if is_rscn {
+        info!("SceneImporter: Detected .rscn file, invoking FileManager...");
+        let temp_root = FileManager::unzip_scene(scene_path)?;
+        let json_path = FileManager::find_scene_json(temp_root)?;
+        info!(
+            "SceneImporter: Found internal scene.json at {:?}",
+            json_path
+        );
+        let content = json_path.contents()?;
+        debug!(
+            "SceneImporter: Read JSON content from {:?}:\n{}",
+            json_path, content
+        );
+        (content, json_path.get_popped().unwrap())
+    } else if let Some(s) = json_string {
+        (
+            s,
+            scene_path.get_popped().unwrap_or(AutoPath::try_from(".")?),
+        )
+    } else {
+        if !scene_path.is_file() {
+            error!("SceneImporter: File not found: {:?}", scene_path);
+            return Err(anyhow::Error::msg(format!(
+                "File {} does not exist!",
+                scene_path
+            )));
+        }
+        let content = scene_path.contents()?;
+        (content, scene_path.get_popped().unwrap())
+    };
+
+    let schema_json = include_str!("scene_schema.json");
+    let schema: serde_json::Value = serde_json::from_str(schema_json)?;
+
+    debug!("SceneImporter: Validating JSON schema...");
+    let json_value = serde_json::from_str(&json_content)?;
+    if jsonschema::is_valid(&schema, &json_value) {
+        debug!("SceneImporter: JSON schema validation successful.");
+        let read = serde_json::from_str::<SceneFile>(&json_content)?;
+        let mut loaded_data = transform_to_scene(read)?;
+
+        let abs_paths = loaded_data
+            .paths
+            .into_iter()
+            .map(|p| {
+                let abs = base_path.get_joined(&p).unwrap().to_string();
+                debug!("SceneImporter: Resolved asset path: {} -> {}", p, abs);
+                abs
+            })
+            .collect();
+        loaded_data.paths = abs_paths;
+
+        info!("SceneImporter: Scene parsing successful.");
+        Ok(loaded_data)
+    } else {
+        error!("SceneImporter: JSON schema validation failed.");
         Err(anyhow::Error::msg(
             "JSON does not comply with Schema".to_string(),
         ))

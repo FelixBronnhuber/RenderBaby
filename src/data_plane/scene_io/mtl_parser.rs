@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+use scene_objects::material::Material;
 use crate::included_files::AutoPath;
 
 #[derive(Debug)]
@@ -147,5 +149,47 @@ impl MTLParser {
             }
         });
         Ok(return_mats)
+    }
+
+    pub fn to_material(&self, auto_path: AutoPath, auto_parent: Option<AutoPath>) -> Material {
+        let texture_path = self.map_kd.as_ref().map(|name| match &auto_parent {
+            Some(p) => p.get_joined(name).unwrap().to_string(),
+            None => name.clone(),
+        });
+
+        Material::new(
+            self.name.clone(),
+            self.ka.iter().map(|a| *a as f64).collect(),
+            self.kd.iter().map(|a| *a as f64).collect(),
+            self.ks.iter().map(|a| *a as f64).collect(),
+            self.ke.iter().map(|a| *a as f64).collect(),
+            self.ns as f64,
+            self.d as f64,
+            texture_path,
+            Some(auto_path.to_string()),
+        )
+    }
+}
+
+pub fn load_mtl(auto_path: AutoPath) -> anyhow::Result<Vec<Material>> {
+    let materials = MTLParser::parse(auto_path.clone())?;
+    let parent = auto_path.get_popped();
+    let result = materials
+        .into_iter()
+        .map(|mat| mat.to_material(auto_path.clone(), parent.clone()))
+        .collect();
+    Ok(result)
+}
+
+pub fn load_mtl_with_name(path: AutoPath, name: String) -> anyhow::Result<Material> {
+    let materials = MTLParser::parse(path.clone())?;
+    let parent = path.get_popped();
+    match materials.into_iter().find(|mat| mat.name == name) {
+        Some(mat) => Ok(mat.to_material(path.clone(), parent.clone())),
+        None => Err(anyhow!(
+            "Material with name {} not found in file {}",
+            name,
+            path
+        )),
     }
 }

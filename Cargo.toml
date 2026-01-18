@@ -40,7 +40,6 @@ members = [
     "crates/engine-wgpu-wrapper",
     "crates/engine-config",
     "crates/view-wrappers",
-    "crates/command-stack",
     "crates/log-buffer",
     "crates/scene-objects",
     "crates/eframe-elements",

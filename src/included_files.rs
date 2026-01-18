@@ -1,6 +1,8 @@
+use std::ffi::OsStr;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek};
-use std::path::{Display, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use include_dir::{include_dir, Dir, File as IncludeFile};
 
 /* Functions to include files from the binary in the executable - instead of relying on the path.
@@ -13,7 +15,7 @@ const INCLUDED_PREFIX: &str = "$INCLUDED/";
 pub trait ReadSeek: Read + Seek {}
 impl<T: Read + Seek> ReadSeek for T {}
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AutoPath<'a> {
     Included(
         &'a Path,
@@ -78,28 +80,18 @@ impl<'a> AutoPath<'a> {
                 if let Some(f) = f {
                     Ok(Box::new(Cursor::new(f.contents())))
                 } else {
-                    Err(anyhow::Error::msg(format!(
-                        "Not a file: {}!",
-                        self.display()
-                    )))
+                    Err(anyhow::Error::msg(format!("Not a file: {}!", self)))
                 }
             }
             AutoPath::External(path) => Ok(Box::new(File::open(path)?)),
         }
     }
 
-    pub fn display(&self) -> Display<'_> {
-        self.path().display()
-    }
-
     pub fn contents(&self) -> anyhow::Result<String> {
         match self {
             AutoPath::Included(_, _, f) => match f {
                 Some(f) => Ok(String::from_utf8(f.contents().to_vec())?),
-                None => Err(anyhow::Error::msg(format!(
-                    "Not a file: {}!",
-                    self.display()
-                ))),
+                None => Err(anyhow::Error::msg(format!("Not a file: {}!", self))),
             },
             AutoPath::External(path) => Ok(std::fs::read_to_string(path)?),
         }
@@ -138,6 +130,72 @@ impl<'a> AutoPath<'a> {
     pub fn get_joined(&self, other: &str) -> Option<AutoPath<'a>> {
         let joined = self.path().join(other);
         AutoPath::try_from(joined).ok()
+    }
+
+    pub fn extension(&self) -> Option<&str> {
+        self.path().extension().and_then(|ext| ext.to_str())
+    }
+
+    pub fn iter_dir(&self) -> anyhow::Result<impl Iterator<Item = AutoPath<'a>>> {
+        match self {
+            AutoPath::Included(_, d, _) => {
+                if let Some(d) = d {
+                    let paths = d
+                        .dirs()
+                        .map(|dir| AutoPath::Included(dir.path(), Some(dir), None))
+                        .chain(
+                            d.files()
+                                .map(|file| AutoPath::Included(file.path(), None, Some(file))),
+                        );
+                    Ok(Box::new(paths) as Box<dyn Iterator<Item = AutoPath>>)
+                } else {
+                    Err(anyhow::Error::msg(format!("Not a directory: {}!", self)))
+                }
+            }
+            AutoPath::External(path) => {
+                if path.is_dir() {
+                    let entries = std::fs::read_dir(path)?
+                        .filter_map(|res| res.ok())
+                        .map(|entry| AutoPath::External(entry.path()));
+                    Ok(Box::new(entries) as Box<dyn Iterator<Item = AutoPath>>)
+                } else {
+                    Err(anyhow::Error::msg(format!("Not a directory: {}!", self)))
+                }
+            }
+        }
+    }
+
+    pub fn is_dir(&self) -> bool {
+        match self {
+            AutoPath::Included(_, d, _) => d.is_some(),
+            AutoPath::External(path) => path.is_dir(),
+        }
+    }
+
+    pub fn is_file(&self) -> bool {
+        match self {
+            AutoPath::Included(_, _, f) => f.is_some(),
+            AutoPath::External(path) => path.is_file(),
+        }
+    }
+
+    fn os_to_string(os_str: Option<&OsStr>) -> Option<String> {
+        os_str.and_then(|name| name.to_str().map(|s| s.to_string()))
+    }
+
+    pub fn file_name(&self) -> Option<String> {
+        match self {
+            AutoPath::Included(_, _, f) => f
+                .as_ref()
+                .and_then(|file| Self::os_to_string(file.path().file_name())),
+            AutoPath::External(path) => Self::os_to_string(path.file_name()),
+        }
+    }
+}
+
+impl Display for AutoPath<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path().to_string_lossy())
     }
 }
 
