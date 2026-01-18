@@ -1,4 +1,4 @@
-use scene_objects::light_source::{LightSource, LightType};
+use scene_objects::light_source::{LightSource};
 use serde::{Deserialize, Serialize};
 
 use crate::data_plane::scene_proxy::{color::Color, position::Vec3d};
@@ -9,7 +9,7 @@ pub(crate) struct ProxyLight {
     pub name: String,
     pub color: Color,
     #[serde(rename = "type")]
-    pub light_type: String,
+    //pub light_type: String,
     // todo: 'type' is a rust keyword! rename in serialization
     pub rotation: Vec3d,
 }
@@ -21,7 +21,7 @@ impl ProxyLight {
             luminosity: light.get_luminositoy(),
             name: light.get_name().to_string(),
             color: light.get_color().into(),
-            light_type: (*light.get_light_type()).into(),
+            //light_type: (*light.get_light_type()).into(),
             rotation: light.get_rotation().into(),
         }
     }
@@ -42,7 +42,7 @@ impl Default for ProxyLight {
                 g: 1.0,
                 b: 1.0,
             },
-            light_type: LightType::Point.into(),
+            //light_type: LightType::Point.into(),
             rotation: Vec3d {
                 x: 0.0,
                 y: 0.0,
@@ -60,7 +60,7 @@ impl From<ProxyLight> for LightSource {
             value.color.into(),
             value.name,
             value.rotation.into(),
-            value.light_type.into(),
+            //value.light_type.into(),
         )
     }
 }

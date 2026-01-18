@@ -1,5 +1,6 @@
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
+use scene_objects::material::{Material, MaterialPresets};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SceneFile {
@@ -8,6 +9,18 @@ pub struct SceneFile {
     pub lights: Vec<FileLightSource>,
     pub camera: FileCamera,
     pub background_color: FileColor,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub misc: Option<SceneFileMisc>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SceneFileMisc {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spheres: Option<Vec<FileSphere>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ray_samples: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hash_color: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -45,7 +58,24 @@ pub struct FileColor {
     pub g: f32,
     pub b: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub a: Option<f32>, //ungenutzt
+    pub a: Option<f32>, // ungenutzt
+}
+
+impl From<&FileColor> for [f32; 3] {
+    fn from(c: &FileColor) -> [f32; 3] {
+        [c.r, c.g, c.b]
+    }
+}
+
+impl From<&[f32; 3]> for FileColor {
+    fn from(value: &[f32; 3]) -> Self {
+        FileColor {
+            r: value[0],
+            g: value[1],
+            b: value[2],
+            a: None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -58,6 +88,44 @@ pub struct Vec3d {
 pub struct Resolution {
     pub x: u32,
     pub y: u32,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FileSphere {
+    pub center: Vec3d,
+    pub radius: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub material: Option<FileMaterialRef>,
+    pub color: FileColor,
+    pub name: String,
+    pub scale: Vec3d,
+    pub translation: Vec3d,
+    pub rotation: Vec3d,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum FileMaterialRef {
+    Preset { preset: String },
+    Path { path: String, name: String },
+}
+
+impl TryFrom<&Material> for FileMaterialRef {
+    type Error = anyhow::Error;
+    fn try_from(mat: &Material) -> anyhow::Result<Self> {
+        if let Some(ref_path) = &mat.ref_path {
+            Ok(FileMaterialRef::Path {
+                path: ref_path.clone(),
+                name: mat.name.clone(),
+            })
+        } else {
+            match MaterialPresets::try_from(mat) {
+                Ok(preset) => Ok(FileMaterialRef::Preset {
+                    preset: preset.into(),
+                }),
+                Err(e) => Err(e),
+            }
+        }
+    }
 }
 
 impl From<Vec3> for Vec3d {

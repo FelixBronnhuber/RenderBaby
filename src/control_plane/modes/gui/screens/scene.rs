@@ -1,5 +1,7 @@
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use eframe::emath::Align;
+use egui::{Color32, RichText};
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
@@ -120,16 +122,24 @@ impl Screen for SceneScreen {
 
                 let scene_clone = self.model.scene.clone();
                 let message_pipe_clone = self.message_popup_pipe.clone();
+                let export_misc_clone = self.model.export_misc.clone();
 
                 if save_clicked {
-                    message_pipe_clone.default_handle(scene_clone.lock().unwrap().save());
+                    message_pipe_clone.default_handle(
+                        scene_clone
+                            .lock()
+                            .unwrap()
+                            .save(export_misc_clone.load(Ordering::SeqCst)),
+                    );
                 } else if save_as_clicked || save_clicked {
                     self.file_dialog_save.save_file(move |res| {
                         if let Ok(path) = res {
                             let mut scene_lock = scene_clone.lock().unwrap();
                             message_pipe_clone
                                 .default_handle(scene_lock.set_output_path(Some(path.clone())));
-                            message_pipe_clone.default_handle(scene_lock.save());
+                            message_pipe_clone.default_handle(
+                                scene_lock.save(export_misc_clone.load(Ordering::SeqCst)),
+                            );
                         }
                     });
                 }
@@ -144,7 +154,7 @@ impl Screen for SceneScreen {
                             let res = scene_clone.lock().unwrap().load_object_from_file(path);
                             match res {
                                 Ok(_) => {
-                                    proxy_dirty.store(true, std::sync::atomic::Ordering::SeqCst);
+                                    proxy_dirty.store(true, Ordering::SeqCst);
                                 }
                                 Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
                             };
@@ -201,6 +211,33 @@ impl Screen for SceneScreen {
             .min_width(220.0)
             .show(ctx, |ui| {
                 self.model.consume_proxy_dirty_and_reload();
+
+                let mut export_misc_loaded = self.model.export_misc.load(Ordering::SeqCst);
+
+                if !export_misc_loaded {
+                    ui.label(
+                        RichText::new("⚠ Currently not exporting misc objects.")
+                            .color(Color32::ORANGE)
+                            .strong(),
+                    );
+                    ui.label(
+                        RichText::new(
+                            "Enable to also export: Spheres, Ray Samples and Color Hash to rscn.",
+                        )
+                        .small(),
+                    );
+                }
+
+                if ui
+                    .checkbox(&mut export_misc_loaded, "Export Additional Data")
+                    .clicked()
+                {
+                    self.model
+                        .export_misc
+                        .store(export_misc_loaded, Ordering::SeqCst);
+                }
+
+                ui.separator();
 
                 if self.model.frame_buffer.has_provider() {
                     if ui.button("Cancel Render").clicked() {

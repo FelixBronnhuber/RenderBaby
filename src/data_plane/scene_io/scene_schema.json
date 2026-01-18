@@ -33,9 +33,39 @@
             "items": {
                 "$ref": "#/$defs/light"
             }
+        },
+        "misc": {
+            "$ref": "#/$defs/misc"
         }
     },
     "$defs": {
+        "materialRef": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": ["preset"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "preset": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": ["path"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
+        },
         "vec3": {
             "type": "object",
             "required": [
@@ -200,6 +230,65 @@
                 },
                 "color": {
                     "$ref": "#/$defs/color"
+                }
+            }
+        },
+        "sphere": {
+            "type": "object",
+            "required": [
+                "center",
+                "radius",
+                "color",
+                "name",
+                "scale",
+                "translation",
+                "rotation"
+            ],
+            "properties": {
+                "center": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "radius": {
+                    "type": "number"
+                },
+                "material": {
+                    "$ref": "#/$defs/materialRef",
+                    "default": { "preset": "default" }
+                },
+                "color": {
+                    "$ref": "#/$defs/color"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scale": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "translation": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "rotation": {
+                    "$ref": "#/$defs/vec3"
+                }
+            },
+            "additionalProperties": false
+        },
+        "misc": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "spheres": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/sphere"
+                    }
+                },
+                "ray_samples": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                },
+                "hash_color": {
+                    "type": "boolean"
                 }
             }
         }

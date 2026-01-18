@@ -2,15 +2,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use anyhow::Context;
 use glam::Vec3;
-use scene_objects::{
-    camera,
-    camera::Camera,
-    light_source::{LightSource, LightType},
-};
+use scene_objects::{camera, camera::Camera, light_source::LightSource, sphere::Sphere, material::*};
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
 use crate::data_plane::scene_io::file_manager::FileManager;
 use log::{info, debug, error};
+use crate::data_plane::scene_io::mtl_parser::load_mtl_with_name;
 
 pub struct LoadedSceneData {
     pub scene: Scene,
@@ -46,12 +43,6 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
                 } else {
                     Vec3::new(0.0, 0.0, 0.0)
                 }
-            },
-            match light.r#type.as_str() {
-                "ambient" => LightType::Ambient,
-                "point" => LightType::Point,
-                "directional" => LightType::Directional,
-                _ => LightType::Ambient,
             },
         ))
     }
@@ -107,6 +98,42 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
         .iter()
         .map(|o| Vec3::new(o.scale.x, o.scale.y, o.scale.z))
         .collect();
+
+    if let Some(misc) = &file.misc {
+        if let Some(spheres) = &misc.spheres {
+            for sphere in spheres {
+                let material = match &sphere.material {
+                    Some(material) => match material {
+                        FileMaterialRef::Preset { preset } => {
+                            match MaterialPresets::try_from(preset.as_str()) {
+                                Ok(preset) => preset.into(),
+                                Err(_) => Material::default(),
+                            }
+                        }
+                        FileMaterialRef::Path { path, name } => {
+                            load_mtl_with_name(PathBuf::from(path), name.clone())?
+                        }
+                    },
+                    None => Material::default(),
+                };
+                scene.add_sphere(Sphere::new(
+                    Vec3::new(sphere.center.x, sphere.center.y, sphere.center.z),
+                    sphere.radius,
+                    material,
+                    (&sphere.color).into(),
+                ));
+            }
+        }
+
+        if let Some(ray_samples) = &misc.ray_samples {
+            scene.get_camera_mut().set_ray_samples(*ray_samples);
+        }
+
+        if let Some(hash_color) = &misc.hash_color {
+            scene.set_color_hash_enabled(*hash_color);
+        }
+    }
+
     Ok(LoadedSceneData {
         scene,
         paths,
