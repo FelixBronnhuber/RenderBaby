@@ -12,7 +12,7 @@ use scene_objects::{
     mesh::Mesh,
     sphere::Sphere,
 };
-use crate::data_plane::scene::{render_scene::Scene};
+use crate::data_plane::scene::{render_parameter::RenderParameter, render_scene::Scene};
 use engine_bvh::triangle::GPUTriangle;
 use engine_bvh::bvh::BVH;
 
@@ -73,6 +73,7 @@ fn camera_to_render_uniforms(
     color_hash_enabled: bool,
     bvh_node_count: u32,
     bvh_triangle_count: u32,
+    render_param: RenderParameter,
 ) -> Result<RenderUniforms, Error> {
     //! converts the given scene_object::camera::Camera to a render_config::Uniforms
     //! so that it can be passed to the render engine
@@ -101,13 +102,13 @@ fn camera_to_render_uniforms(
         spheres_count,
         bvh_node_count,
         bvh_triangle_count,
-        RenderUniforms::default().ground_height, //Replace with correct values from GUI
-        RenderUniforms::GROUND_ENABLED,
-        RenderUniforms::CHECKERBOARD_ENABLED,
-        RenderUniforms::default().sky_color,
-        RenderUniforms::default().max_depth,
-        RenderUniforms::default().checkerboard_color_1,
-        RenderUniforms::default().checkerboard_color_2,
+        render_param.ground_height, //Replace with correct values from GUI
+        render_param.ground_enabled,
+        render_param.checkerboard_enabled,
+        render_param.sky_color,
+        render_param.max_depth,
+        render_param.checkerboard_colors.0,
+        render_param.checkerboard_colors.1,
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
@@ -354,6 +355,7 @@ impl Scene {
             self.get_color_hash_enabled(),
             bvh_node_count,
             bvh_triangle_count,
+            self.get_render_parameter(),
         )
         .unwrap()
     }
