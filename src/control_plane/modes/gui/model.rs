@@ -11,7 +11,7 @@ use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 #[allow(dead_code)]
 pub struct Model {
     pub scene: Arc<Mutex<Scene>>,
-    pub proxy: ProxyScene,
+    pub proxy: Arc<Mutex<ProxyScene>>,
     // flag to indicate whether the real scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
     pub frame_buffer: FrameBuffer,
@@ -101,7 +101,7 @@ impl Model {
         let proxy = scene.get_proxy_scene();
         Self {
             scene: Arc::new(Mutex::new(scene)),
-            proxy,
+            proxy: Arc::new(Mutex::new(proxy)),
             proxy_dirty: Arc::new(AtomicBool::new(false)),
             frame_buffer: FrameBuffer::new(true),
             export_misc: Arc::new(AtomicBool::new(false)),
@@ -109,12 +109,10 @@ impl Model {
     }
 
     pub fn set_output_path(&mut self, path: Option<PathBuf>) -> anyhow::Result<()> {
-        // ask scene to change the output path. This would require the destination not to already exist
         self.scene.lock().unwrap().set_output_path(path)
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        // throws an error if an output path isn't set
         self.scene
             .lock()
             .unwrap()
@@ -127,15 +125,15 @@ impl Model {
         Ok(())
     }
 
-    pub fn reload_proxy(&mut self) {
-        self.proxy = self.scene.lock().unwrap().get_proxy_scene();
+    pub fn reload_proxy(&self) {
+        *self.proxy.lock().unwrap() = self.scene.lock().unwrap().get_proxy_scene();
     }
 
     pub fn mark_proxy_dirty(&self) {
         self.proxy_dirty.store(true, Ordering::SeqCst);
     }
 
-    pub fn consume_proxy_dirty_and_reload(&mut self) {
+    pub fn consume_proxy_dirty_and_reload(&self) {
         if self.proxy_dirty.swap(false, Ordering::SeqCst) {
             self.reload_proxy();
         }

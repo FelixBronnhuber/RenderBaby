@@ -70,7 +70,7 @@ impl FrameIterator for Provider {
 }
 
 pub struct FrameBuffer {
-    latest_frame_rx: Receiver<anyhow::Result<Frame>>,
+    latest_frame_rx: Arc<Mutex<Receiver<anyhow::Result<Frame>>>>,
     command_tx: Sender<BufferCommand>,
     join_handle: JoinHandle<()>,
     clone_last: bool,
@@ -101,7 +101,7 @@ impl FrameBuffer {
         });
 
         Self {
-            latest_frame_rx,
+            latest_frame_rx: Arc::new(Mutex::new(latest_frame_rx)),
             command_tx,
             join_handle,
             clone_last,
@@ -126,6 +126,20 @@ impl FrameBuffer {
             }
         };
 
+        let catch_command = |command: BufferCommand, provider: &mut Provider| -> bool {
+            match command {
+                BufferCommand::Provide(p) => {
+                    provider.set(p);
+                    true
+                }
+                BufferCommand::StopCurrentProvider => {
+                    provider.destroy();
+                    provider.reset();
+                    true
+                }
+            }
+        };
+
         loop {
             if provider.is_none() {
                 match command_rx.recv() {
@@ -138,29 +152,23 @@ impl FrameBuffer {
                     }
                 }
             } else {
+                #[allow(clippy::collapsible_if)]
+                if let Ok(command) = command_rx.try_recv() {
+                    if catch_command(command, &mut provider) {
+                        continue;
+                    }
+                }
+
                 let frame = provider.next();
                 let is_last = !provider.has_next();
 
                 if is_last {
                     set_last_frame(&frame);
                     provider.reset();
-                }
-
-                if let Ok(command) = command_rx.try_recv() {
-                    if !is_last {
-                        set_last_frame(&frame);
-                    }
-
-                    match command {
-                        BufferCommand::Provide(p) => {
-                            provider.set(p);
-                            continue;
-                        }
-                        BufferCommand::StopCurrentProvider => {
-                            provider.destroy();
-                            provider.reset();
-                            continue;
-                        }
+                } else if let Ok(command) = command_rx.try_recv() {
+                    set_last_frame(&frame);
+                    if catch_command(command, &mut provider) {
+                        continue;
                     }
                 }
 
@@ -186,7 +194,7 @@ impl FrameBuffer {
     }
 
     pub fn try_recv(&self) -> Option<anyhow::Result<Frame>> {
-        self.latest_frame_rx.try_recv().ok()
+        self.latest_frame_rx.lock().unwrap().try_recv().ok()
     }
 
     pub fn get_last_frame(&self) -> anyhow::Result<Option<Frame>> {
@@ -226,7 +234,7 @@ impl FrameBuffer {
                 );
             });
 
-            self.latest_frame_rx = latest_frame_rx;
+            self.latest_frame_rx = Arc::new(Mutex::new(latest_frame_rx));
             self.command_tx = command_tx;
             Ok(())
         }

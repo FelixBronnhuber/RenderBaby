@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use eframe::emath::Align;
@@ -6,9 +7,11 @@ use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
 use eframe_elements::image_area::{Image, ImageArea};
 use eframe_elements::message_popup::{Message, MessagePopupPipe};
+use frame_buffer::deferred_iterator::DeferredIterator;
 use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::Screen;
 use crate::control_plane::modes::gui::screens::start::StartScreen;
+use crate::control_plane::modes::gui::screens::temp_low_render::TemporaryLowRender;
 use crate::control_plane::modes::gui::screens::viewable::Viewable;
 use crate::control_plane::modes::is_debug_mode;
 
@@ -16,7 +19,7 @@ static FRAME_DURATION_FPS24: Duration = Duration::from_millis(1000 / 24);
 
 #[allow(dead_code)]
 pub struct SceneScreen {
-    model: Model,
+    model: Arc<Model>,
     bottom_visible: bool,
     render_on_change: bool,
     file_dialog_obj: ThreadedNativeFileDialog,
@@ -24,11 +27,17 @@ pub struct SceneScreen {
     file_dialog_save: ThreadedNativeFileDialog,
     image_area: ImageArea,
     message_popup_pipe: MessagePopupPipe,
+    deferred_iterator: DeferredIterator,
 }
 
 #[allow(dead_code)]
 impl SceneScreen {
     pub fn new(model: Model) -> Self {
+        let model = Arc::new(model);
+        let message_popup_pipe = MessagePopupPipe::new();
+        let message_popup_pipe_clone = message_popup_pipe.clone();
+        let render_callback = Box::new(move |res| message_popup_pipe_clone.default_handle(res));
+        let temporary_low = TemporaryLowRender::new(model.clone(), render_callback, 1);
         Self {
             model,
             bottom_visible: false,
@@ -45,7 +54,8 @@ impl SceneScreen {
                     .add_filter("JSON Scene", &["json"]),
             ),
             image_area: ImageArea::new(Default::default()),
-            message_popup_pipe: MessagePopupPipe::new(),
+            message_popup_pipe,
+            deferred_iterator: DeferredIterator::new(Arc::new(temporary_low), 1000),
         }
     }
 
@@ -66,19 +76,6 @@ impl SceneScreen {
                     });
             });
     }
-
-    fn do_render(&self) {
-        let it = self.model.render();
-        match it {
-            Ok(_) => {}
-            Err(_) => {
-                self.message_popup_pipe
-                    .push_message(Message::from_error(anyhow::anyhow!(
-                        "Failed to generate a frame iterator."
-                    )));
-            }
-        };
-    }
 }
 
 impl Screen for SceneScreen {
@@ -87,7 +84,7 @@ impl Screen for SceneScreen {
     }
 
     fn on_start(&mut self, _ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.do_render();
+        self.deferred_iterator.force();
     }
 
     fn update(
@@ -244,45 +241,49 @@ impl Screen for SceneScreen {
                         self.model.frame_buffer.stop_current_provider();
                     }
                 } else if ui.button("Start Render").clicked() {
-                    self.do_render();
+                    self.deferred_iterator.force()
                 }
 
                 ui.separator();
 
-                let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
+                let mut proxy_tmp = std::mem::take(&mut *self.model.proxy.lock().unwrap());
 
                 ui.label("Camera");
+                let mut changed = false;
+
                 if proxy_tmp.camera.ui_with_settings(
                     ui,
                     &mut self.model.scene.clone(),
                     &mut self.render_on_change,
-                ) && self.render_on_change
-                {
-                    self.do_render();
+                ) {
+                    changed = true;
                 }
 
                 ui.separator();
 
-                if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
-                    self.do_render();
+                if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) {
+                    changed = true;
                 }
 
                 ui.separator();
 
                 ui.label("Objects");
-                if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) && self.render_on_change
-                {
-                    self.do_render();
+                if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) {
+                    changed = true;
                 }
 
                 ui.separator();
 
                 ui.label("Lights");
-                if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
-                    self.do_render();
+                if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) {
+                    changed = true;
                 }
 
-                self.model.proxy = proxy_tmp;
+                if changed && self.render_on_change {
+                    self.deferred_iterator.schedule();
+                }
+
+                *self.model.proxy.lock().unwrap() = proxy_tmp;
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -306,7 +307,7 @@ impl Screen for SceneScreen {
         }
 
         // hopefully temporary fix to keep painting while render is going even if the user is doing nothing.
-        if self.model.frame_buffer.has_provider() {
+        if self.deferred_iterator.is_active() {
             ctx.request_repaint_after(FRAME_DURATION_FPS24);
         }
 
