@@ -1,6 +1,5 @@
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use eframe::emath::Align;
 use egui::{Color32, RichText};
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
