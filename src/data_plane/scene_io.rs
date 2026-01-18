@@ -7,3 +7,4 @@ pub mod scene_importer;
 mod scene_io_objects;
 #[cfg(test)]
 mod tests;
+pub mod texture_loader;

@@ -8,7 +8,7 @@ pub struct LightSource {
     pub name: String,
     pub color: [f32; 3],
     pub rotation: Vec3,
-    pub light_type: LightType,
+    // pub light_type: LightType,
 }
 #[allow(dead_code)]
 impl LightSource {
@@ -51,6 +51,7 @@ impl LightSource {
         //! New Rotation as glam::Vec3
         todo!()
     }
+    /*
     pub fn get_light_type(&self) -> &LightType {
         //! ## Returns
         //! LightSource LightType Enum
@@ -61,7 +62,7 @@ impl LightSource {
         //! ## Parameter
         //! 'light_type': New LightType Enum
         self.light_type = light_type;
-    }
+    }*/
     pub fn get_color(&self) -> [f32; 3] {
         //! ## Returns
         //! LightSource color as rgb array of f32, values in \[0, 1]
@@ -92,7 +93,7 @@ impl LightSource {
         color: [f32; 3],
         name: String,
         rotation: Vec3,
-        light_type: LightType,
+        //light_type: LightType,
     ) -> Self {
         //! Constructor for LightSource
         LightSource {
@@ -101,7 +102,7 @@ impl LightSource {
             name,
             color,
             rotation, // some types have no ratation
-            light_type,
+                      //light_type,
         }
     }
 }
@@ -110,14 +111,15 @@ impl std::fmt::Display for LightSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{:?} LightSource {} at {}",
-            self.get_light_type(),
+            "LightSource {} at {}",
+            //self.get_light_type(),
             self.name,
             self.get_position()
         )
     }
 }
 
+/*
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 /// Light can be either Ambient, Point or Directional
@@ -148,3 +150,4 @@ impl From<String> for LightType {
         }
     }
 }
+*/
