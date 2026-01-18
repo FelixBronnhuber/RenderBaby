@@ -12,7 +12,7 @@ use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
 pub struct Model {
     pub scene: Arc<Mutex<Scene>>,
     pub proxy: ProxyScene,
-    // flag to indicate whether the scene has been modified without also modifying the proxy
+    // flag to indicate whether the real scene has been modified without also modifying the proxy
     pub proxy_dirty: Arc<AtomicBool>,
     pub frame_buffer: FrameBuffer,
     pub export_misc: Arc<AtomicBool>,

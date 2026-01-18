@@ -1,7 +1,6 @@
-use anyhow::anyhow;
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
-use scene_objects::material::Material;
+use scene_objects::material::{Material, MaterialPresets};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SceneFile {
@@ -107,7 +106,7 @@ pub struct FileSphere {
 #[serde(untagged)]
 pub enum FileMaterialRef {
     Preset { preset: String },
-    Path { path: String },
+    Path { path: String, name: String },
 }
 
 impl TryFrom<&Material> for FileMaterialRef {
@@ -116,11 +115,16 @@ impl TryFrom<&Material> for FileMaterialRef {
         if let Some(ref_path) = &mat.ref_path {
             Ok(FileMaterialRef::Path {
                 path: ref_path.clone(),
+                name: mat.name.clone(),
             })
         } else {
-            Err(anyhow!("Material has no path"))
+            match MaterialPresets::try_from(mat) {
+                Ok(preset) => Ok(FileMaterialRef::Preset {
+                    preset: preset.into(),
+                }),
+                Err(e) => Err(e),
+            }
         }
-        // TODO: implement presets
     }
 }
 
