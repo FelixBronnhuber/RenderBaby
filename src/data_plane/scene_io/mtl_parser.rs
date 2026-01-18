@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use scene_objects::material::Material;
 use std::path::Path;
+use anyhow::anyhow;
 
 #[derive(Debug)]
 pub enum MTLParseError {
@@ -183,6 +184,25 @@ impl MTLParser {
         });
         Ok(returnmats)
     }
+
+    pub fn to_material(&self, path: PathBuf, parent: Option<PathBuf>) -> Material {
+        let texture_path = self.map_kd.as_ref().map(|name| match &parent {
+            Some(p) => p.join(name).to_string_lossy().to_string(),
+            None => name.clone(),
+        });
+
+        Material::new(
+            self.name.clone(),
+            self.ka.iter().map(|a| *a as f64).collect(),
+            self.kd.iter().map(|a| *a as f64).collect(),
+            self.ks.iter().map(|a| *a as f64).collect(),
+            self.ke.iter().map(|a| *a as f64).collect(),
+            self.ns as f64,
+            self.d as f64,
+            texture_path,
+            Some(path.to_string_lossy().to_string()),
+        )
+    }
 }
 
 pub fn load_mtl(path: PathBuf) -> anyhow::Result<Vec<Material>> {
@@ -190,23 +210,20 @@ pub fn load_mtl(path: PathBuf) -> anyhow::Result<Vec<Material>> {
     let parent = Path::new(&path).parent().map(|p| p.to_path_buf());
     let result = materials
         .into_iter()
-        .map(|mat| {
-            let texture_path = mat.map_kd.as_ref().map(|name| match &parent {
-                Some(p) => p.join(name).to_string_lossy().to_string(),
-                None => name.clone(),
-            });
-            Material::new(
-                mat.name,
-                mat.ka.iter().map(|a| *a as f64).collect(),
-                mat.kd.iter().map(|a| *a as f64).collect(),
-                mat.ks.iter().map(|a| *a as f64).collect(),
-                mat.ke.iter().map(|a| *a as f64).collect(),
-                mat.ns as f64,
-                mat.d as f64,
-                texture_path,
-                Some(path.to_string_lossy().to_string()),
-            )
-        })
+        .map(|mat| mat.to_material(path.clone(), parent.clone()))
         .collect();
     Ok(result)
+}
+
+pub fn load_mtl_with_name(path: PathBuf, name: String) -> anyhow::Result<Material> {
+    let materials = MTLParser::parse(path.to_string_lossy().as_ref())?;
+    let parent = Path::new(&path).parent().map(|p| p.to_path_buf());
+    match materials.into_iter().find(|mat| mat.name == name) {
+        Some(mat) => Ok(mat.to_material(path.clone(), parent.clone())),
+        None => Err(anyhow!(
+            "Material with name {} not found in file {}",
+            name,
+            path.to_string_lossy()
+        )),
+    }
 }

@@ -1,5 +1,6 @@
-use std::time::Duration;
 use std::sync::atomic::Ordering;
+use std::time::Duration;
+use eframe::emath::Align;
 use egui::{Color32, RichText};
 use rfd::FileDialog;
 use eframe_elements::file_picker::ThreadedNativeFileDialog;
@@ -163,7 +164,7 @@ impl Screen for SceneScreen {
                             let res = scene_clone.lock().unwrap().load_object_from_file(path);
                             match res {
                                 Ok(_) => {
-                                    proxy_dirty.store(true, std::sync::atomic::Ordering::SeqCst);
+                                    proxy_dirty.store(true, Ordering::SeqCst);
                                 }
                                 Err(e) => message_pipe_clone.push_message(Message::from_error(e)),
                             };
