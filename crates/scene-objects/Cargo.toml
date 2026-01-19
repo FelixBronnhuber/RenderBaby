@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.100"
 glam = {version = "0.30.9", features = ["serde"]}
+log = "0.4"
 
