@@ -89,13 +89,10 @@ fn test_rscn_export_import_with_mesh() {
 
     // We need a real mesh file to test.
     // fixtures/scenes/obj/cube_bare.obj exists in the project root.
-    let project_root = AutoPath::try_from(env!("CARGO_MANIFEST_DIR"));
-    assert!(project_root.is_ok());
-    let project_root = project_root.unwrap();
-    let fixture_obj = project_root.get_joined("fixtures/scenes/obj/cube_bare.obj");
+    let fixture_obj = AutoPath::try_from("$INCLUDED/fixtures/scenes/obj/cube_bare.obj");
 
     assert!(
-        fixture_obj.is_some(),
+        fixture_obj.is_ok(),
         "Fixture obj not found at {:?}",
         fixture_obj
     );
@@ -142,9 +139,7 @@ fn test_rscn_export_import_with_mesh() {
     // Ensure it is NOT the original path
     assert_ne!(
         imported_path,
-        project_root
-            .get_joined("fixtures/scenes/obj/cube_bare.obj")
-            .unwrap()
+        AutoPath::try_from("$INCLUDED/fixtures/scenes/obj/cube_bare.obj").unwrap()
     );
 
     // Clean up
@@ -268,16 +263,14 @@ fn test_rscn_export_with_mtl() {
     let mut scene = create_test_scene("MtlTest");
 
     // Load cornell box which has an MTL
-    let project_root = AutoPath::try_from(env!("CARGO_MANIFEST_DIR"));
-    assert!(project_root.is_ok());
-    let project_root = project_root.unwrap();
+    let fixture_obj = AutoPath::try_from("$INCLUDED/fixtures/cornell_box/cornell-box.obj");
 
-    let fixture_obj = project_root.get_joined("fixtures/cornell_box/cornell-box.obj");
     assert!(
-        fixture_obj.is_some(),
+        fixture_obj.is_ok(),
         "Fixture obj not found at {:?}",
         fixture_obj
     );
+
     let fixture_obj = fixture_obj.unwrap();
 
     scene
