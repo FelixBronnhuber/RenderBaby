@@ -150,7 +150,7 @@ impl ProxyCamera {
                 ui.horizontal(|ui| {
                     ui.label("E/Q: Up/Down");
                 });
-                ui.label("Use 'Rener on change' for better viewfinding");
+                ui.label("Use 'Render on change' for better viewfinding");
             },
         );
 
