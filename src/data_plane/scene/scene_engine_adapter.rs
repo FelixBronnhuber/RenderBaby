@@ -23,13 +23,12 @@ pub type RenderCamera = engine_config::Camera;
 type RenderLight = engine_config::PointLight;
 type RenderGeometry = (Vec<f32>, Vec<u32>, Vec<f32>, engine_config::Material);
 type SubMeshGeometry = (Vec<f32>, Vec<u32>, Vec<f32>);
-
+/// Converts the given LightSource to a engine_config::PointLight if has the type Point
+/// ## Parameter:
+/// 'light': LightSource that is to be converted
+/// ## Returns
+/// Options of engine_config::PointLight: Some if light has Type Point
 fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
-    //! Converts the given LightSource to a engine_config::PointLight if has the type Point
-    //! ## Parameter:
-    //! 'light': LightSource that is to be converted
-    //! ## Returns
-    //! Options of engine_config::PointLight: Some if light has Type Point
     Some(RenderLight::new(
         light.get_position().into(),
         0.5,
@@ -37,14 +36,13 @@ fn light_to_render_point_light(light: &LightSource) -> Option<RenderLight> {
         light.get_color(),
     ))
 }
-
+/// Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
+/// so it can be passed to the render engine
+/// ## Parameter
+/// scene_objects::sphere::Sphere to be converted
+/// ## Returns
+/// engine_config::Sphere based on the given sphere
 fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
-    //! Converts a given scene_objects::sphere::Sphere to a engine_config::sphere
-    //! so it can be passed to the render engine
-    //! ## Parameter
-    //! scene_objects::sphere::Sphere to be converted
-    //! ## Returns
-    //! engine_config::Sphere based on the given sphere
     let center = sphere.get_center();
 
     RenderSphere::new(
@@ -63,6 +61,15 @@ fn sphere_to_render_sphere(sphere: &Sphere) -> RenderSphere {
 fn vec3_to_array(vec: Vec3) -> [f32; 3] {
     [vec.x, vec.y, vec.z]
 }
+/// converts the given scene_object::camera::Camera to a render_config::Uniforms
+/// so that it can be passed to the render engine
+/// ## Parameter
+/// 'camera': scene_object::camer::Camera to be converted <br>
+/// 'spheres_count': Number of spheres to be rendered <br>
+/// 'triangles_count': Number of triangles to be rendered <br>
+/// 'color_hash_enabled': Whether color hash is enabled
+/// ## Returns
+/// render_config::Unfiforms for the given parameters
 fn camera_to_render_uniforms(
     camera: &Camera,
     spheres_count: u32,
@@ -71,15 +78,6 @@ fn camera_to_render_uniforms(
     bvh_triangle_count: u32,
     render_param: RenderParameter,
 ) -> Result<RenderUniforms, Error> {
-    //! converts the given scene_object::camera::Camera to a render_config::Uniforms
-    //! so that it can be passed to the render engine
-    //! ## Parameter
-    //! 'camera': scene_object::camer::Camera to be converted <br>
-    //! 'spheres_count': Number of spheres to be rendered <br>
-    //! 'triangles_count': Number of triangles to be rendered <br>
-    //! 'color_hash_enabled': Whether color hash is enabled
-    //! ## Returns
-    //! render_config::Unfiforms for the given parameters
     let position = camera.get_position();
     let dir = camera.get_look_at() - camera.get_position(); //Engine uses currently a direction vector
     let render_camera = RenderCamera::new(
@@ -109,7 +107,7 @@ fn camera_to_render_uniforms(
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
 }
-
+/// Helper to convert slice
 fn vec3_from_slice_f32(v: &[f64]) -> [f32; 3] {
     [
         v.first().copied().unwrap_or(0.0) as f32,
@@ -117,7 +115,7 @@ fn vec3_from_slice_f32(v: &[f64]) -> [f32; 3] {
         v.get(2).copied().unwrap_or(0.0) as f32,
     ]
 }
-
+/// Helper to convert slice
 fn vec3_to_f32_with_color(v: &[f64], color: Option<&[f32; 3]>) -> [f32; 3] {
     if let Some(color) = color {
         let v = vec3_from_slice_f32(v);
@@ -126,7 +124,11 @@ fn vec3_to_f32_with_color(v: &[f64], color: Option<&[f32; 3]>) -> [f32; 3] {
         vec3_from_slice_f32(v)
     }
 }
-
+/// Converts the material to the form that the GPU needs
+/// ## Parameter
+/// 'mat': Reference to a Material from the scene
+/// 'color': Option of color
+/// 'texture_map': Reference to HashMap used
 fn material_to_render_material(
     mat: &scene_objects::material::Material,
     color: Option<&[f32; 3]>,
@@ -165,13 +167,11 @@ fn material_to_render_material(
     )
     .unwrap_or_default()
 }
-
+/// Extracts vertices and point references from the given mesh
+/// ## Parameter
+/// 'mesh': Mesh from scene_objects crate that is to be converted
+/// Returns: Vector of tuples: (vertices, indices, uvs, material)
 fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
-    //! Extracts vertices and point references from the given mesh
-    //! ## Parameter
-    //! 'mesh': Mesh from scene_objects crate that is to be converted
-    //! Returns: Vector of tuples: (vertices, indices, uvs, material)
-
     let original_vertices = mesh.get_vertices();
     let original_indices = mesh.get_tri_indices();
     let original_uvs = mesh.get_uvs();
@@ -288,6 +288,7 @@ fn mesh_to_render_data(mesh: &Mesh, texture_map: &HashMap<String, i32>) -> Vec<R
     vec![(vertices, indices, uvs, material)]
 }
 
+/// Converts a given Mesh to a triangle as it will be used on the GPU
 fn mesh_to_gpu_triangles(
     mesh: &RenderMesh,
     verts: &[f32],
@@ -326,9 +327,9 @@ fn mesh_to_gpu_triangles(
 
 /// Extends scene to offer functionalities needed for rendering with raytracer or pathtracer engine
 impl Scene {
+    /// ## Returns
+    /// A vector with all engine_config::PointLight from self
     fn get_render_point_lights(&self) -> Vec<RenderLight> {
-        //! ## Returns
-        //! A vector with all engine_config::PointLight from self
         let mut res = vec![];
         for light in self.get_light_sources() {
             if let Some(render_light) = light_to_render_point_light(light) {
@@ -337,22 +338,22 @@ impl Scene {
         }
         res
     }
+    /// ## Returns
+    /// a Vec that contains all Scene spheres as engine_config::Sphere
     fn get_render_spheres(&self) -> Vec<RenderSphere> {
-        //! ## Returns
-        //! a Vec that contains all Scene spheres as engine_config::Sphere
         self.get_spheres()
             .iter()
             .map(sphere_to_render_sphere)
             .collect()
     }
+    /// ## Returns
+    /// RenderUnfiform for the camera of the scene
     pub(crate) fn get_render_uniforms(
         &self,
         spheres_count: u32,
         bvh_node_count: u32,
         bvh_triangle_count: u32,
     ) -> RenderUniforms {
-        //! ## Returns
-        //! RenderUnfiform for the camera of the scene
         camera_to_render_uniforms(
             self.get_camera(),
             spheres_count,
@@ -363,10 +364,9 @@ impl Scene {
         )
         .unwrap()
     }
-
+    /// ## Returns
+    /// Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
     fn get_render_tris(&self, texture_map: &HashMap<String, i32>) -> Vec<RenderGeometry> {
-        //! ## Returns
-        //! Vector of touples, with each of the touples representing a TriGeometry defined by the points and the triangles build from the points.
         self.get_meshes()
             .iter()
             .flat_map(|m| mesh_to_render_data(m, texture_map))
@@ -496,21 +496,19 @@ impl Scene {
                 .build()
         }
     }
-
+    /// ## Returns
+    /// A FrameIterator for the current scene
     pub fn get_frame_iterator(&mut self) -> Result<Box<dyn FrameIterator>> {
-        //! ## Returns
-        //! A FrameIterator for the current scene
         let rc = self.generate_full_render_command_builder();
 
         let engine = self.get_render_engine_mut();
 
         engine.get_frame_iterator(rc)
     }
-
+    /// calls the render engine for the scene self.
+    /// ## Returns
+    /// Result of either the Frame or a error
     pub fn render(&mut self) -> Result<Frame> {
-        //! calls the render engine for the scene self.
-        //! ## Returns
-        //! Result of either the Frame or a error
         info!("{self}: Render has been called. Collecting render parameters");
 
         let rc = self.generate_full_render_command_builder();
