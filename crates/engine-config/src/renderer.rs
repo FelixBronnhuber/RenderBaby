@@ -1,77 +1,58 @@
 //! Renderer trait definitions for the RenderBaby system.
 //!
-//! This module defines the core [`Renderer`] trait that all rendering engines must implement.
-//! It provides both synchronous (blocking) and progressive (iterative) rendering modes.
+//! This module defines the core rendering interfaces that all rendering engines must implement.
+//! It provides both synchronous (blocking) and progressive (iterative) rendering modes through
+//! two complementary traits: [`Renderer`] and [`RendererIterable`].
+//!
+//! ### Synchronous Rendering
+//!
+//! The [`render`](Renderer::render) method blocks until the entire image is complete,
+//! executing all passes sequentially and returning the final result.
+//!
+//! ### Progressive Rendering
+//!
+//! The [`frame_iterator`](Renderer::frame_iterator) method returns an iterator that yields
+//! partial results incrementally. This enables:
+//! - Interactive preview while rendering
+//! - Real-time progress monitoring
+//! - Early termination if results are satisfactory
+//! - Responsive UI during long renders
 
 use anyhow::Result;
 use crate::RenderConfig;
 
 use frame_buffer::frame_iterator::{Frame, FrameIterator};
 
-/// Core rendering interface for all RenderBaby engines.
+/// Core rendering interface for all RenderBaby rendering backends.
 ///
-/// The `Renderer` trait defines the contract that all rendering backends must fulfill.
-/// It supports two rendering modes:
-///
-/// - **Synchronous Rendering**: [`render`](Renderer::render) blocks until the entire image is complete.
-/// - **Progressive Rendering**: [`frame_iterator`](Renderer::frame_iterator) returns an iterator
-///   that yields partial results, allowing for interactive preview and incremental refinement.
+/// The `Renderer` trait defines the low-level contract that all rendering engines
+/// must fulfill. It provides both synchronous and progressive
+/// rendering capabilities.
 ///
 /// # Thread Safety
 ///
 /// Implementors must be `Send` to support multi-threaded rendering workflows.
-///
-/// # Usage Example
-///
-/// ```rust,ignore
-/// use engine_config::{Renderer, RenderConfig};
-///
-/// fn render_scene(renderer: &mut impl Renderer, config: RenderConfig) -> anyhow::Result<()> {
-///     // Option 1: Synchronous rendering
-///     let final_frame = renderer.render(config.clone())?;
-///     
-///     // Option 2: Progressive rendering
-///     let mut iter = renderer.frame_iterator(config)?;
-///     while iter.has_next() {
-///         let partial_frame = iter.next()?;
-///         // Display or process partial result
-///     }
-///     
-///     Ok(())
-/// }
-/// ```
 pub trait Renderer: Send {
     /// Renders a scene synchronously and returns the final frame.
     ///
     /// This method blocks until the entire rendering process is complete. It computes
-    /// all samples and returns the fully converged result.
+    /// all samples across all passes and returns the fully converged result.
     ///
     /// # Arguments
     ///
-    /// * `rc` - The render configuration containing scene description and settings
+    /// * `rc` - The render configuration containing scene description and rendering settings
     ///
     /// # Returns
     ///
-    /// * `Result<Frame>` - The rendered frame with pixel data, or an error if rendering fails
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - GPU resources fail to initialize
-    /// - The render configuration is invalid
-    /// - GPU operations fail during rendering
+    /// * `Ok(Frame)` - The rendered frame with complete pixel data
+    /// * `Err(_)` - An error if rendering fails
     fn render(&mut self, rc: RenderConfig) -> Result<Frame>;
 
     /// Creates a frame iterator for progressive rendering.
     ///
-    /// This method initializes the rendering session and returns an iterator that yields
+    /// This method initializes a rendering session and returns an iterator that yields
     /// frames incrementally. Each call to `next()` on the iterator computes additional
     /// samples and returns the current accumulated result.
-    ///
-    /// This is particularly useful for:
-    /// - Interactive preview while rendering
-    /// - Showing progress in real-time
-    /// - Allowing early termination if the result is satisfactory
     ///
     /// # Arguments
     ///
@@ -79,35 +60,47 @@ pub trait Renderer: Send {
     ///
     /// # Returns
     ///
-    /// * `Result<Box<dyn FrameIterator>>` - A boxed iterator yielding frames progressively,
-    ///   or an error if initialization fails
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - GPU resources fail to initialize
-    /// - The render configuration is invalid
+    /// * `Ok(Box<dyn FrameIterator>)` - An iterator yielding frames progressively
+    /// * `Err(_)` - An error if initialization fails
     fn frame_iterator(&mut self, rc: RenderConfig) -> Result<Box<dyn FrameIterator>>;
 }
 
-/// Alternative renderer trait for iterative rendering workflows.
+/// High-level renderer interface with additional convenience methods.
 ///
-/// `RendererIterable` provides a similar interface to [`Renderer`] but with method names
-/// that may be more intuitive in certain contexts. This trait is currently experimental
-/// and may be unified with [`Renderer`] in the future.
+/// `RendererIterable` extends the basic [`Renderer`] trait with higher-level rendering
+/// methods that provide automatic timing, logging, and iterator management. This trait
+/// is primarily implemented by the unified `Engine` wrapper.
 ///
-/// # Note
+/// # Relationship to Renderer
 ///
-/// This trait is functionally equivalent to [`Renderer`] and is primarily provided for
-/// API compatibility and naming preferences.
+/// While [`Renderer`] is the low-level interface implemented by rendering backends,
+/// `RendererIterable` is the high-level interface used by applications. The unified
+/// `Engine` implements `RendererIterable` by wrapping a `Box<dyn Renderer>`.
 pub trait RendererIterable {
-    /// Renders a scene synchronously and returns the final frame.
+    /// Renders a scene synchronously.
     ///
-    /// See [`Renderer::render`] for details.
+    /// This method internally creates a frame iterator, consumes all frames,
+    /// and returns the final result.
+    ///
+    /// # Implementation Note
+    ///
+    /// # Arguments
+    ///
+    /// * `rc` - The render configuration containing scene description and settings
     fn render(&mut self, rc: RenderConfig) -> Result<Frame>;
 
-    /// Creates and returns a frame iterator for progressive rendering.
+    /// Creates a frame iterator for progressive rendering.
     ///
-    /// See [`Renderer::frame_iterator`] for details.
+    /// Returns an iterator that yields frames incrementally, allowing for
+    /// interactive preview and progress monitoring.
+    ///
+    /// # Arguments
+    ///
+    /// * `rc` - The render configuration containing scene description and settings
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Box<dyn FrameIterator>)` - An iterator yielding progressive frames
+    /// * `Err(_)` - An error if initialization fails
     fn get_frame_iterator(&mut self, rc: RenderConfig) -> Result<Box<dyn FrameIterator>>;
 }
