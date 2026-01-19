@@ -424,7 +424,7 @@ impl Viewable for Vec<ProxySphere> {
                 new_sphere.center.clone().into(),
                 new_sphere.radius,
                 Material::default(),
-                new_sphere.color.clone().into(),
+                new_sphere.color.into(),
             ));
             self.push(new_sphere);
             changed = true;
@@ -455,7 +455,7 @@ impl Viewable for ProxySphere {
 
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
-            sphere.set_color(self.color.clone().into());
+            sphere.set_color(self.color.into());
             changed = true;
         }
 
@@ -518,6 +518,91 @@ impl Viewable for Misc {
                 .set_ray_samples(self.ray_samples);
             changed = true;
         }
+
+        ui.separator();
+
+        ui.label("Sky Color:");
+        if color_ui(ui, &mut self.render_param.sky_color) {
+            scene
+                .lock()
+                .unwrap()
+                .set_background_color(self.render_param.sky_color);
+            changed = true;
+        }
+
+        if ui
+            .add(
+                egui::Slider::new(&mut self.render_param.max_depth, 1..=10)
+                    .text("Ray Reflection Depth"),
+            )
+            .changed()
+        {
+            scene
+                .lock()
+                .unwrap()
+                .set_max_depth(self.render_param.max_depth);
+            changed = true;
+        }
+
+        if ui
+            .checkbox(&mut self.render_param.ground_enabled, "Enable Ground")
+            .changed()
+        {
+            scene
+                .lock()
+                .unwrap()
+                .set_ground_enabled(self.render_param.ground_enabled);
+            changed = true;
+        }
+
+        if self.render_param.ground_enabled {
+            ui.label("Ground Height:");
+            if ui
+                .add(egui::DragValue::new(&mut self.render_param.ground_height).speed(0.1))
+                .changed()
+            {
+                scene
+                    .lock()
+                    .unwrap()
+                    .set_ground_height(self.render_param.ground_height);
+                changed = true;
+            }
+
+            if ui
+                .checkbox(
+                    &mut self.render_param.checkerboard_enabled,
+                    "Use Checkerboard",
+                )
+                .changed()
+            {
+                scene
+                    .lock()
+                    .unwrap()
+                    .set_checkerboard_enabled(self.render_param.checkerboard_enabled);
+                changed = true;
+            }
+
+            if self.render_param.checkerboard_enabled {
+                ui.label("Checkerboard Color 1");
+                if color_ui(ui, &mut self.render_param.checkerboard_colors.0) {
+                    scene
+                        .lock()
+                        .unwrap()
+                        .set_checkerboared_colors(self.render_param.checkerboard_colors);
+                    changed = true;
+                }
+                ui.label("Checkerboard Color 2");
+                if color_ui(ui, &mut self.render_param.checkerboard_colors.1) {
+                    scene
+                        .lock()
+                        .unwrap()
+                        .set_checkerboared_colors(self.render_param.checkerboard_colors);
+                    changed = true;
+                }
+            }
+        }
+
+        ui.separator();
 
         ui.vertical(|ui| {
             ui.label("Spheres");
@@ -583,7 +668,7 @@ impl Viewable for ProxyLight {
         }
         ui.label("Color:");
         if color_ui(ui, &mut self.color) {
-            light.set_color(self.color.clone().into());
+            light.set_color(self.color.into());
             changed = true;
         }
 

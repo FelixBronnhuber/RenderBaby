@@ -206,9 +206,9 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
         lights: lightarr,
         camera: file_camera,
         background_color: FileColor {
-            r: bg[0],
-            g: bg[1],
-            b: bg[2],
+            r: bg.r,
+            g: bg.g,
+            b: bg.b,
             a: None,
         },
         misc: if export_misc {
