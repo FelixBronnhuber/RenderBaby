@@ -200,7 +200,9 @@ pub fn parse_scene(
             .paths
             .into_iter()
             .map(|p| {
-                let abs = base_path.get_joined(&p).unwrap().to_string();
+                let abs = AutoPath::get_absolute_or_join(&p, &base_path)
+                    .unwrap()
+                    .to_string();
                 debug!("SceneImporter: Resolved asset path: {} -> {}", p, abs);
                 abs
             })

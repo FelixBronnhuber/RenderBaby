@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
-use std::collections::HashMap;
+use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
 use log::{debug, error, info, warn};
 use frame_buffer::frame_iterator::Frame;
@@ -31,7 +30,7 @@ pub struct Scene {
     first_render: bool,
     render_engine: Option<Engine>,
     last_frame: Option<Frame>,
-    pub textures: HashMap<String, TextureData>,
+    pub(crate) texture_cache: TextureCache,
     output_path: Option<PathBuf>,
     render_params: RenderParameter,
 }
@@ -43,23 +42,15 @@ impl Default for Scene {
 
 #[allow(unused)]
 impl Scene {
-    fn ensure_texture_loaded(&mut self, path: &str) {
-        let key = std::path::Path::new(path).to_string_lossy().to_string();
-        if self.textures.contains_key(&key) {
+    fn ensure_texture_loaded(&mut self, path: AutoPath) {
+        // Normalize to a 'static AutoPath key for the cache
+        let key_auto = AutoPath::try_from(path.path_buf());
+        if let Ok(key_auto) = key_auto
+            && self.texture_cache.contains_key(&key_auto)
+        {
             return;
         }
-        match image::open(&key) {
-            Ok(img) => {
-                let img = img.to_rgba8();
-                let (width, height) = img.dimensions();
-                let data: Vec<u32> = img.pixels().map(|p| u32::from_le_bytes(p.0)).collect();
-                self.textures
-                    .insert(key, TextureData::new(width, height, data));
-            }
-            Err(e) => {
-                error!("Failed to load texture {}: {}", path, e);
-            }
-        }
+        let _ = self.texture_cache.load(path);
     }
 
     fn _load_scene_from_path(auto_path: AutoPath) -> anyhow::Result<Scene> {
@@ -118,16 +109,8 @@ impl Scene {
     ) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path using obj_parser::load_obj
         info!("{self}: Loading object from {}", auto_path);
-        let mut cache = TextureCache::new();
-        match load_obj(auto_path.clone(), &mut cache) {
+        match load_obj(auto_path.clone(), &mut self.texture_cache) {
             Ok(mut res) => {
-                // Ensure any textures referenced by materials are present in self.textures
-                for m in &res.materials {
-                    if let Some(tex_path) = &m.texture_path {
-                        self.ensure_texture_loaded(tex_path);
-                    }
-                }
-
                 // If a relative path is provided, override mesh path to keep exported scene clean
                 if let Some(rel) = relative_path {
                     res.mesh.set_path(rel);
@@ -349,7 +332,7 @@ impl Scene {
             },
             first_render: true,
             last_frame: None,
-            textures: HashMap::new(),
+            texture_cache: TextureCache::new(),
             output_path: None,
         }
     }

@@ -3,7 +3,7 @@
   "objects": [
     {
       "name": "capsule.obj",
-      "path": "../capsule/capsule.obj",
+      "path": "$INCLUDED/fixtures/capsule/capsule.obj",
       "scale": {
         "x": 1.0,
         "y": 1.0,
@@ -22,7 +22,7 @@
     },
     {
       "name": "rustacean-3d.obj",
-      "path": "../ferris_low_poly/rustacean-3d.obj",
+      "path": "$INCLUDED/fixtures/ferris_low_poly/rustacean-3d.obj",
       "scale": {
         "x": 1.0,
         "y": 1.0,

@@ -29,12 +29,7 @@ impl Model {
 
     pub fn new_with_capsule() -> Self {
         let mut scene = Scene::new();
-        // scene.proto_init();
-
-        // Load capsule fixture
-        let cwd = std::env::current_dir().unwrap();
-        let capsule_path = cwd.join("fixtures/capsule/capsule.obj");
-        let auto_path = AutoPath::try_from(capsule_path);
+        let auto_path = AutoPath::try_from("$INCLUDED/fixtures/capsule/capsule.obj");
         match auto_path {
             Ok(path) => {
                 log::info!("Loading capsule fixture from {:?}", path);
@@ -60,9 +55,7 @@ impl Model {
             }
         }
 
-        // Load ferris fixture
-        let ferris_path = cwd.join("fixtures/ferris_low_poly/rustacean-3d.obj");
-        let auto_path = AutoPath::try_from(ferris_path);
+        let auto_path = AutoPath::try_from("$INCLUDED/fixtures/ferris_low_poly/rustacean-3d.obj");
         match auto_path {
             Ok(path) => {
                 log::info!("Loading ferris fixture from {:?}", path);

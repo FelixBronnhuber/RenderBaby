@@ -1,17 +1,17 @@
 use std::ffi::OsStr;
 use std::fmt::Display;
 use std::fs::File;
-use std::io::{Cursor, Read, Seek};
+use std::io::{BufRead, BufReader, Cursor, Read, Seek};
 use std::path::{Path, PathBuf};
 use include_dir::{include_dir, Dir, File as IncludeFile};
 
 static INCLUDED_FILES: Dir<'static> = include_dir!("$CARGO_MANIFEST_DIR/included");
 const INCLUDED_PREFIX: &str = "$INCLUDED/";
 
-pub trait ReadSeek: Read + Seek {}
-impl<T: Read + Seek> ReadSeek for T {}
+pub trait ReadSeek: Read + Seek + BufRead {}
+impl<T: Read + Seek + BufRead> ReadSeek for T {}
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum AutoPath<'a> {
     Included(
         &'a Path,
@@ -43,8 +43,24 @@ impl<'a> AutoPath<'a> {
     }
 }
 
+use std::hash::{Hash, Hasher};
+
+impl<'a> PartialEq for AutoPath<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.path_buf() == other.path_buf()
+    }
+}
+
+impl Eq for AutoPath<'_> {}
+
+impl<'a> Hash for AutoPath<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.path_buf().hash(state)
+    }
+}
+
 impl<'a> AutoPath<'a> {
-    pub fn all_from_extensions(&self, extensions: &[&str]) -> Vec<AutoPath<'static>> {
+    pub fn all_from_extensions(&self, extensions: &[&str]) -> Vec<AutoPath<'a>> {
         match self {
             AutoPath::Included(_, d, _) => {
                 if let Some(d) = d {
@@ -76,6 +92,27 @@ impl<'a> AutoPath<'a> {
         }
     }
 
+    pub fn get_absolute_or_join(path: &str, base: &AutoPath<'a>) -> anyhow::Result<AutoPath<'a>> {
+        match base {
+            AutoPath::Included(_, _, _) => {
+                if is_include_path(path.as_ref()) {
+                    return AutoPath::try_from(path);
+                }
+            }
+            AutoPath::External(_) => {
+                if Path::new(path).is_absolute() {
+                    return AutoPath::try_from(path);
+                }
+            }
+        }
+        base.get_joined(path).ok_or_else(|| {
+            anyhow::Error::msg(format!(
+                "Could not join path {} with base path {}!",
+                path, base
+            ))
+        })
+    }
+
     pub fn reader(&self) -> anyhow::Result<Box<dyn ReadSeek + 'static>> {
         match self {
             AutoPath::Included(_, _, f) => {
@@ -85,7 +122,7 @@ impl<'a> AutoPath<'a> {
                     Err(anyhow::Error::msg(format!("Not a file: {}!", self)))
                 }
             }
-            AutoPath::External(path) => Ok(Box::new(File::open(path)?)),
+            AutoPath::External(path) => Ok(Box::new(BufReader::new(File::open(path)?))),
         }
     }
 
@@ -144,7 +181,11 @@ impl<'a> AutoPath<'a> {
     }
 
     pub fn extension(&self) -> Option<&str> {
-        self.path().extension().and_then(|ext| ext.to_str())
+        self.extension_os().and_then(|f| f.to_str())
+    }
+
+    pub fn extension_os(&self) -> Option<&OsStr> {
+        self.path().extension()
     }
 
     pub fn iter_dir(&self) -> anyhow::Result<impl Iterator<Item = AutoPath<'a>>> {
@@ -307,5 +348,3 @@ fn get_included_subdir(dir: &Path) -> Option<&'static Dir<'static>> {
         None
     }
 }
-
-// AUTO FUNCTIONS:

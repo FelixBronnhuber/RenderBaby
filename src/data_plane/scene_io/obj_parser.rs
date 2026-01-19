@@ -139,7 +139,6 @@ impl OBJParser {
 
 pub struct ObjLoadResult {
     pub mesh: Mesh,
-    pub materials: Vec<Material>,
 }
 
 pub fn load_obj(
@@ -154,22 +153,22 @@ pub fn load_obj(
 
     if let Some(mtl_paths) = objs.material_path.clone() {
         for rel in mtl_paths {
-            let mtl_path = parent_dir.get_joined(&rel);
-            if mtl_path.is_none() {
-                anyhow::bail!("Failed to load material file {}!", rel);
-            }
-            let mtl_path = mtl_path.unwrap();
+            let mtl_path = AutoPath::get_absolute_or_join(&rel, &parent_dir)?;
             match load_mtl(mtl_path.clone()) {
-                Ok(mut mats) => {
-                    for m in &mut mats {
-                        if let Some(tex) = &m.texture_path {
-                            let _ = texture_cache.load(tex);
-                        }
-                    }
+                Ok(mats) => {
                     material_name_list.extend(mats.iter().map(|m| m.name.clone()));
                     materials.extend(mats.into_iter());
                 }
                 Err(_e) => {}
+            }
+        }
+    }
+
+    for m in &materials {
+        #[allow(clippy::collapsible_if)]
+        if let Some(tex_path_str) = &m.texture_path {
+            if let Ok(ap) = AutoPath::try_from(tex_path_str.clone()) {
+                let _ = texture_cache.load(ap);
             }
         }
     }
@@ -250,5 +249,5 @@ pub fn load_obj(
         Some(auto_path.path_buf()),
     )?;
 
-    Ok(ObjLoadResult { mesh, materials })
+    Ok(ObjLoadResult { mesh })
 }
