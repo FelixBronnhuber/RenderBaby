@@ -230,79 +230,81 @@ impl Screen for SceneScreen {
             .resizable(true)
             .min_width(220.0)
             .show(ctx, |ui| {
-                self.model.consume_proxy_dirty_and_reload();
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    self.model.consume_proxy_dirty_and_reload();
 
-                let mut export_misc_loaded = self.model.export_misc.load(Ordering::SeqCst);
+                    let mut export_misc_loaded = self.model.export_misc.load(Ordering::SeqCst);
 
-                if !export_misc_loaded {
-                    ui.label(
-                        RichText::new("⚠ Currently not exporting misc objects.")
-                            .color(Color32::ORANGE)
-                            .strong(),
-                    );
-                    ui.label(
-                        RichText::new(
-                            "Enable to also export: Spheres, Ray Samples and Color Hash to rscn.",
-                        )
-                        .small(),
-                    );
-                }
-
-                if ui
-                    .checkbox(&mut export_misc_loaded, "Export Additional Data")
-                    .clicked()
-                {
-                    self.model
-                        .export_misc
-                        .store(export_misc_loaded, Ordering::SeqCst);
-                }
-
-                ui.separator();
-
-                if self.model.frame_buffer.has_provider() {
-                    if ui.button("Cancel Render").clicked() {
-                        self.model.frame_buffer.stop_current_provider();
+                    if !export_misc_loaded {
+                        ui.label(
+                            RichText::new("⚠ Currently not exporting misc objects.")
+                                .color(Color32::ORANGE)
+                                .strong(),
+                        );
+                        ui.label(
+                            RichText::new(
+                                "Enable to also export: Spheres, Ray Samples and Color Hash to rscn.",
+                            )
+                                .small(),
+                        );
                     }
-                } else if ui.button("Start Render").clicked() {
-                    self.do_render();
-                }
 
-                ui.separator();
+                    if ui
+                        .checkbox(&mut export_misc_loaded, "Export Additional Data")
+                        .clicked()
+                    {
+                        self.model
+                            .export_misc
+                            .store(export_misc_loaded, Ordering::SeqCst);
+                    }
 
-                let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
+                    ui.separator();
 
-                ui.label("Camera");
-                if proxy_tmp.camera.ui_with_settings(
-                    ui,
-                    &mut self.model.scene.clone(),
-                    &mut self.render_on_change,
-                ) && self.render_on_change
-                {
-                    self.do_render();
-                }
+                    if self.model.frame_buffer.has_provider() {
+                        if ui.button("Cancel Render").clicked() {
+                            self.model.frame_buffer.stop_current_provider();
+                        }
+                    } else if ui.button("Start Render").clicked() {
+                        self.do_render();
+                    }
 
-                ui.separator();
+                    ui.separator();
 
-                if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
-                    self.do_render();
-                }
+                    let mut proxy_tmp = std::mem::take(&mut self.model.proxy);
 
-                ui.separator();
+                    ui.label("Camera");
+                    if proxy_tmp.camera.ui_with_settings(
+                        ui,
+                        &mut self.model.scene.clone(),
+                        &mut self.render_on_change,
+                    ) && self.render_on_change
+                    {
+                        self.do_render();
+                    }
 
-                ui.label("Objects");
-                if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) && self.render_on_change
-                {
-                    self.do_render();
-                }
+                    ui.separator();
 
-                ui.separator();
+                    if proxy_tmp.misc.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
+                        self.do_render();
+                    }
 
-                ui.label("Lights");
-                if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
-                    self.do_render();
-                }
+                    ui.separator();
 
-                self.model.proxy = proxy_tmp;
+                    ui.label("Objects");
+                    if proxy_tmp.objects.ui(ui, &mut self.model.scene.clone()) && self.render_on_change
+                    {
+                        self.do_render();
+                    }
+
+                    ui.separator();
+
+                    ui.label("Lights");
+                    if proxy_tmp.lights.ui(ui, &mut self.model.scene.clone()) && self.render_on_change {
+                        self.do_render();
+                    }
+
+                    self.model.proxy = proxy_tmp;
+                });
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
