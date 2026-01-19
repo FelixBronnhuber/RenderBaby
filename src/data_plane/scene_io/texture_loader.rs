@@ -25,10 +25,6 @@ impl TextureCache {
         (textures, map)
     }
 
-    pub fn contains_key(&self, key: &AutoPath<'static>) -> bool {
-        self.map.contains_key(key)
-    }
-
     pub fn load(&mut self, path: AutoPath) -> anyhow::Result<i32> {
         // Normalize key to a 'static AutoPath using its owned path buffer
         let key_path = path.path_buf();

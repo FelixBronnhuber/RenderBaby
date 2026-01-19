@@ -1,4 +1,5 @@
 use std::ffi::OsStr;
+use log::error;
 use scene_objects::material::Material;
 use scene_objects::mesh::Mesh;
 use crate::data_plane::scene_io::mtl_parser::load_mtl;
@@ -97,12 +98,10 @@ impl OBJParser {
                 Some(("usemtl", usemtl)) => {
                     currentmaterial = usemtl.trim().to_string();
                 }
-                Some(("mtllib", mtllib)) => {
-                    mtl_path.push(match directory_path.get_joined(mtllib.trim()) {
-                        Some(path) => path.path_buf().to_string_lossy().to_string(),
-                        None => String::new(),
-                    })
-                }
+                Some(("mtllib", mtllib)) => match directory_path.get_joined(mtllib.trim()) {
+                    Some(path) => mtl_path.push(path.path_buf().to_string_lossy().to_string()),
+                    None => error!("Could not find mtllib file: {}", mtllib.trim()),
+                },
 
                 _ => {}
             }

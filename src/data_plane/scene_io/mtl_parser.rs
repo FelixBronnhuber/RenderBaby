@@ -153,7 +153,10 @@ impl MTLParser {
 
     pub fn to_material(&self, auto_path: AutoPath, auto_parent: Option<AutoPath>) -> Material {
         let texture_path = self.map_kd.as_ref().map(|name| match &auto_parent {
-            Some(p) => p.get_joined(name).unwrap().to_string(),
+            Some(p) => p
+                .get_joined(name)
+                .map(|joined| joined.to_string())
+                .unwrap_or_else(|| name.clone()),
             None => name.clone(),
         });
 

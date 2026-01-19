@@ -42,17 +42,6 @@ impl Default for Scene {
 
 #[allow(unused)]
 impl Scene {
-    fn ensure_texture_loaded(&mut self, path: AutoPath) {
-        // Normalize to a 'static AutoPath key for the cache
-        let key_auto = AutoPath::try_from(path.path_buf());
-        if let Ok(key_auto) = key_auto
-            && self.texture_cache.contains_key(&key_auto)
-        {
-            return;
-        }
-        let _ = self.texture_cache.load(path);
-    }
-
     fn _load_scene_from_path(auto_path: AutoPath) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
         info!("Scene: Loading new scene from {}", auto_path);

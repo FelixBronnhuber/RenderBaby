@@ -168,7 +168,12 @@ pub fn parse_scene(
             "SceneImporter: Read JSON content from {:?}:\n{}",
             json_path, content
         );
-        (content, json_path.get_popped().unwrap())
+        (
+            content,
+            json_path
+                .get_popped()
+                .expect("Failed to get a parent path for .rscn file!"),
+        )
     } else if let Some(s) = json_string {
         (
             s,
@@ -183,7 +188,12 @@ pub fn parse_scene(
             )));
         }
         let content = scene_path.contents()?;
-        (content, scene_path.get_popped().unwrap())
+        (
+            content,
+            scene_path
+                .get_popped()
+                .expect("Failed to get a parent path for scene file!"),
+        )
     };
 
     let schema_json = include_str!("scene_schema.json");
@@ -200,9 +210,12 @@ pub fn parse_scene(
             .paths
             .into_iter()
             .map(|p| {
-                let abs = AutoPath::get_absolute_or_join(&p, &base_path)
-                    .unwrap()
-                    .to_string();
+                let abs = AutoPath::get_absolute_or_join(&p, &base_path);
+                if abs.is_err() {
+                    error!("SceneImporter: Failed to resolve asset path: {}", p);
+                    return p; // TODO: not sure how else to handle if not panic!
+                }
+                let abs = abs.unwrap().to_string();
                 debug!("SceneImporter: Resolved asset path: {} -> {}", p, abs);
                 abs
             })

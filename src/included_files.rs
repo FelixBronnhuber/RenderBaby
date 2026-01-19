@@ -152,9 +152,9 @@ impl<'a> AutoPath<'a> {
 
     pub fn get_popped(&self) -> Option<AutoPath<'a>> {
         match self {
-            AutoPath::Included(path, _, _) => path.parent().map(|p| {
+            AutoPath::Included(path, _, _) => path.parent().and_then(|p| {
                 let prefixed = Self::with_include_prefix(p);
-                AutoPath::try_from(prefixed).unwrap()
+                AutoPath::try_from(prefixed).ok()
             }),
             AutoPath::External(path) => {
                 let mut new_path = path.clone();
@@ -325,11 +325,13 @@ fn is_include_path(path: &Path) -> bool {
 }
 
 fn is_included_and_exists(path: &Path) -> bool {
-    is_include_path(path) && get_included_file(path).is_some()
+    is_include_path(path)
+        && (get_included_file(path).is_some() || get_included_subdir(path).is_some())
 }
 
 fn strip_include_path(path: &Path) -> &Path {
-    path.strip_prefix("$INCLUDED/").unwrap()
+    path.strip_prefix(INCLUDED_PREFIX)
+        .expect("Tried to strip prefix from non-included path!")
 }
 
 fn get_included_file(path: &Path) -> Option<&'static IncludeFile<'static>> {
