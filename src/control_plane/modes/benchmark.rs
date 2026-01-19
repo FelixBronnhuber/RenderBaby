@@ -30,7 +30,7 @@ impl BenchmarkApp {
         Self {}
     }
     fn benchmark(sample_count: u32, resolution: Resolution) -> std::time::Duration {
-        let mut scene = match AutoPath::try_from("fixtures/benchmark.json") {
+        let mut scene = match AutoPath::try_from("included/templates/scene/benchmark.rscn") {
             Ok(path) => Scene::load_scene_from_path(path, true).unwrap(),
             Err(_) => {
                 panic!("Failed to load benchmark scene");
