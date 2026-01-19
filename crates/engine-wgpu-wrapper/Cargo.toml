@@ -7,9 +7,9 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.100"
-wgpu = "27.0.1"
 engine-config = { path = "../engine-config" }
 bytemuck = "1.24.0"
 pollster = "0.4.0"
 log = "0.4.28"
 engine-bvh = { path = "../engine-bvh"}
+wgpu = "28.0.0"

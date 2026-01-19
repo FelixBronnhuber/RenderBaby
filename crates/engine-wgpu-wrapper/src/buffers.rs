@@ -173,7 +173,7 @@ impl GpuBuffers {
         self.staging = Self::create_staging_buffer(device, size);
         self.accumulation = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Accumulation Buffer"),
-            size: (size * 4),
+            size: size * 4,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -231,7 +231,7 @@ impl GpuBuffers {
 
     fn create_storage_buffer<T: bytemuck::Pod>(device: &Device, label: &str, data: &[T]) -> Buffer {
         if data.is_empty() {
-            let size = std::mem::size_of::<T>() as u64;
+            let size = size_of::<T>() as u64;
             device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(label),
                 size: if size == 0 { 4 } else { size }, // Handle ZSTs, though Pod shouldn't be ZSTs.

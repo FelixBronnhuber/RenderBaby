@@ -351,8 +351,8 @@ impl Viewable for Vec<ProxyMesh> {
                 if name.trim().is_empty() {
                     name = format!("Object {}", i);
                 }
-
                 CollapsingHeader::new(name)
+                    .id_salt(format!("mesh_{}", i))
                     .default_open(false)
                     .show(ui, |ui| {
                         changed |=
@@ -541,8 +541,8 @@ impl Viewable for Vec<ProxyLight> {
                 if name.trim().is_empty() {
                     proxy_light.name = format!("Light {}", i);
                 }
-
                 CollapsingHeader::new(name)
+                    .id_salt(format!("light_{}", i))
                     .default_open(false)
                     .show(ui, |ui| {
                         changed |= proxy_light
