@@ -1,10 +1,9 @@
-use std::fs;
-use std::path::{Path, PathBuf};
-use anyhow::Context;
 use glam::Vec3;
 use scene_objects::{camera, camera::Camera, light_source::LightSource, sphere::Sphere, material::*};
 use crate::data_plane::scene::{render_scene::Scene};
 use crate::data_plane::scene_io::scene_io_objects::*;
+use crate::included_files::AutoPath;
+
 use crate::data_plane::scene_io::file_manager::FileManager;
 use log::{info, debug, error};
 use crate::data_plane::scene_io::mtl_parser::load_mtl_with_name;
@@ -111,7 +110,7 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
                             }
                         }
                         FileMaterialRef::Path { path, name } => {
-                            load_mtl_with_name(PathBuf::from(path), name.clone())?
+                            load_mtl_with_name(AutoPath::try_from(path.to_string())?, name.clone())?
                         }
                     },
                     None => Material::default(),
@@ -145,7 +144,7 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
 
 #[allow(clippy::type_complexity)]
 pub fn parse_scene(
-    scene_path: PathBuf,
+    scene_path: AutoPath,
     json_string: Option<String>,
 ) -> anyhow::Result<LoadedSceneData> {
     if json_string.is_some() {
@@ -158,33 +157,43 @@ pub fn parse_scene(
 
     let (json_content, base_path) = if is_rscn {
         info!("SceneImporter: Detected .rscn file, invoking FileManager...");
-        let temp_root = FileManager::unzip_scene(&scene_path)?;
-        let json_path = FileManager::find_scene_json(&temp_root)?;
+        let temp_root = FileManager::unzip_scene(scene_path)?;
+        let json_path = FileManager::find_scene_json(temp_root)?;
         info!(
             "SceneImporter: Found internal scene.json at {:?}",
             json_path
         );
-        let content = fs::read_to_string(&json_path)?;
+        let content = json_path.contents()?;
         debug!(
             "SceneImporter: Read JSON content from {:?}:\n{}",
             json_path, content
         );
-        (content, json_path.parent().unwrap().to_path_buf())
+        (
+            content,
+            json_path
+                .get_popped()
+                .expect("Failed to get a parent path for .rscn file!"),
+        )
     } else if let Some(s) = json_string {
         (
             s,
-            scene_path.parent().unwrap_or(Path::new(".")).to_path_buf(),
+            scene_path.get_popped().unwrap_or(AutoPath::try_from(".")?),
         )
     } else {
         if !scene_path.is_file() {
             error!("SceneImporter: File not found: {:?}", scene_path);
             return Err(anyhow::Error::msg(format!(
                 "File {} does not exist!",
-                scene_path.display()
+                scene_path
             )));
         }
-        let content = fs::read_to_string(&scene_path).context("file could not be read")?;
-        (content, scene_path.parent().unwrap().to_path_buf())
+        let content = scene_path.contents()?;
+        (
+            content,
+            scene_path
+                .get_popped()
+                .expect("Failed to get a parent path for scene file!"),
+        )
     };
 
     let schema_json = include_str!("scene_schema.json");
@@ -201,7 +210,12 @@ pub fn parse_scene(
             .paths
             .into_iter()
             .map(|p| {
-                let abs = base_path.join(&p).to_string_lossy().to_string();
+                let abs = AutoPath::get_absolute_or_join(&p, &base_path);
+                if abs.is_err() {
+                    error!("SceneImporter: Failed to resolve asset path: {}", p);
+                    return p; // TODO: not sure how else to handle if not panic!
+                }
+                let abs = abs.unwrap().to_string();
                 debug!("SceneImporter: Resolved asset path: {} -> {}", p, abs);
                 abs
             })

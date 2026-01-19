@@ -377,13 +377,7 @@ impl Scene {
         let render_spheres = self.get_render_spheres();
 
         // Collect textures
-        let mut texture_list = Vec::new();
-        let mut texture_map = HashMap::new();
-
-        for (path, data) in &self.textures {
-            texture_map.insert(path.clone(), texture_list.len() as i32);
-            texture_list.push(data.clone());
-        }
+        let (texture_list, texture_map) = self.texture_cache.get_split_clone();
 
         let render_tris = self.get_render_tris(&texture_map);
         debug!("Scene mesh data: {:?}", self.get_meshes());

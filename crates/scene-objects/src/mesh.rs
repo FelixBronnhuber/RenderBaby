@@ -214,7 +214,7 @@ impl GeometricObject for Mesh {
         self.update_centroid();
     }
 
-    fn translate(&mut self, vec: glam::Vec3) {
+    fn translate(&mut self, vec: Vec3) {
         //! translates the points by the direction given
         //! ## Parameter
         //! 'vec': Vector by which the geometries are translated
@@ -227,7 +227,7 @@ impl GeometricObject for Mesh {
         self.update_centroid();
     }
 
-    fn rotate(&mut self, vec: glam::Vec3) {
+    fn rotate(&mut self, vec: Vec3) {
         //! Rotates the points around the centroid
         //! ## Parameter
         //! 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
@@ -257,15 +257,15 @@ impl SceneObject for Mesh {
         self.path.clone()
     }
 
-    fn get_scale(&self) -> glam::Vec3 {
+    fn get_scale(&self) -> Vec3 {
         self.scale
     }
 
-    fn get_translation(&self) -> glam::Vec3 {
+    fn get_translation(&self) -> Vec3 {
         self.translation
     }
 
-    fn get_rotation(&self) -> glam::Vec3 {
+    fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
 }

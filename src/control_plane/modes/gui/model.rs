@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
-use include_dir::File;
 use crate::data_plane::scene::render_scene::Scene;
 use crate::data_plane::scene_proxy::proxy_scene::ProxyScene;
 use glam::Vec3;
 use frame_buffer::frame_buffer::FrameBuffer;
 use scene_objects::{camera::Resolution, material::Material, sphere::Sphere};
+use crate::included_files::AutoPath;
 
 #[allow(dead_code)]
 pub struct Model {
@@ -20,7 +20,7 @@ pub struct Model {
 
 #[allow(dead_code)]
 impl Model {
-    pub fn new_from_path(path: PathBuf) -> anyhow::Result<Self> {
+    pub fn new_from_path(path: AutoPath) -> anyhow::Result<Self> {
         match Scene::load_scene_from_path(path, false) {
             Ok(scene) => Ok(Self::new(scene)),
             Err(e) => Err(e),
@@ -29,48 +29,49 @@ impl Model {
 
     pub fn new_with_capsule() -> Self {
         let mut scene = Scene::new();
-        // scene.proto_init();
-
-        // Load capsule fixture
-        let cwd = std::env::current_dir().unwrap();
-        let capsule_path = cwd.join("fixtures/capsule/capsule.obj");
-        if capsule_path.exists() {
-            log::info!("Loading capsule fixture from {:?}", capsule_path);
-            if let Err(e) = scene.load_object_from_file(capsule_path) {
-                log::error!("Failed to load capsule fixture: {}", e);
+        let auto_path = AutoPath::try_from("$INCLUDED/fixtures/capsule/capsule.obj");
+        match auto_path {
+            Ok(path) => {
+                log::info!("Loading capsule fixture from {:?}", path);
+                if let Err(e) = scene.load_object_from_file(path) {
+                    log::error!("Failed to load capsule fixture: {}", e);
+                }
+                // Set up camera for capsule
+                scene
+                    .get_camera_mut()
+                    .set_position(Vec3::new(0.0, 2.0, 4.0));
+                scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
+                scene
+                    .get_camera_mut()
+                    .set_resolution(Resolution::new(256, 256));
+                scene.get_camera_mut().set_ray_samples(1);
             }
-            // Set up camera for capsule
-            scene
-                .get_camera_mut()
-                .set_position(Vec3::new(0.0, 2.0, 4.0));
-            scene.get_camera_mut().set_look_at(Vec3::new(0.0, 0.0, 0.0));
-            scene
-                .get_camera_mut()
-                .set_resolution(Resolution::new(256, 256));
-            scene.get_camera_mut().set_ray_samples(1);
-        } else {
-            log::warn!(
-                "Capsule fixture not found at {:?}, falling back to proto_init",
-                capsule_path
-            );
-            scene.proto_init();
+            Err(e) => {
+                log::warn!(
+                    "Capsule fixture not found at {:?}, falling back to proto_init",
+                    e.to_string()
+                );
+                scene.proto_init();
+            }
         }
 
-        // Load ferris fixture
-        let ferris_path = cwd.join("fixtures/ferris_low_poly/rustacean-3d.obj");
-        if ferris_path.exists() {
-            log::info!("Loading ferris fixture from {:?}", ferris_path);
-            // Move ferris to (0, 0, 4) to be visible in reflection
-            if let Err(e) = scene.load_object_from_file_transformed(
-                ferris_path,
-                Vec3::new(3.5, -0.2, -1.0),
-                Vec3::new(-90.0, 250.0, 0.0),
-                1.0,
-            ) {
-                log::error!("Failed to load ferris fixture: {}", e);
+        let auto_path = AutoPath::try_from("$INCLUDED/fixtures/ferris_low_poly/rustacean-3d.obj");
+        match auto_path {
+            Ok(path) => {
+                log::info!("Loading ferris fixture from {:?}", path);
+                // Move ferris to (0, 0, 4) to be visible in reflection
+                if let Err(e) = scene.load_object_from_file_transformed(
+                    path,
+                    Vec3::new(3.5, -0.2, -1.0),
+                    Vec3::new(-90.0, 250.0, 0.0),
+                    1.0,
+                ) {
+                    log::error!("Failed to load ferris fixture: {}", e);
+                }
             }
-        } else {
-            log::warn!("Ferris fixture not found at {:?}", ferris_path);
+            Err(e) => {
+                log::warn!("Ferris fixture not found at {:?}", e.to_string());
+            }
         }
 
         scene.add_sphere(Sphere::new(
@@ -82,15 +83,6 @@ impl Model {
         scene.set_color_hash_enabled(false); // Disable color hash to see textures
 
         Self::new(scene)
-    }
-
-    pub fn new_from_template(file: &'static File<'static>) -> anyhow::Result<Self> {
-        let file_contents = file
-            .contents_utf8()
-            .expect("Couldn't turn file into string.");
-        Ok(Self::new(Scene::load_scene_from_string(
-            file_contents.to_string(),
-        )?))
     }
 
     pub fn new_empty() -> Self {

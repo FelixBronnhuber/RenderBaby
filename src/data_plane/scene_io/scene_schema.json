@@ -275,7 +275,7 @@
         },
         "misc": {
             "type": "object",
-            "additionalProperties": false,
+            "additionalProperties": true,
             "properties": {
                 "spheres": {
                     "type": "array",

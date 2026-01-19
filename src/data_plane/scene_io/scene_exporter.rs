@@ -81,10 +81,38 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
                     );
                 }
             } else {
-                warn!(
-                    "SceneExporter: Asset file not found at {:?}, skipping copy.",
-                    src
-                );
+                // Try to handle included ($INCLUDED) assets
+                match crate::included_files::AutoPath::try_from(src.clone()) {
+                    Ok(ap) => {
+                        debug!(
+                            "SceneExporter: Writing included asset {:?} to {:?}",
+                            ap, dest_abs
+                        );
+                        #[allow(clippy::collapsible_if)]
+                        if let Some(p) = dest_abs.parent() {
+                            if !p.exists() {
+                                fs::create_dir_all(p)?;
+                            }
+                        }
+                        {
+                            let mut reader = ap.reader()?;
+                            let mut out = File::create(&dest_abs)?;
+                            std::io::copy(&mut reader, &mut out)?;
+                        }
+                        if let Err(e) = copy_included_obj_dependencies(&ap, &dest_abs) {
+                            warn!(
+                                "SceneExporter: Error copying included dependencies for {:?}: {}",
+                                ap, e
+                            );
+                        }
+                    }
+                    Err(_) => {
+                        warn!(
+                            "SceneExporter: Asset file not found at {:?}, skipping copy.",
+                            src
+                        );
+                    }
+                }
             }
 
             let p_str = dest_rel.to_string_lossy().to_string();
@@ -225,7 +253,6 @@ pub fn serialize_scene(path: PathBuf, sc: &Scene, export_misc: bool) -> anyhow::
 }
 
 fn copy_obj_dependencies(src_obj: &Path, dest_obj: &Path) -> anyhow::Result<()> {
-    // Basic parser to find mtllib in OBJ
     let file = File::open(src_obj)?;
     let reader = std::io::BufReader::new(file);
 
@@ -293,6 +320,73 @@ fn resolve_and_copy(
                     && let Some(tex_filename) = parts.last()
                 {
                     resolve_and_copy(&src_path, &dest_path, tex_filename, false)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn copy_included_obj_dependencies(
+    src_obj: &crate::included_files::AutoPath,
+    dest_obj: &Path,
+) -> anyhow::Result<()> {
+    let data = src_obj.contents()?;
+    for line in data.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("mtllib") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() > 1 {
+                let mtl_filename = parts[1];
+                resolve_and_copy_included(src_obj, dest_obj, mtl_filename, true)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn resolve_and_copy_included(
+    ref_src: &crate::included_files::AutoPath,
+    ref_dest: &Path,
+    relative_path: &str,
+    is_mtl: bool,
+) -> anyhow::Result<()> {
+    use crate::included_files::AutoPath;
+    let src_parent = ref_src
+        .get_popped()
+        .ok_or_else(|| anyhow::Error::msg("Invalid included source parent"))?;
+    let src_path = AutoPath::get_absolute_or_join(relative_path, &src_parent)?;
+
+    let dest_parent = ref_dest
+        .parent()
+        .ok_or_else(|| anyhow::Error::msg("Invalid destination parent"))?;
+    let dest_path = dest_parent.join(relative_path);
+
+    #[allow(clippy::collapsible_if)]
+    if let Some(p) = dest_path.parent() {
+        if !p.exists() {
+            fs::create_dir_all(p)?;
+        }
+    }
+
+    {
+        let mut reader = src_path.reader()?;
+        let mut out = File::create(&dest_path)?;
+        std::io::copy(&mut reader, &mut out)?;
+    }
+
+    if is_mtl {
+        let mtl_data = src_path.contents()?;
+        for line in mtl_data.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("map_") || trimmed.starts_with("bump") {
+                let parts: Vec<&str> = trimmed.split_whitespace().collect();
+                #[allow(clippy::collapsible_if)]
+                if parts.len() > 1 {
+                    if let Some(tex_filename) = parts.last() {
+                        resolve_and_copy_included(&src_path, &dest_path, tex_filename, false)?;
+                    }
                 }
             }
         }
