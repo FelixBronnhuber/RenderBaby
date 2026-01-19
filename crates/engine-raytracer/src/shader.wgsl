@@ -602,9 +602,7 @@ fn trace_ray(
 
         //Sky
         if (!closest_hit.hit) {
-            let unit_dir = normalize(direction);
-            let a = 0.5 * (unit_dir.y + 1.0);
-            let sky = (1.0 - a) * vec3<f32>(1.0) + a * uniforms.sky_color;
+            let sky = uniforms.sky_color;
             color += attenuation * sky;
             break;
         }

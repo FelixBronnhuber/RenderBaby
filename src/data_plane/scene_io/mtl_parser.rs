@@ -1,42 +1,7 @@
-use std::fs;
-use std::path::PathBuf;
-use scene_objects::material::Material;
-use std::path::Path;
 use anyhow::anyhow;
+use scene_objects::material::Material;
+use crate::included_files::AutoPath;
 
-#[derive(Debug)]
-pub enum MTLParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-impl std::fmt::Display for MTLParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MTLParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            MTLParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            MTLParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            MTLParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for MTLParseError {}
-impl From<std::io::Error> for MTLParseError {
-    fn from(e: std::io::Error) -> Self {
-        MTLParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for MTLParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        MTLParseError::ParseInteger(e)
-    }
-}
-impl From<std::num::ParseFloatError> for MTLParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        MTLParseError::ParseFloat(e)
-    }
-}
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct MTLParser {
@@ -51,14 +16,15 @@ pub struct MTLParser {
     pub map_kd: Option<String>,
     pub bump: Option<String>,
 }
+
 impl MTLParser {
-    pub fn parse(path: &str) -> Result<Vec<MTLParser>, MTLParseError> {
-        let data = fs::read_to_string(path)?;
+    pub fn parse(path: AutoPath) -> anyhow::Result<Vec<MTLParser>> {
+        let data = path.contents()?;
         if data.is_empty() {
-            return Err(MTLParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("MTL file is empty!"));
         }
 
-        let mut returnmats = Vec::new();
+        let mut return_mats = Vec::new();
         let mut name: String = String::with_capacity(2);
         let mut ka: Vec<f32> = Vec::with_capacity(10);
         let mut kd: Vec<f32> = Vec::with_capacity(10);
@@ -76,7 +42,7 @@ impl MTLParser {
                 let line = l.trim();
                 if line.starts_with("newmtl") {
                     if !name.is_empty() {
-                        returnmats.push({
+                        return_mats.push({
                             MTLParser {
                                 name: name.clone(),
                                 ka: ka.clone(),
@@ -168,7 +134,7 @@ impl MTLParser {
                 }
             }
         }
-        returnmats.push({
+        return_mats.push({
             MTLParser {
                 name: name.clone(),
                 ka: ka.clone(),
@@ -182,12 +148,15 @@ impl MTLParser {
                 bump: bump.clone(),
             }
         });
-        Ok(returnmats)
+        Ok(return_mats)
     }
 
-    pub fn to_material(&self, path: PathBuf, parent: Option<PathBuf>) -> Material {
-        let texture_path = self.map_kd.as_ref().map(|name| match &parent {
-            Some(p) => p.join(name).to_string_lossy().to_string(),
+    pub fn to_material(&self, auto_path: AutoPath, auto_parent: Option<AutoPath>) -> Material {
+        let texture_path = self.map_kd.as_ref().map(|name| match &auto_parent {
+            Some(p) => p
+                .get_joined(name)
+                .map(|joined| joined.to_string())
+                .unwrap_or_else(|| name.clone()),
             None => name.clone(),
         });
 
@@ -200,30 +169,30 @@ impl MTLParser {
             self.ns as f64,
             self.d as f64,
             texture_path,
-            Some(path.to_string_lossy().to_string()),
+            Some(auto_path.to_string()),
         )
     }
 }
 
-pub fn load_mtl(path: PathBuf) -> anyhow::Result<Vec<Material>> {
-    let materials = MTLParser::parse(path.to_string_lossy().as_ref())?;
-    let parent = Path::new(&path).parent().map(|p| p.to_path_buf());
+pub fn load_mtl(auto_path: AutoPath) -> anyhow::Result<Vec<Material>> {
+    let materials = MTLParser::parse(auto_path.clone())?;
+    let parent = auto_path.get_popped();
     let result = materials
         .into_iter()
-        .map(|mat| mat.to_material(path.clone(), parent.clone()))
+        .map(|mat| mat.to_material(auto_path.clone(), parent.clone()))
         .collect();
     Ok(result)
 }
 
-pub fn load_mtl_with_name(path: PathBuf, name: String) -> anyhow::Result<Material> {
-    let materials = MTLParser::parse(path.to_string_lossy().as_ref())?;
-    let parent = Path::new(&path).parent().map(|p| p.to_path_buf());
+pub fn load_mtl_with_name(path: AutoPath, name: String) -> anyhow::Result<Material> {
+    let materials = MTLParser::parse(path.clone())?;
+    let parent = path.get_popped();
     match materials.into_iter().find(|mat| mat.name == name) {
         Some(mat) => Ok(mat.to_material(path.clone(), parent.clone())),
         None => Err(anyhow!(
             "Material with name {} not found in file {}",
             name,
-            path.to_string_lossy()
+            path
         )),
     }
 }

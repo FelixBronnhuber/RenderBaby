@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
-use std::collections::HashMap;
+use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
 use log::{debug, error, info, warn};
 use frame_buffer::frame_iterator::Frame;
@@ -19,6 +18,7 @@ use crate::{
         scene::{render_parameter::RenderParameter, scene_graph::SceneGraph},
         scene_io::{img_export::export_img_png, obj_parser::load_obj, scene_importer::parse_scene},
     },
+    included_files::AutoPath,
 };
 use crate::data_plane::scene_io::scene_exporter;
 use crate::data_plane::scene_io::texture_loader::TextureCache;
@@ -30,7 +30,7 @@ pub struct Scene {
     first_render: bool,
     render_engine: Option<Engine>,
     last_frame: Option<Frame>,
-    pub textures: HashMap<String, TextureData>,
+    pub(crate) texture_cache: TextureCache,
     output_path: Option<PathBuf>,
     render_params: RenderParameter,
 }
@@ -42,35 +42,11 @@ impl Default for Scene {
 
 #[allow(unused)]
 impl Scene {
-    /// Helper function to make sure that texture is loaded
-    /// ## Parameter:
-    /// 'path': &str to the texture
-    fn ensure_texture_loaded(&mut self, path: &str) {
-        let key = std::path::Path::new(path).to_string_lossy().to_string();
-        if self.textures.contains_key(&key) {
-            return;
-        }
-        match image::open(&key) {
-            Ok(img) => {
-                let img = img.to_rgba8();
-                let (width, height) = img.dimensions();
-                let data: Vec<u32> = img.pixels().map(|p| u32::from_le_bytes(p.0)).collect();
-                self.textures
-                    .insert(key, TextureData::new(width, height, data));
-            }
-            Err(e) => {
-                error!("Failed to load texture {}: {}", path, e);
-            }
-        }
-    }
-
     /// loads and returns a new scene from a json / rscn file at path
-    /// ## Parameter
-    /// 'path': std::path::PathBuf to the scene file
-    fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
-        info!("Scene: Loading new scene from {}", path.display());
+    fn _load_scene_from_path(auto_path: AutoPath) -> anyhow::Result<Scene> {
+        info!("Scene: Loading new scene from {}", auto_path);
 
-        let loaded_data = parse_scene(path.clone(), None)?;
+        let loaded_data = parse_scene(auto_path.clone(), None)?;
 
         let mut scene = loaded_data.scene;
         let paths = loaded_data.paths;
@@ -80,7 +56,7 @@ impl Scene {
 
         debug!("Scene: Loading {} objects...", paths.len());
         for (i, p_str) in paths.iter().enumerate() {
-            let p = PathBuf::from(p_str);
+            let p = AutoPath::try_from(p_str.to_string())?;
             debug!("Scene: Loading object {} from {:?}", i, p);
             info!(
                 "Scene: Applying transformations: translation={:?}, rotation={:?}, scale={:?}",
@@ -88,7 +64,7 @@ impl Scene {
             );
             scene.load_object_from_file_relative(
                 p.clone(),
-                p,
+                p.path_buf(),
                 translation[i],
                 rotation[i],
                 scale[i],
@@ -127,20 +103,12 @@ impl Scene {
     /// 'relative_path': Option<Path>. If not none used as mesh path
     pub fn parse_obj_to_mesh(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: Option<PathBuf>,
     ) -> Result<Mesh, Error> {
-        info!("{self}: Loading object from {}", path.display());
-        let mut cache = TextureCache::new();
-        match load_obj(path.clone(), &mut cache) {
+        info!("{self}: Loading object from {}", auto_path);
+        match load_obj(auto_path.clone(), &mut self.texture_cache) {
             Ok(mut res) => {
-                // Ensure any textures referenced by materials are present in self.textures
-                for m in &res.materials {
-                    if let Some(tex_path) = &m.texture_path {
-                        self.ensure_texture_loaded(tex_path);
-                    }
-                }
-
                 // If a relative path is provided, override mesh path to keep exported scene clean
                 if let Some(rel) = relative_path {
                     res.mesh.set_path(rel);
@@ -148,42 +116,41 @@ impl Scene {
 
                 info!(
                     "Scene {self}: Successfully loaded object from {}",
-                    path.display()
+                    auto_path
                 );
                 Ok(res.mesh)
             }
             Err(error) => {
                 error!(
                     "{self}: Parsing obj from {} resulted in error: {error}",
-                    path.display()
+                    auto_path
                 );
                 Err(error)
             }
         }
     }
-
     /// Loads a mesh from the given path and adds it to the meshes of the scene
     /// ## Parameter
-    /// 'path': std::path::PathBuf to the obj
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path, None)?;
+    /// 'auto_path': AutoPath to the obj
+    pub fn load_object_from_file(&mut self, auto_path: AutoPath) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(auto_path, None)?;
         self.add_mesh(mesh);
         Ok(())
     }
     /// Loads a mesh from the given  relative path and applies the given translation, rotation, scale, adds it to the scene
-    /// 'path':  relative std::path::PathBuf to the obj
+    /// 'auto_path':  relative AutoPath to the obj
     /// 'translation': Translation to be applied, as glam::Vec3
     /// 'rotation': Rotation to be applied, as glam::Vec3
     /// 'scale': Scale to be applied, as glam::Vec3
     fn load_object_from_file_relative(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: PathBuf,
         translation: Vec3,
         rotation: Vec3,
         scale: Vec3,
     ) -> Result<(), Error> {
-        let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        let mut mesh = self.parse_obj_to_mesh(auto_path, Some(relative_path))?;
         mesh.scale(scale.x);
         mesh.rotate(rotation);
         mesh.translate(translation);
@@ -191,13 +158,13 @@ impl Scene {
         Ok(())
     }
     /// Loads a mesh from the given  relative path and applies the given translation, rotation, scale, adds it to the scene
-    /// 'path': absolute std::path::PathBuf to the obj
+    /// 'path': absolute AutoPath to the obj
     /// 'translation': Translation to be applied, as glam::Vec3
     /// 'rotation': Rotation to be applied, as glam::Vec3
     /// 'scale': Scale to be applied, as glam::Vec3
     pub fn load_object_from_file_transformed(
         &mut self,
-        path: PathBuf,
+        path: AutoPath,
         translation: Vec3,
         rotation: Vec3,
         scale: f32,
@@ -213,19 +180,19 @@ impl Scene {
     // LOAD SCENES
     /// Loads a scene from the given path pointing to a .rscn or .json-file
     /// # Parameter
-    /// 'path': std::path::PathBuf to the scene file
+    /// 'path': AutoPath to the scene file
     /// 'detached':
-    pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
-        let mut scene = Self::_load_scene_from_path(path.clone());
+    pub fn load_scene_from_path(auto_path: AutoPath, detached: bool) -> anyhow::Result<Scene> {
+        let mut scene = Self::_load_scene_from_path(auto_path.clone());
         match scene {
             Ok(mut scene) => {
-                let is_rscn = path
-                    .extension()
-                    .map(|s| s.to_string_lossy() == "rscn")
-                    .unwrap_or(false);
+                let is_rscn = match auto_path.extension() {
+                    Some(ext) => ext == "rscn",
+                    None => false,
+                };
 
                 if !is_rscn && !detached {
-                    scene.output_path = Some(path);
+                    scene.output_path = Some(auto_path.path_buf());
                 } else {
                     scene.output_path = None;
                 }
@@ -240,24 +207,8 @@ impl Scene {
             Err(error) => Err(error),
         }
     }
-    /// loads a scene from the given String
-    pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
-        let scene = parse_scene(PathBuf::new(), Some(json_string));
-        match scene {
-            Ok(loaded_data) => {
-                let mut scene = loaded_data.scene;
-                let paths = loaded_data.paths;
-                let rotation = loaded_data.rotations;
-                let translation = loaded_data.translations;
-                let scale = loaded_data.scales;
-                Ok(scene)
-            }
-            Err(error) => Err(error),
-        }
-    }
-    /// Saves the scene to the given path
+    /// Saves the scene
     /// ## Parameter
-    /// 'path': std::path::PathBuf to the location where the file should be created
     /// 'export_misc': if misc parameters should be exported aswell. These go beyond the rscn standard
     pub fn save(&mut self, export_misc: bool) -> anyhow::Result<()> {
         if let Some(output_path) = self.output_path.clone()
@@ -266,9 +217,7 @@ impl Scene {
             self.export_scene(output_path, export_misc)?;
             Ok(())
         } else {
-            Err(anyhow::Error::msg(
-                "No valid output path set for this scene",
-            ))
+            Err(Error::msg("No valid output path set for this scene"))
         }
     }
     /// Sets the output path to the given path
@@ -392,7 +341,7 @@ impl Scene {
             },
             first_render: true,
             last_frame: None,
-            textures: HashMap::new(),
+            texture_cache: TextureCache::new(),
             output_path: None,
         }
     }

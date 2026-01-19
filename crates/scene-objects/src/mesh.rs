@@ -255,15 +255,15 @@ impl SceneObject for Mesh {
         self.path.clone()
     }
 
-    fn get_scale(&self) -> glam::Vec3 {
+    fn get_scale(&self) -> Vec3 {
         self.scale
     }
 
-    fn get_translation(&self) -> glam::Vec3 {
+    fn get_translation(&self) -> Vec3 {
         self.translation
     }
 
-    fn get_rotation(&self) -> glam::Vec3 {
+    fn get_rotation(&self) -> Vec3 {
         self.rotation
     }
 }

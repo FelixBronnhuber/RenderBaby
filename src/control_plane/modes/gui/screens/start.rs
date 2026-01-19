@@ -1,24 +1,30 @@
 use eframe::emath::Vec2;
-use include_dir::File;
-use log::info;
+use log::{info, warn};
 use rfd::FileDialog;
 use eframe_elements::effects::{Effect, FillEffect};
 use eframe_elements::message_popup::{Message, MessagePopupPipe};
 use crate::control_plane::modes::gui::model::Model;
 use crate::control_plane::modes::gui::screens::scene::SceneScreen;
 use crate::control_plane::modes::gui::screens::Screen;
+use crate::included_files::AutoPath;
 
 pub struct StartScreen {
     show_template_dialog: bool,
     fill_effect: FillEffect,
-    templates: Vec<&'static File<'static>>,
+    templates: Vec<AutoPath<'static>>,
     message_popup_pipe: MessagePopupPipe,
     file_dialog_scene: FileDialog,
 }
 
 impl StartScreen {
     pub(crate) fn new() -> Self {
-        let templates = crate::included_files::list_scene_templates();
+        let templates = match AutoPath::try_from("$INCLUDED/templates/scene") {
+            Ok(dir) => dir.all_from_extensions(&["json", "rscn"]),
+            Err(err) => {
+                warn!("Failed to load templates: {}", err);
+                Vec::new()
+            }
+        };
 
         Self {
             show_template_dialog: false,
@@ -66,7 +72,7 @@ impl StartScreen {
                             {
                                 self.show_template_dialog = false;
                                 info!("Selected template: {}", name);
-                                match Model::new_from_template(template) {
+                                match Model::new_from_path(template.clone()) {
                                     Ok(model) => {
                                         next_screen = Some(Box::new(SceneScreen::new(model)));
                                     }
@@ -122,10 +128,18 @@ impl Screen for StartScreen {
                     {
                         if let Some(path) = file_dialog.pick_file() {
                             info!("Importing scene from {:?}", path);
-                            match Model::new_from_path(path) {
-                                Ok(model) => {
-                                    next_screen = Some(Box::new(SceneScreen::new(model)));
-                                }
+                            let path = AutoPath::try_from(path);
+
+                            match path {
+                                Ok(path) => match Model::new_from_path(path) {
+                                    Ok(model) => {
+                                        next_screen = Some(Box::new(SceneScreen::new(model)));
+                                    }
+                                    Err(err) => {
+                                        self.message_popup_pipe
+                                            .push_message(Message::from_error(err));
+                                    }
+                                },
                                 Err(err) => {
                                     self.message_popup_pipe
                                         .push_message(Message::from_error(err));

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use log::{error, info};
 use crate::control_plane::app::App;
 use crate::data_plane::scene::render_scene::Scene;
+use crate::included_files::AutoPath;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -34,7 +35,15 @@ impl App for CliStaticApp {
     fn show(self: Box<CliStaticApp>) {
         info!("Loading scene...");
 
-        let scene_res = Scene::load_scene_from_path(self.args.scene.clone(), true);
+        let auto_path = match AutoPath::try_from(self.args.scene.clone()) {
+            Ok(path) => path,
+            Err(e) => {
+                error!("Error loading scene: {:?}, exiting...", e);
+                std::process::exit(1);
+            }
+        };
+
+        let scene_res = Scene::load_scene_from_path(auto_path.clone(), true);
         let mut scene: Scene;
         match scene_res {
             Err(e) => {

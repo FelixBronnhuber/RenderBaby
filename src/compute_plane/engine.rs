@@ -21,7 +21,7 @@ impl RendererIterable for Engine {
         let mut last_frame: Frame = Frame::new(0, 0, vec![]);
         loop {
             if frame_iterator.has_next() {
-                last_frame = frame_iterator.next().unwrap();
+                last_frame = frame_iterator.next()?;
             } else {
                 break;
             }

@@ -37,7 +37,7 @@ impl ProgressiveRenderHelper {
     /// * `total_samples` - The total number of samples desired for the final image.
     pub fn new(total_samples: u32) -> Self {
         Self {
-            total_passes: (total_samples.div_ceil(SAMPLES_PER_PASS)),
+            total_passes: total_samples.div_ceil(SAMPLES_PER_PASS),
             current_pass: 0,
             total_samples,
             samples_per_pass: SAMPLES_PER_PASS,
@@ -80,7 +80,7 @@ impl GpuWrapper {
     /// * `rc` - The initial render configuration. Must contain `Change::Create` for all required fields.
     /// * `path` - The path to the shader source file.
     pub fn new(rc: RenderConfig, path: &str) -> Result<Self> {
-        let gpu = GpuDevice::new().unwrap();
+        let gpu = GpuDevice::new()?;
         let initial_uniforms = match rc.uniforms {
             Change::Create(u) | Change::Update(u) => u,
             Change::Keep => Uniforms::default(),
@@ -124,10 +124,9 @@ impl GpuWrapper {
                 let new_size = (uniforms.width as u64) * (uniforms.height as u64) * 4;
                 self.buffer_wrapper.init_uniforms(&self.device, uniforms);
                 if old_size != new_size {
-                    log::info!(
+                    info!(
                         "Resolution changed during first render, resizing buffers from {} to {} bytes",
-                        old_size,
-                        new_size
+                        old_size, new_size
                     );
                     self.prh.update(uniforms.total_samples);
                     self.buffer_wrapper.grow_resolution(&self.device, new_size);
@@ -167,16 +166,15 @@ impl GpuWrapper {
             new_rc.validate()?;
 
             match &new_rc.uniforms {
-                Change::Keep => log::info!("Not updating Uniforms."),
+                Change::Keep => info!("Not updating Uniforms."),
                 Change::Update(uniforms) => {
                     // Check if resolution changed and resize output/staging buffers if needed
                     let old_size = self.get_image_buffer_size() * 4;
                     let new_size = (uniforms.width as u64) * (uniforms.height as u64) * 4;
                     if old_size != new_size {
-                        log::info!(
+                        info!(
                             "Resolution changed, resizing buffers from {} to {} bytes",
-                            old_size,
-                            new_size
+                            old_size, new_size
                         );
                         self.buffer_wrapper.grow_resolution(&self.device, new_size);
                     }
@@ -192,7 +190,7 @@ impl GpuWrapper {
             }
 
             match &new_rc.spheres {
-                Change::Keep => log::info!("Not updating Spheres Buffer."),
+                Change::Keep => info!("Not updating Spheres Buffer."),
                 Change::Update(spheres) => {
                     self.buffer_wrapper.update_spheres(&self.device, spheres);
                 }
@@ -205,7 +203,7 @@ impl GpuWrapper {
             }
 
             match &new_rc.uvs {
-                Change::Keep => log::info!("Not updating UVs Buffer."),
+                Change::Keep => info!("Not updating UVs Buffer."),
                 Change::Update(uvs) => {
                     self.buffer_wrapper.update_uvs(&self.device, uvs);
                 }
@@ -218,7 +216,7 @@ impl GpuWrapper {
             }
 
             match &new_rc.meshes {
-                Change::Keep => log::info!("Not updating Meshes Buffer."),
+                Change::Keep => info!("Not updating Meshes Buffer."),
                 Change::Update(meshes) => {
                     self.buffer_wrapper.update_meshes(&self.device, meshes);
                 }
@@ -230,7 +228,7 @@ impl GpuWrapper {
                 }
             }
             match &new_rc.lights {
-                Change::Keep => log::info!("Not updating Lights Buffer."),
+                Change::Keep => info!("Not updating Lights Buffer."),
                 Change::Update(lights) => {
                     self.buffer_wrapper.update_lights(&self.device, lights);
                 }
@@ -242,7 +240,7 @@ impl GpuWrapper {
                 }
             }
             match &new_rc.bvh_nodes {
-                Change::Keep => log::info!("Not updating BVH Nodes."),
+                Change::Keep => info!("Not updating BVH Nodes."),
                 Change::Update(nodes) => {
                     self.buffer_wrapper.update_bvh_nodes(&self.device, nodes);
                 }
@@ -254,7 +252,7 @@ impl GpuWrapper {
                 }
             }
             match &new_rc.bvh_indices {
-                Change::Keep => log::info!("Not updating BVH Indices."),
+                Change::Keep => info!("Not updating BVH Indices."),
                 Change::Update(indices) => {
                     self.buffer_wrapper
                         .update_bvh_indices(&self.device, indices);
@@ -268,7 +266,7 @@ impl GpuWrapper {
                 }
             }
             match &new_rc.bvh_triangles {
-                Change::Keep => log::info!("Not updating BVH Triangles."),
+                Change::Keep => info!("Not updating BVH Triangles."),
                 Change::Update(tris) => {
                     self.buffer_wrapper.update_bvh_triangles(&self.device, tris);
                 }
@@ -282,7 +280,7 @@ impl GpuWrapper {
             }
 
             match &new_rc.textures {
-                Change::Keep => log::info!("Not updating Textures Buffer."),
+                Change::Keep => info!("Not updating Textures Buffer."),
                 Change::Update(textures) => {
                     self.buffer_wrapper.update_textures(&self.device, textures);
                 }
@@ -496,7 +494,7 @@ impl GpuWrapper {
             Change::Keep => {}
         }
 
-        log::info!(
+        info!(
             "Writing uniforms to GPU: camera_pos={:?}, camera_dir={:?}, pane_distance={}, pane_width={}, size={}x{}, spheres={}, triangles={}",
             uniforms.camera.pos,
             uniforms.camera.dir,
@@ -563,7 +561,7 @@ impl GpuWrapper {
         }
 
         if let Change::Create(textures) | Change::Update(textures) = &self.rc.textures {
-            let (tex_data, tex_info) = crate::buffers::GpuBuffers::process_textures(textures);
+            let (tex_data, tex_info) = GpuBuffers::process_textures(textures);
             self.queue.write_buffer(
                 &self.buffer_wrapper.texture_data,
                 0,

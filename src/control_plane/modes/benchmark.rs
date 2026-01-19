@@ -5,6 +5,7 @@ use sysinfo::{System};
 use wgpu::Instance;
 use crate::control_plane::app::App;
 use crate::data_plane::scene::render_scene::Scene;
+use crate::included_files::AutoPath;
 
 const SAMPLE_COUNTS: &[u32] = &[1, 10, 100, 1000];
 
@@ -29,8 +30,12 @@ impl BenchmarkApp {
         Self {}
     }
     fn benchmark(sample_count: u32, resolution: Resolution) -> std::time::Duration {
-        let mut scene =
-            Scene::load_scene_from_path("fixtures/benchmark.json".parse().unwrap(), true).unwrap();
+        let mut scene = match AutoPath::try_from("included/templates/scene/benchmark.rscn") {
+            Ok(path) => Scene::load_scene_from_path(path, true).unwrap(),
+            Err(_) => {
+                panic!("Failed to load benchmark scene");
+            }
+        };
         scene.render().expect("Render failed");
         scene.get_camera_mut().set_resolution(resolution);
         scene.get_camera_mut().set_ray_samples(sample_count);
