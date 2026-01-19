@@ -9,7 +9,7 @@
 /// or switching engines. Each variant corresponds to a different rendering algorithm
 /// with different characteristics.
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum RenderEngine {
     /// Classical ray tracing with direct lighting (not implemented).
     ///
