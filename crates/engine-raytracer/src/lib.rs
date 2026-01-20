@@ -42,7 +42,8 @@ impl Engine {
     ///
     /// * `rc` - Initial render configuration
     pub fn new(rc: RenderConfig) -> Self {
-        let wrapper = GpuWrapper::new(rc, "engine-pathtracer/src/shader.wgsl").unwrap();
+        let shader_source = include_str!("shader.wgsl");
+        let wrapper = GpuWrapper::new(rc, shader_source).unwrap();
 
         Self {
             gpu_wrapper: wrapper,

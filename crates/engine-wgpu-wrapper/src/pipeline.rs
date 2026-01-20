@@ -1,6 +1,3 @@
-use std::fs;
-use std::path::Path;
-
 /// Wrapper for the `wgpu::ComputePipeline`.
 ///
 /// This struct handles the loading of the WGSL shader source code and the creation
@@ -12,22 +9,21 @@ pub struct ComputePipeline {
 impl ComputePipeline {
     /// Creates a new compute pipeline.
     ///
-    /// It reads the shader source file from the path specified relative to the
-    /// `engine-wgpu-wrapper` crate root (using `CARGO_MANIFEST_DIR`).
+    /// It uses the provided WGSL shader source code.
     ///
     /// # Arguments
     ///
     /// * `device` - The wgpu device.
     /// * `bind_group_layout` - The layout of the resources expected by the shader.
-    /// * `path` - The relative path to the WGSL shader file (e.g., `"../engine-raytracer/src/shader.wgsl"`).
+    /// * `shader_source` - The WGSL shader source code.
     ///
     /// # Panics
     ///
-    /// Panics if the shader file cannot be read or if pipeline creation fails.
+    /// Panics if pipeline creation fails.
     pub fn new(
         device: &wgpu::Device,
         bind_group_layout: &wgpu::BindGroupLayout,
-        path: &str,
+        shader_source: &str,
     ) -> Self {
         // Pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -36,15 +32,8 @@ impl ComputePipeline {
             immediate_size: 0,
         });
 
-        let path_new: &str = &(env!("CARGO_MANIFEST_DIR").to_owned() + "/../" + path);
-
-        let shader_path = Path::new(path_new);
-
-        let shader_source = fs::read_to_string(shader_path).unwrap();
-        // .unwrap_or_else(|_| panic!("Failed to read shader file: {:?}", shader_path));
-
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some(&format!("{} shader", path)),
+            label: Some("Compute Shader"),
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 

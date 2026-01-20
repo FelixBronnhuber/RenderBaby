@@ -109,9 +109,10 @@ impl Engine {
     ///
     /// * `Self` - A new instance of the ray tracing engine.
     pub fn new(rc: RenderConfig) -> Self {
-        // TODO: The shader path is currently hardcoded relative to the project root.
-        // This might need to be made more robust for different execution contexts.
-        let wrapper = GpuWrapper::new(rc, "engine-pathtracer/src/shader.wgsl").unwrap();
+        // Embed the shader source code into the binary at compile time.
+        // This ensures the shader is available regardless of the execution environment.
+        let shader_source = include_str!("shader.wgsl");
+        let wrapper = GpuWrapper::new(rc, shader_source).unwrap();
         Self {
             gpu_wrapper: Arc::new(Mutex::new(wrapper)),
         }
