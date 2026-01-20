@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::data_plane::scene_proxy::color::Color;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+/// RenderParameter: Holds render parameters for the scene
 pub(crate) struct RenderParameter {
     pub(crate) ground_height: f32,
     pub(crate) ground_enabled: bool,

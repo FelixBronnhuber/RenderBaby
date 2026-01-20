@@ -9,7 +9,7 @@ use crate::{
     material::Material,
 };
 
-/// This is where the mesh as an alternative to trigeometry will be implemented
+/// Mesh represents the main type of geometry: It is made up from vertices and tris
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Mesh {
@@ -29,6 +29,7 @@ pub struct Mesh {
 
 #[allow(unused)]
 impl Mesh {
+    /// Constructor for new Mesh
     pub fn new(
         vertices: Vec<f32>,
         tris: Vec<u32>,
@@ -38,7 +39,6 @@ impl Mesh {
         name: Option<String>,
         _path: Option<PathBuf>,
     ) -> Result<Self, Error> {
-        //! Constructor for new Mesh
         match Self::calculate_centroid(&vertices) {
             Ok(c) => Ok(Self {
                 vertices,
@@ -57,16 +57,16 @@ impl Mesh {
             Err(error) => Err(Error::msg(format!("Failed to create new mesh: {error}"))),
         }
     }
-
+    /// ## Returns
+    /// The materials of the mesh as an Option of Reference to a Vector of Materials
     pub fn get_materials(&self) -> Option<&Vec<Material>> {
         self.materials.as_ref()
     }
+    /// Calculates the centroid based on self.vertices
+    /// Should be called after all changes to self.vertices
+    /// ## Returns
+    /// Result<(), Error>
     fn update_centroid(&mut self) -> Result<(), Error> {
-        //! Calculates the centroid based on self.vertices
-        //! Should be called after all changes to self.vertices
-        //! ## Returns
-        //! Result<(), Error>
-
         match Self::calculate_centroid(&self.vertices) {
             Ok(c) => {
                 self.centroid = c;
@@ -77,31 +77,30 @@ impl Mesh {
             ))),
         }
     }
-
+    /// rotates the mesh so that the given vector is the new rotation
+    /// ## Parameter
+    /// 'rotation': new absolute rotation as glam::Vec3 (Euler angles in degrees)
     pub fn rotate_to(&mut self, rotation: Vec3) {
-        //! rotates the mesh so that the given vector is the new rotation
-        //! ## Parameter
-        //! 'rotation': new absolute rotation as glam::Vec3 (Euler angles in degrees)
         debug!("Mesh {}: rotate_to absolute {:?}", self.name, rotation);
 
-        // 1. Calculate target matrix
+        // Calculate target matrix
         let yaw = rotation.z.to_radians();
         let pitch = rotation.y.to_radians();
         let roll = rotation.x.to_radians();
         let target_matrix = Mat3::from_euler(EulerRot::ZYX, yaw, pitch, roll);
 
-        // 2. Calculate delta matrix: Target = Delta * Current => Delta = Target * Current^-1
+        // Calculate delta matrix: Target = Delta * Current => Delta = Target * Current^-1
         // Since rotation matrices are orthogonal, Inverse = Transpose.
         let delta_rot = target_matrix * self.accumulated_rotation.transpose();
 
-        // 3. Apply delta
+        // Apply delta
         self.apply_rotation_matrix(delta_rot);
 
-        // 4. Update state directly
+        // Update state directly
         self.accumulated_rotation = target_matrix;
         self.rotation = rotation;
     }
-
+    /// Helper function for rotation
     fn apply_rotation_matrix(&mut self, matrix: Mat3) {
         self.update_centroid();
         debug!(
@@ -124,29 +123,27 @@ impl Mesh {
         }
         self.update_centroid();
     }
-
+    /// scales the mesh so that the given scale is the new scale
+    /// ## Parameter
+    /// 'scale': new absolute scale
     pub fn scale_to(&mut self, scale: f32) {
-        //! scales the mesh so that the given scale is the new scale
-        //! ## Parameter
-        //! 'scale': new absolute scale
         let factor = scale.abs() / self.scale.x;
         if factor != 0.0 {
             self.scale(factor);
         }
     }
-
+    /// translates the mesh so that the given translation is the new absolute translation
+    /// ## Parameter
+    /// 'translation': new absolute translation as glam::Vec3
     pub fn translate_to(&mut self, translation: Vec3) {
-        //! translates the mesh so that the given translation is the new absolute translation
-        //! ## Parameter
-        //! 'translation': new absolute translation as glam::Vec3
         self.translate(translation - self.translation);
     }
+    /// Calculates the centroid for a sclice of vertices, where 3 entries in the sclice are x, y, z of one point
+    /// ## Parameter
+    /// 'vertices': slice of f32 representing the vertices
+    /// ## Returns
+    /// Centroid of the given vertices as Result<Vec3, Error>
     pub(crate) fn calculate_centroid(vertices: &[f32]) -> Result<Vec3, Error> {
-        //! Calculates the centroid for a sclice of vertices, where 3 entries in the sclice are x, y, z of one point
-        //! ## Parameter
-        //! 'vertices': slice of f32 representing the vertices
-        //! ## Returns
-        //! Centroid of the given vertices as Result<Vec3, Error>
         if vertices.is_empty() {
             return Err(Error::msg("Cannot calculate centroid of 0 points"));
         }
@@ -171,18 +168,19 @@ impl Mesh {
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
-
+    /// ## Returns
+    /// Reference to Vec<f32>, where three entries define one point in 3d space
     pub fn get_vertices(&self) -> &Vec<f32> {
-        //! ## Returns
-        //! Reference to Vec<f32>, where three entries define one point in 3d space
         &self.vertices
     }
+    /// ## Returns
+    /// UVS of the Mesh
     pub fn get_uvs(&self) -> Option<&Vec<f32>> {
         self.uvs.as_ref()
     }
+    /// ## Returns
+    /// Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle
     pub fn get_tri_indices(&self) -> &Vec<u32> {
-        //! Returns
-        //! Reference to Vec<u32>, where three entries define the indices of the vertices that make up one triangle#
         &self.tris
     }
     pub fn set_path(&mut self, path: PathBuf) {
@@ -196,10 +194,10 @@ impl Mesh {
 
 #[allow(unused)]
 impl GeometricObject for Mesh {
+    /// scales the geometry by the given factor
+    /// ## Parameter
+    /// 'factor': factor for scale
     fn scale(&mut self, factor: f32) {
-        //! scales the geometry by the given factor
-        //! ## Parameter
-        //! 'factor': factor for scale
         self.update_centroid();
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] =
@@ -213,11 +211,10 @@ impl GeometricObject for Mesh {
         self.scale *= factor;
         self.update_centroid();
     }
-
-    fn translate(&mut self, vec: Vec3) {
-        //! translates the points by the direction given
-        //! ## Parameter
-        //! 'vec': Vector by which the geometries are translated
+    /// translates the points by the direction given
+    /// ## Parameter
+    /// 'vec': Vector by which the geometries are translated
+    fn translate(&mut self, vec: glam::Vec3) {
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] += vec.x;
             self.vertices[i * 3 + 1] += vec.y;
@@ -226,11 +223,10 @@ impl GeometricObject for Mesh {
         self.translation += vec;
         self.update_centroid();
     }
-
-    fn rotate(&mut self, vec: Vec3) {
-        //! Rotates the points around the centroid
-        //! ## Parameter
-        //! 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
+    /// Rotates the points around the centroid
+    /// ## Parameter
+    /// 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
+    fn rotate(&mut self, vec: glam::Vec3) {
         debug!("Mesh {}: rotate relative {:?}", self.name, vec);
 
         let yaw = vec.z.to_radians();
