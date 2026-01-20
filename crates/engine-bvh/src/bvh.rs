@@ -18,16 +18,18 @@ const MAX_LEAF_SIZE: usize = 128; //Maximum Triangles per Leaf, apparently lower
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct BVHNode {
-    //Bounding Box of this Node
+    /// Minimum corner of the node's bounding box.
     pub aabb_min: Vec3,
     pub _pad0: u32,
+    /// Maximum corner of the node's bounding box.
     pub aabb_max: Vec3,
     pub _pad1: u32,
-    //Index in Nodes Vector of BVH struct
+    /// Indexes of child nodes
     pub left: u32,
     pub right: u32,
-    //Index of First Primitive in this Node and how many primitives there are in this node
+    /// Index of the first primitive stored in this node.
     pub first_primitive: u32,
+    /// Number of primitives stored in this node.
     pub primitive_count: u32,
 }
 
@@ -71,8 +73,10 @@ impl BVHNode {
 /// index buffer that references the original triangle list.
 #[derive(Default)]
 pub struct BVH {
+    /// All BVH nodes in depth-first order.
     pub nodes: Vec<BVHNode>,
-    pub indices: Vec<u32>, // Only Triangles
+    /// Triangle indices referenced by leaf nodes.
+    pub indices: Vec<u32>,
 }
 
 impl BVH {

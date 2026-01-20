@@ -7,7 +7,9 @@ use glam::Vec3;
 /// collision detection, and acceleration structures such as BVHs.
 #[derive(Clone, Copy, Debug)]
 pub struct AABB {
+    /// Minimum corner of the bounding box.
     pub min: Vec3,
+    /// Maximum corner of the bounding box.
     pub max: Vec3,
 }
 
