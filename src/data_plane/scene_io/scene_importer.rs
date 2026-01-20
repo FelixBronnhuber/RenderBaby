@@ -33,7 +33,7 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
         scene.add_lightsource(LightSource::new(
             Vec3::new(light.position.x, light.position.y, light.position.z),
             light.luminosity,
-            [light.color.r, light.color.g, light.color.b],
+            light.color.into(),
             light.name.clone(),
             {
                 if light.rotation.is_some() {
@@ -72,11 +72,7 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
         .get_camera_mut()
         .set_pane_distance(file.camera.pane_distance);
     //Background
-    scene.set_background_color([
-        file.background_color.r,
-        file.background_color.g,
-        file.background_color.b,
-    ]);
+    scene.set_background_color(file.background_color.into());
     let paths = file
         .objects
         .iter()
@@ -119,7 +115,7 @@ fn transform_to_scene(file: SceneFile) -> anyhow::Result<LoadedSceneData> {
                     Vec3::new(sphere.center.x, sphere.center.y, sphere.center.z),
                     sphere.radius,
                     material,
-                    (&sphere.color).into(),
+                    sphere.color.into(),
                 ));
             }
         }

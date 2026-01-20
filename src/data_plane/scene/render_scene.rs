@@ -22,6 +22,7 @@ use crate::{
 };
 use crate::data_plane::scene_io::scene_exporter;
 use crate::data_plane::scene_io::texture_loader::TextureCache;
+use crate::data_plane::scene_proxy::color::Color;
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -320,13 +321,13 @@ impl Scene {
                             0,
                             0,
                             0,
-                            render_param.ground_height, //Leave or change to scene defaults
+                            render_param.ground_height, // Leave or change to scene defaults
                             render_param.ground_enabled,
                             render_param.checkerboard_enabled,
-                            render_param.sky_color,
+                            render_param.sky_color.into(),
                             render_param.max_depth,
-                            render_param.checkerboard_colors.0,
-                            render_param.checkerboard_colors.1,
+                            render_param.checkerboard_colors.0.into(),
+                            render_param.checkerboard_colors.1.into(),
                         ))
                         .spheres_create(vec![])
                         .uvs_create(vec![])
@@ -457,18 +458,20 @@ impl Scene {
         self.name = name.clone();
         info!("{self}: Renamed to {name} from {old_name}");
     }
-    /// ## Returns
-    /// Background color rgb as array of f32
-    pub fn get_background_color(&self) -> [f32; 3] {
+
+    pub fn get_background_color(&self) -> Color {
+        //! ## Returns
+        //! Background color rgb as array of f32
         self.render_params.sky_color
     }
-    /// ## Parameters
-    /// 'color': New background color as array of f32
-    pub fn set_background_color(&mut self, color: [f32; 3]) {
+
+    pub fn set_background_color(&mut self, color: Color) {
+        //! ## Parameters
+        //! New background color as array of f32
         self.render_params.sky_color = color;
         info!(
             "Scene {self}: set background color to [{}, {}, {}]",
-            color[0], color[1], color[2]
+            color.r, color.g, color.b
         );
     }
     /// ## Returns
@@ -504,14 +507,15 @@ impl Scene {
         self.render_params.checkerboard_enabled = enabled;
         info!("Scene {self}: set checkerboard enabled  to {}", enabled);
     }
-    /// ## Returns
-    /// checkerboard colors as pair of [f32;3]
-    pub fn get_checkerboard_colors(&self) -> ([f32; 3], [f32; 3]) {
+    pub fn get_checkerboard_colors(&self) -> (Color, Color) {
+        //! ## Returns
+        //! checkerboard colors as pair of [f32;3]
         self.render_params.checkerboard_colors
     }
-    /// ## Parameters
-    /// 'colors': pair of [f32;3] represesnting rgb colors
-    pub fn set_checkerboared_colors(&mut self, colors: ([f32; 3], [f32; 3])) {
+
+    pub fn set_checkerboared_colors(&mut self, colors: (Color, Color)) {
+        //! ## Parameters
+        //! 'colors': pair of [f32;3] represesnting rgb colors
         self.render_params.checkerboard_colors = colors;
         info!("Scene {self}: set ground enabled  to {:?}", colors);
     }
