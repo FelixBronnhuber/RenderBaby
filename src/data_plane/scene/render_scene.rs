@@ -319,7 +319,7 @@ impl Scene {
                         .lights_create(vec![])
                         .textures_create(vec![])
                         .build(),
-                    RenderEngine::Raytracer,
+                    RenderEngine::Pathtracer,
                 ))
             } else {
                 None
