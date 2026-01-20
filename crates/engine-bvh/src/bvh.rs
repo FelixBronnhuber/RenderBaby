@@ -1,11 +1,20 @@
+//! Bounding Volume Hierarchy (BVH) construction.
 use glam::Vec3;
 use bytemuck::{Pod, Zeroable};
 
 use crate::triangle::GPUTriangle;
 use crate::aabb::AABB;
 
+/// Maximum number of primitives stored in a leaf node.
+///
+/// Lower values typically improve traversal performance
+/// at the cost of a deeper tree.
 const MAX_LEAF_SIZE: usize = 128; //Maximum Triangles per Leaf, apparently lower is more common
 
+/// A single node in the Bounding Volume Hierarchy.
+///
+/// The node layout is optimized for GPU usage and can represent
+/// either an internal node or a leaf node.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct BVHNode {
@@ -23,6 +32,9 @@ pub struct BVHNode {
 }
 
 impl BVHNode {
+    /// Creates a leaf node.
+    ///
+    /// Leaf nodes directly reference a range of primitives.
     pub fn leaf(
         aabb_min: Vec3,
         aabb_max: Vec3,
@@ -38,6 +50,10 @@ impl BVHNode {
         }
     }
 
+    /// Creates an internal node.
+    ///
+    /// Internal nodes reference two child nodes and do not
+    /// directly store primitives.
     pub fn internal(aabb_min: Vec3, aabb_max: Vec3, left: u32, right: u32) -> Self {
         Self {
             aabb_min,
@@ -49,6 +65,10 @@ impl BVHNode {
     }
 }
 
+/// A Bounding Volume Hierarchy built over a set of triangles.
+///
+/// The BVH stores nodes in a flat array and keeps a separate
+/// index buffer that references the original triangle list.
 #[derive(Default)]
 pub struct BVH {
     pub nodes: Vec<BVHNode>,
@@ -56,6 +76,10 @@ pub struct BVH {
 }
 
 impl BVH {
+    /// Builds a new BVH from a slice of triangles.
+    ///
+    /// The construction uses a median split along the longest axis
+    /// of the node's bounding box.
     pub fn new(triangles: &[GPUTriangle]) -> Self {
         let mut indices: Vec<u32> = (0..triangles.len() as u32).collect();
         let mut nodes = Vec::new();
@@ -66,6 +90,9 @@ impl BVH {
     }
 }
 
+/// Recursively builds a BVH node.
+///
+/// Returns the index of the newly created node.
 fn build_node(
     triangles: &[GPUTriangle],
     indices: &mut [u32],
@@ -118,6 +145,7 @@ fn build_node(
     node_index
 }
 
+/// Computes the centroid of a triangle.
 fn triangle_centroid(tri: &GPUTriangle) -> Vec3 {
     (tri.v0 + tri.v1 + tri.v2) / 3.0
 }

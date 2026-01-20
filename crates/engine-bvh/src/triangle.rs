@@ -1,6 +1,11 @@
+//! GPU-friendly triangle representation.
 use glam::Vec3;
 use bytemuck::{Pod, Zeroable};
 
+/// A triangle structure optimized for GPU usage.
+///
+/// The layout is `#[repr(C)]` and padded to ensure compatibility
+/// with GPU buffers and shader interfaces.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable, Default)]
 pub struct GPUTriangle {
