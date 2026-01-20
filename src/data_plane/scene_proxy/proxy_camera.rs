@@ -15,6 +15,9 @@ pub(crate) struct ProxyCamera {
 }
 
 impl ProxyCamera {
+    pub const MAX_WIDTH: u32 = 4320;
+    pub const MAX_HEIGHT: u32 = 4320;
+
     pub(crate) fn new_from_real_camera(camera: &Camera) -> Self {
         Self {
             position: camera.get_position().into(),
