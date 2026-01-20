@@ -101,10 +101,10 @@ fn camera_to_render_uniforms(
         render_param.ground_height, //Replace with correct values from GUI
         render_param.ground_enabled,
         render_param.checkerboard_enabled,
-        render_param.sky_color,
+        render_param.sky_color.into(),
         render_param.max_depth,
-        render_param.checkerboard_colors.0,
-        render_param.checkerboard_colors.1,
+        render_param.checkerboard_colors.0.into(),
+        render_param.checkerboard_colors.1.into(),
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
@@ -377,13 +377,7 @@ impl Scene {
         let render_spheres = self.get_render_spheres();
 
         // Collect textures
-        let mut texture_list = Vec::new();
-        let mut texture_map = HashMap::new();
-
-        for (path, data) in &self.textures {
-            texture_map.insert(path.clone(), texture_list.len() as i32);
-            texture_list.push(data.clone());
-        }
+        let (texture_list, texture_map) = self.texture_cache.get_split_clone();
 
         let render_tris = self.get_render_tris(&texture_map);
         debug!("Scene mesh data: {:?}", self.get_meshes());

@@ -42,6 +42,7 @@ fn create_test_scene(name: &str) -> Scene {
 }
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::included_files::AutoPath;
 
 static COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -68,6 +69,8 @@ fn test_json_export_import_integrity() {
         .export_scene(file_path.clone(), false)
         .expect("Failed to export JSON scene");
 
+    let file_path = AutoPath::try_from(file_path).unwrap();
+
     // Import
     let imported_scene =
         Scene::load_scene_from_path(file_path, false).expect("Failed to import JSON scene");
@@ -86,14 +89,15 @@ fn test_rscn_export_import_with_mesh() {
 
     // We need a real mesh file to test.
     // fixtures/scenes/obj/cube_bare.obj exists in the project root.
-    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let fixture_obj = project_root.join("fixtures/scenes/obj/cube_bare.obj");
+    let fixture_obj = AutoPath::try_from("$INCLUDED/fixtures/scenes/obj/cube_bare.obj");
 
     assert!(
-        fixture_obj.exists(),
+        fixture_obj.is_ok(),
         "Fixture obj not found at {:?}",
         fixture_obj
     );
+
+    let fixture_obj = fixture_obj.unwrap();
 
     // Load the mesh into the scene first
     scene
@@ -107,7 +111,11 @@ fn test_rscn_export_import_with_mesh() {
     scene
         .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
-    assert!(export_path.exists());
+
+    let export_path = AutoPath::try_from(export_path);
+
+    assert!(export_path.is_ok());
+    let export_path = export_path.unwrap();
 
     // Import back
     let imported_scene =
@@ -123,12 +131,15 @@ fn test_rscn_export_import_with_mesh() {
     // Check if the path of the imported mesh is valid and absolute
     let imported_path = imported_scene.get_meshes()[0].get_path().clone().unwrap();
     assert!(imported_path.is_absolute());
-    assert!(imported_path.exists());
+
+    let imported_path = AutoPath::try_from(imported_path);
+    assert!(imported_path.is_ok());
+    let imported_path = imported_path.unwrap();
 
     // Ensure it is NOT the original path
     assert_ne!(
         imported_path,
-        project_root.join("fixtures/scenes/obj/cube_bare.obj")
+        AutoPath::try_from("$INCLUDED/fixtures/scenes/obj/cube_bare.obj").unwrap()
     );
 
     // Clean up
@@ -139,8 +150,8 @@ fn test_rscn_export_import_with_mesh() {
 fn test_import_nonexistent_file() {
     let temp_dir = setup_temp_dir();
     let path = temp_dir.join("fake.json");
-    let result = Scene::load_scene_from_path(path, false);
-    assert!(result.is_err());
+    let path = AutoPath::try_from(path);
+    assert!(path.is_err());
 }
 
 #[test]
@@ -157,6 +168,8 @@ fn test_invalid_rscn_structure() {
     zip.write_all(b"hello").unwrap();
     zip.finish().unwrap();
 
+    let zip_path = AutoPath::try_from(zip_path).unwrap();
+
     let result = Scene::load_scene_from_path(zip_path, false);
     // This should fail because scene.json is missing
     assert!(result.is_err());
@@ -165,8 +178,10 @@ fn test_invalid_rscn_structure() {
 #[test]
 fn test_idempotency() {
     // Idempotency in this context: Importing the same file twice produces equivalent scenes
-    let temp_dir = setup_temp_dir();
-    let export_path = temp_dir.join("idem.rscn");
+    let temp_dir = AutoPath::try_from(setup_temp_dir());
+    assert!(temp_dir.is_ok());
+    let temp_dir = temp_dir.unwrap();
+    let export_path = temp_dir.path().join("idem.rscn");
 
     let mut scene = Scene::new();
     scene.set_name("Idem".to_string());
@@ -181,6 +196,8 @@ fn test_idempotency() {
     ));
 
     scene.export_scene(export_path.clone(), false).unwrap();
+
+    let export_path = AutoPath::try_from(export_path).unwrap();
 
     let s1 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
     let s2 = Scene::load_scene_from_path(export_path.clone(), false).unwrap();
@@ -209,7 +226,9 @@ fn test_scene_save_method() {
     // Save should work now
     scene.save(false).expect("Scene::save() failed");
 
-    assert!(save_path.exists());
+    let save_path = AutoPath::try_from(save_path);
+    assert!(save_path.is_ok());
+    let save_path = save_path.unwrap();
 
     // Verify we can load it back
     let loaded = Scene::load_scene_from_path(save_path, false).expect("Failed to load saved scene");
@@ -227,6 +246,7 @@ fn test_rscn_import_disables_color_hash() {
 
     scene.export_scene(export_path.clone(), false).unwrap();
 
+    let export_path = AutoPath::try_from(export_path).unwrap();
     // Load it back
     let loaded = Scene::load_scene_from_path(export_path, false).unwrap();
     // Should be false for rscn
@@ -243,14 +263,15 @@ fn test_rscn_export_with_mtl() {
     let mut scene = create_test_scene("MtlTest");
 
     // Load cornell box which has an MTL
-    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let fixture_obj = project_root.join("fixtures/cornell_box/cornell-box.obj");
+    let fixture_obj = AutoPath::try_from("$INCLUDED/fixtures/cornell_box/cornell-box.obj");
 
     assert!(
-        fixture_obj.exists(),
+        fixture_obj.is_ok(),
         "Fixture obj not found at {:?}",
         fixture_obj
     );
+
+    let fixture_obj = fixture_obj.unwrap();
 
     scene
         .load_object_from_file(fixture_obj)
@@ -261,22 +282,23 @@ fn test_rscn_export_with_mtl() {
         .export_scene(export_path.clone(), false)
         .expect("Failed to export RSCN");
 
+    let export_path = AutoPath::try_from(export_path).unwrap();
     // Verify content by unzipping manually (using FileManager)
     // FileManager::unzip_scene extracts to a temp dir
-    let unzipped_path = FileManager::unzip_scene(&export_path).expect("Failed to unzip");
+    let unzipped_path = FileManager::unzip_scene(export_path).expect("Failed to unzip");
 
     // Expected structure:
     // unzipped_path/scene/obj/cornell-box.obj
     // unzipped_path/scene/obj/cornell-box.mtl
-    let obj_path = unzipped_path.join("scene/obj/cornell-box.obj");
-    let mtl_path = unzipped_path.join("scene/obj/cornell-box.mtl");
+    let obj_path = unzipped_path.get_joined("scene/obj/cornell-box.obj");
+    let mtl_path = unzipped_path.get_joined("scene/obj/cornell-box.mtl");
 
-    assert!(obj_path.exists(), "OBJ file missing in archive");
-    assert!(mtl_path.exists(), "MTL file missing in archive");
+    assert!(obj_path.is_some(), "OBJ file missing in archive");
+    assert!(mtl_path.is_some(), "MTL file missing in archive");
 
     // Clean up
     let _ = fs::remove_dir_all(temp_dir);
-    let _ = fs::remove_dir_all(unzipped_path);
+    let _ = fs::remove_dir_all(unzipped_path.path());
 }
 
 #[test]
@@ -302,6 +324,8 @@ fn test_export_import_misc_data() {
 
     // Export with export_misc = true
     scene_exporter::serialize_scene(file_path.clone(), &scene, true).expect("Export failed");
+
+    let file_path = AutoPath::try_from(file_path).unwrap();
 
     // Import back
     let loaded_data = scene_importer::parse_scene(file_path.clone(), None).expect("Import failed");
@@ -340,6 +364,8 @@ fn test_export_misc_data_disabled() {
 
     // Export with export_misc = false
     scene_exporter::serialize_scene(file_path.clone(), &scene, false).expect("Export failed");
+
+    let file_path = AutoPath::try_from(file_path).unwrap();
 
     // Import back
     let loaded_data = scene_importer::parse_scene(file_path.clone(), None).expect("Import failed");

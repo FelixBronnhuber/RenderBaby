@@ -1,6 +1,7 @@
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
 use scene_objects::material::{Material, MaterialPresets};
+use crate::data_plane::scene_proxy::color::Color;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SceneFile {
@@ -52,7 +53,7 @@ pub struct FileCamera {
     pub resolution: Resolution,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct FileColor {
     pub r: f32,
     pub g: f32,
@@ -61,8 +62,18 @@ pub struct FileColor {
     pub a: Option<f32>, // ungenutzt
 }
 
-impl From<&FileColor> for [f32; 3] {
-    fn from(c: &FileColor) -> [f32; 3] {
+impl From<FileColor> for Color {
+    fn from(value: FileColor) -> Self {
+        Color {
+            r: value.r,
+            g: value.g,
+            b: value.b,
+        }
+    }
+}
+
+impl From<FileColor> for [f32; 3] {
+    fn from(c: FileColor) -> [f32; 3] {
         [c.r, c.g, c.b]
     }
 }

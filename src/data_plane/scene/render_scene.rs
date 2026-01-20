@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use anyhow::Error;
-use engine_config::{RenderConfigBuilder, Uniforms, TextureData};
-use std::collections::HashMap;
+use engine_config::{RenderConfigBuilder, Uniforms};
 use glam::Vec3;
 use log::{debug, error, info, warn};
 use frame_buffer::frame_iterator::Frame;
@@ -19,9 +18,11 @@ use crate::{
         scene::{render_parameter::RenderParameter, scene_graph::SceneGraph},
         scene_io::{img_export::export_img_png, obj_parser::load_obj, scene_importer::parse_scene},
     },
+    included_files::AutoPath,
 };
 use crate::data_plane::scene_io::scene_exporter;
 use crate::data_plane::scene_io::texture_loader::TextureCache;
+use crate::data_plane::scene_proxy::color::Color;
 
 /// The scene holds all relevant objects, lightsources, camera
 pub struct Scene {
@@ -30,7 +31,7 @@ pub struct Scene {
     first_render: bool,
     render_engine: Option<Engine>,
     last_frame: Option<Frame>,
-    pub textures: HashMap<String, TextureData>,
+    pub(crate) texture_cache: TextureCache,
     output_path: Option<PathBuf>,
     render_params: RenderParameter,
 }
@@ -42,30 +43,11 @@ impl Default for Scene {
 
 #[allow(unused)]
 impl Scene {
-    fn ensure_texture_loaded(&mut self, path: &str) {
-        let key = std::path::Path::new(path).to_string_lossy().to_string();
-        if self.textures.contains_key(&key) {
-            return;
-        }
-        match image::open(&key) {
-            Ok(img) => {
-                let img = img.to_rgba8();
-                let (width, height) = img.dimensions();
-                let data: Vec<u32> = img.pixels().map(|p| u32::from_le_bytes(p.0)).collect();
-                self.textures
-                    .insert(key, TextureData::new(width, height, data));
-            }
-            Err(e) => {
-                error!("Failed to load texture {}: {}", path, e);
-            }
-        }
-    }
-
-    fn _load_scene_from_path(path: PathBuf) -> anyhow::Result<Scene> {
+    fn _load_scene_from_path(auto_path: AutoPath) -> anyhow::Result<Scene> {
         //! loads and returns a new scene from a json / rscn file at path
-        info!("Scene: Loading new scene from {}", path.display());
+        info!("Scene: Loading new scene from {}", auto_path);
 
-        let loaded_data = parse_scene(path.clone(), None)?;
+        let loaded_data = parse_scene(auto_path.clone(), None)?;
 
         let mut scene = loaded_data.scene;
         let paths = loaded_data.paths;
@@ -75,7 +57,7 @@ impl Scene {
 
         debug!("Scene: Loading {} objects...", paths.len());
         for (i, p_str) in paths.iter().enumerate() {
-            let p = PathBuf::from(p_str);
+            let p = AutoPath::try_from(p_str.to_string())?;
             debug!("Scene: Loading object {} from {:?}", i, p);
             info!(
                 "Scene: Applying transformations: translation={:?}, rotation={:?}, scale={:?}",
@@ -83,7 +65,7 @@ impl Scene {
             );
             scene.load_object_from_file_relative(
                 p.clone(),
-                p,
+                p.path_buf(),
                 translation[i],
                 rotation[i],
                 scale[i],
@@ -116,21 +98,13 @@ impl Scene {
 
     pub fn parse_obj_to_mesh(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: Option<PathBuf>,
     ) -> Result<Mesh, Error> {
         //! Adds new object from a obj file at path using obj_parser::load_obj
-        info!("{self}: Loading object from {}", path.display());
-        let mut cache = TextureCache::new();
-        match load_obj(path.clone(), &mut cache) {
+        info!("{self}: Loading object from {}", auto_path);
+        match load_obj(auto_path.clone(), &mut self.texture_cache) {
             Ok(mut res) => {
-                // Ensure any textures referenced by materials are present in self.textures
-                for m in &res.materials {
-                    if let Some(tex_path) = &m.texture_path {
-                        self.ensure_texture_loaded(tex_path);
-                    }
-                }
-
                 // If a relative path is provided, override mesh path to keep exported scene clean
                 if let Some(rel) = relative_path {
                     res.mesh.set_path(rel);
@@ -138,35 +112,35 @@ impl Scene {
 
                 info!(
                     "Scene {self}: Successfully loaded object from {}",
-                    path.display()
+                    auto_path
                 );
                 Ok(res.mesh)
             }
             Err(error) => {
                 error!(
                     "{self}: Parsing obj from {} resulted in error: {error}",
-                    path.display()
+                    auto_path
                 );
                 Err(error)
             }
         }
     }
 
-    pub fn load_object_from_file(&mut self, path: PathBuf) -> Result<(), Error> {
-        let mesh = self.parse_obj_to_mesh(path, None)?;
+    pub fn load_object_from_file(&mut self, auto_path: AutoPath) -> Result<(), Error> {
+        let mesh = self.parse_obj_to_mesh(auto_path, None)?;
         self.add_mesh(mesh);
         Ok(())
     }
 
     fn load_object_from_file_relative(
         &mut self,
-        path: PathBuf,
+        auto_path: AutoPath,
         relative_path: PathBuf,
         translation: Vec3,
         rotation: Vec3,
         scale: Vec3,
     ) -> Result<(), Error> {
-        let mut mesh = self.parse_obj_to_mesh(path, Some(relative_path))?;
+        let mut mesh = self.parse_obj_to_mesh(auto_path, Some(relative_path))?;
         mesh.scale(scale.x);
         mesh.rotate(rotation);
         mesh.translate(translation);
@@ -176,7 +150,7 @@ impl Scene {
 
     pub fn load_object_from_file_transformed(
         &mut self,
-        path: PathBuf,
+        path: AutoPath,
         translation: Vec3,
         rotation: Vec3,
         scale: f32,
@@ -191,17 +165,17 @@ impl Scene {
 
     // LOAD SCENES
 
-    pub fn load_scene_from_path(path: PathBuf, detached: bool) -> anyhow::Result<Scene> {
-        let mut scene = Self::_load_scene_from_path(path.clone());
+    pub fn load_scene_from_path(auto_path: AutoPath, detached: bool) -> anyhow::Result<Scene> {
+        let mut scene = Self::_load_scene_from_path(auto_path.clone());
         match scene {
             Ok(mut scene) => {
-                let is_rscn = path
-                    .extension()
-                    .map(|s| s.to_string_lossy() == "rscn")
-                    .unwrap_or(false);
+                let is_rscn = match auto_path.extension() {
+                    Some(ext) => ext == "rscn",
+                    None => false,
+                };
 
                 if !is_rscn && !detached {
-                    scene.output_path = Some(path);
+                    scene.output_path = Some(auto_path.path_buf());
                 } else {
                     scene.output_path = None;
                 }
@@ -217,21 +191,6 @@ impl Scene {
         }
     }
 
-    pub fn load_scene_from_string(json_string: String) -> anyhow::Result<Scene> {
-        let scene = parse_scene(PathBuf::new(), Some(json_string));
-        match scene {
-            Ok(loaded_data) => {
-                let mut scene = loaded_data.scene;
-                let paths = loaded_data.paths;
-                let rotation = loaded_data.rotations;
-                let translation = loaded_data.translations;
-                let scale = loaded_data.scales;
-                Ok(scene)
-            }
-            Err(error) => Err(error),
-        }
-    }
-
     pub fn save(&mut self, export_misc: bool) -> anyhow::Result<()> {
         if let Some(output_path) = self.output_path.clone()
         // && output_path.exists() TODO: why would the path already need to exist?
@@ -239,9 +198,7 @@ impl Scene {
             self.export_scene(output_path, export_misc)?;
             Ok(())
         } else {
-            Err(anyhow::Error::msg(
-                "No valid output path set for this scene",
-            ))
+            Err(Error::msg("No valid output path set for this scene"))
         }
     }
 
@@ -348,13 +305,13 @@ impl Scene {
                             0,
                             0,
                             0,
-                            render_param.ground_height, //Leave or change to scene defaults
+                            render_param.ground_height, // Leave or change to scene defaults
                             render_param.ground_enabled,
                             render_param.checkerboard_enabled,
-                            render_param.sky_color,
+                            render_param.sky_color.into(),
                             render_param.max_depth,
-                            render_param.checkerboard_colors.0,
-                            render_param.checkerboard_colors.1,
+                            render_param.checkerboard_colors.0.into(),
+                            render_param.checkerboard_colors.1.into(),
                         ))
                         .spheres_create(vec![])
                         .uvs_create(vec![])
@@ -369,7 +326,7 @@ impl Scene {
             },
             first_render: true,
             last_frame: None,
-            textures: HashMap::new(),
+            texture_cache: TextureCache::new(),
             output_path: None,
         }
     }
@@ -498,19 +455,19 @@ impl Scene {
         info!("{self}: Renamed to {name} from {old_name}");
     }
 
-    pub fn get_background_color(&self) -> [f32; 3] {
+    pub fn get_background_color(&self) -> Color {
         //! ## Returns
         //! Background color rgb as array of f32
         self.render_params.sky_color
     }
 
-    pub fn set_background_color(&mut self, color: [f32; 3]) {
+    pub fn set_background_color(&mut self, color: Color) {
         //! ## Parameters
         //! New background color as array of f32
         self.render_params.sky_color = color;
         info!(
             "Scene {self}: set background color to [{}, {}, {}]",
-            color[0], color[1], color[2]
+            color.r, color.g, color.b
         );
     }
     pub fn get_ground_height(&self) -> f32 {
@@ -551,13 +508,13 @@ impl Scene {
         self.render_params.checkerboard_enabled = enabled;
         info!("Scene {self}: set checkerboard enabled  to {}", enabled);
     }
-    pub fn get_checkerboard_colors(&self) -> ([f32; 3], [f32; 3]) {
+    pub fn get_checkerboard_colors(&self) -> (Color, Color) {
         //! ## Returns
         //! checkerboard colors as pair of [f32;3]
         self.render_params.checkerboard_colors
     }
 
-    pub fn set_checkerboared_colors(&mut self, colors: ([f32; 3], [f32; 3])) {
+    pub fn set_checkerboared_colors(&mut self, colors: (Color, Color)) {
         //! ## Parameters
         //! 'colors': pair of [f32;3] represesnting rgb colors
         self.render_params.checkerboard_colors = colors;

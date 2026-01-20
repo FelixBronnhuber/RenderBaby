@@ -33,7 +33,7 @@ impl ComputePipeline {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
             bind_group_layouts: &[bind_group_layout],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         let path_new: &str = &(env!("CARGO_MANIFEST_DIR").to_owned() + "/../" + path);

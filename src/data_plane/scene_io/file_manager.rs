@@ -1,11 +1,12 @@
 use anyhow::Result;
 use std::fs;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use zip::write::FileOptions;
 use log::{info, debug};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::included_files::AutoPath;
 
 pub struct FileManager;
 
@@ -13,10 +14,9 @@ static IMPORT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 impl FileManager {
     /// Unzips a .rscn file to a temporary directory and returns the path to the root of the extracted scene.
-    pub fn unzip_scene(rscn_path: &Path) -> Result<PathBuf> {
-        let file = fs::File::open(rscn_path)?;
-
-        let mut archive = zip::ZipArchive::new(file)?;
+    pub fn unzip_scene(rscn_path: AutoPath) -> Result<AutoPath> {
+        let reader = rscn_path.reader()?;
+        let mut archive = zip::ZipArchive::new(reader)?;
 
         // Create a unique temp directory
 
@@ -68,31 +68,30 @@ impl FileManager {
             }
         }
 
-        Ok(temp_dir)
+        AutoPath::try_from(temp_dir)
     }
 
     /// Recursively finds the first scene.json in the directory.
     /// If not found, returns the first .json file found.
-    pub fn find_scene_json(root: &Path) -> Result<PathBuf> {
-        let mut queue = vec![root.to_path_buf()];
-        let mut first_json_fallback: Option<PathBuf> = None;
+    pub fn find_scene_json(root: AutoPath) -> Result<AutoPath> {
+        let mut queue = vec![root.clone()];
+        let mut first_json_fallback: Option<AutoPath> = None;
 
         while let Some(dir) = queue.pop() {
-            if dir.is_dir() {
-                for entry in fs::read_dir(dir)? {
-                    let entry = entry?;
-                    let path = entry.path();
-                    if path.is_dir() {
-                        queue.push(path);
-                    } else if let Some(name) = path.file_name() {
-                        if name == "scene.json" {
-                            debug!("FileManager: Found scene.json at {:?}", path);
-                            return Ok(path);
-                        } else if path.extension().map(|e| e == "json").unwrap_or(false)
-                            && first_json_fallback.is_none()
-                        {
-                            first_json_fallback = Some(path);
-                        }
+            if dir.is_file() {
+                continue;
+            }
+            for path in dir.iter_dir()? {
+                if path.is_dir() {
+                    queue.push(path);
+                } else if let Some(name) = path.file_name() {
+                    if name == "scene.json" {
+                        debug!("FileManager: Found scene.json at {:?}", path);
+                        return Ok(path);
+                    } else if path.extension().map(|e| e == "json").unwrap_or(false)
+                        && first_json_fallback.is_none()
+                    {
+                        first_json_fallback = Some(path);
                     }
                 }
             }

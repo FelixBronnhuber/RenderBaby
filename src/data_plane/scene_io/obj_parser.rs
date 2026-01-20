@@ -1,47 +1,10 @@
 use std::ffi::OsStr;
-use std::fs;
-use std::path::PathBuf;
+use log::error;
 use scene_objects::material::Material;
 use scene_objects::mesh::Mesh;
-use crate::data_plane::scene_io::texture_loader::TextureCache;
 use crate::data_plane::scene_io::mtl_parser::load_mtl;
-use std::path::Path;
-
-#[derive(Debug)]
-pub enum OBJParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-
-impl std::fmt::Display for OBJParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OBJParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            OBJParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            OBJParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            OBJParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for OBJParseError {}
-impl From<std::io::Error> for OBJParseError {
-    fn from(e: std::io::Error) -> Self {
-        OBJParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for OBJParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        OBJParseError::ParseInteger(e)
-    }
-}
-
-impl From<std::num::ParseFloatError> for OBJParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        OBJParseError::ParseFloat(e)
-    }
-}
+use crate::data_plane::scene_io::texture_loader::TextureCache;
+use crate::included_files::AutoPath;
 
 #[derive(Debug)]
 pub struct FaceLine {
@@ -62,13 +25,12 @@ pub struct OBJParser {
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(path: PathBuf) -> Result<OBJParser, OBJParseError> {
-        let path_clone = path.clone();
-        let data = fs::read_to_string(path_clone.clone())?;
-        let mut directory_path = path_clone;
-        directory_path.pop();
+    pub fn parse(path: AutoPath) -> anyhow::Result<OBJParser> {
+        let data = path.contents()?;
+        let directory_path = path.get_popped().unwrap();
+
         if data.is_empty() {
-            return Err(OBJParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("OBJ file is empty!"));
         }
 
         let mut v_numarr = Vec::with_capacity(30);
@@ -136,18 +98,17 @@ impl OBJParser {
                 Some(("usemtl", usemtl)) => {
                     currentmaterial = usemtl.trim().to_string();
                 }
-                Some(("mtllib", mtllib)) => mtl_path.push(
-                    directory_path
-                        .join(mtllib.trim())
-                        .to_string_lossy()
-                        .to_string(),
-                ),
+                Some(("mtllib", mtllib)) => match directory_path.get_joined(mtllib.trim()) {
+                    Some(path) => mtl_path.push(path.path_buf().to_string_lossy().to_string()),
+                    None => error!("Could not find mtllib file: {}", mtllib.trim()),
+                },
 
                 _ => {}
             }
         }
 
         let filename = path
+            .path()
             .file_name()
             .unwrap_or(OsStr::new(" "))
             .to_string_lossy()
@@ -177,33 +138,36 @@ impl OBJParser {
 
 pub struct ObjLoadResult {
     pub mesh: Mesh,
-    pub materials: Vec<Material>,
 }
 
-pub fn load_obj(path: PathBuf, texture_cache: &mut TextureCache) -> anyhow::Result<ObjLoadResult> {
-    let objs = OBJParser::parse(path.clone())?;
+pub fn load_obj(
+    auto_path: AutoPath,
+    texture_cache: &mut TextureCache,
+) -> anyhow::Result<ObjLoadResult> {
+    let objs = OBJParser::parse(auto_path.clone())?;
 
     let mut materials: Vec<Material> = Vec::new();
     let mut material_name_list: Vec<String> = Vec::new();
-    let parent_dir = Path::new(&path)
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or(Path::new(".").to_path_buf());
+    let parent_dir = auto_path.get_popped().unwrap();
 
     if let Some(mtl_paths) = objs.material_path.clone() {
         for rel in mtl_paths {
-            let mtl_path = parent_dir.join(&rel);
+            let mtl_path = AutoPath::get_absolute_or_join(&rel, &parent_dir)?;
             match load_mtl(mtl_path.clone()) {
-                Ok(mut mats) => {
-                    for m in &mut mats {
-                        if let Some(tex) = &m.texture_path {
-                            let _ = texture_cache.load(tex);
-                        }
-                    }
+                Ok(mats) => {
                     material_name_list.extend(mats.iter().map(|m| m.name.clone()));
                     materials.extend(mats.into_iter());
                 }
                 Err(_e) => {}
+            }
+        }
+    }
+
+    for m in &materials {
+        #[allow(clippy::collapsible_if)]
+        if let Some(tex_path_str) = &m.texture_path {
+            if let Ok(ap) = AutoPath::try_from(tex_path_str.clone()) {
+                let _ = texture_cache.load(ap);
             }
         }
     }
@@ -281,8 +245,8 @@ pub fn load_obj(path: PathBuf, texture_cache: &mut TextureCache) -> anyhow::Resu
             Some(material_index)
         },
         Some(objs.name.clone()),
-        Some(path.clone()),
+        Some(auto_path.path_buf()),
     )?;
 
-    Ok(ObjLoadResult { mesh, materials })
+    Ok(ObjLoadResult { mesh })
 }
