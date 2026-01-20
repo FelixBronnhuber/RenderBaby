@@ -194,10 +194,10 @@ impl Mesh {
 
 #[allow(unused)]
 impl GeometricObject for Mesh {
+    /// scales the geometry by the given factor
+    /// ## Parameter
+    /// 'factor': factor for scale
     fn scale(&mut self, factor: f32) {
-        /// scales the geometry by the given factor
-        /// ## Parameter
-        /// 'factor': factor for scale
         self.update_centroid();
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] =
@@ -211,11 +211,10 @@ impl GeometricObject for Mesh {
         self.scale *= factor;
         self.update_centroid();
     }
-
+    /// translates the points by the direction given
+    /// ## Parameter
+    /// 'vec': Vector by which the geometries are translated
     fn translate(&mut self, vec: glam::Vec3) {
-        /// translates the points by the direction given
-        /// ## Parameter
-        /// 'vec': Vector by which the geometries are translated
         for i in 0..self.vertices.len() / 3 {
             self.vertices[i * 3] += vec.x;
             self.vertices[i * 3 + 1] += vec.y;
@@ -224,11 +223,11 @@ impl GeometricObject for Mesh {
         self.translation += vec;
         self.update_centroid();
     }
+    /// Rotates the points around the centroid
+    /// ## Parameter
+    /// 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
 
     fn rotate(&mut self, vec: glam::Vec3) {
-        /// Rotates the points around the centroid
-        /// ## Parameter
-        /// 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
         debug!("Mesh {}: rotate relative {:?}", self.name, vec);
 
         let yaw = vec.z.to_radians();

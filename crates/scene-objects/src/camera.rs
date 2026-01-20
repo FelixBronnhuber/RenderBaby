@@ -44,7 +44,7 @@ impl Camera {
         self.up = up;
     }
     /// ## Returns
-    /// Camera field of view, calculated drom width and distance
+    /// Camera field of view, calculated from width and distance
     pub fn get_fov(&self) -> f32 {
         2.0 * (self.pane_width / (2.0 * self.pane_distance)).atan()
     }

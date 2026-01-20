@@ -10,7 +10,7 @@ use std::path::PathBuf;
 /// Simple Sphere defined by a 3d center and a radius
 pub struct Sphere {
     center: Vec3,
-    radius: f32, // maybe use radius only internally?
+    radius: f32,
     material: Material,
     color: [f32; 3],
     name: String,
@@ -102,8 +102,8 @@ impl Sphere {
 }
 
 impl SceneObject for Sphere {
-    /// ## Returns
-    /// Path of the reference file. Does a sphere need one?
+    /// ## Returns?
+    /// Path of the reference file.
     fn get_path(&self) -> Option<PathBuf> {
         self.path.clone()
     }
@@ -138,7 +138,7 @@ impl GeometricObject for Sphere {
         self.center += vec;
         self.translation += vec;
     }
-    /// Rotates the sphere? Rly? But it could be usefull if sphere is extended to have a texture
+    /// Rotates the sphere. Currently not needed,  it could be usefull if sphere is extended to have a texture
     fn rotate(&mut self, vec: Vec3) {
         self.rotation += vec;
     }
