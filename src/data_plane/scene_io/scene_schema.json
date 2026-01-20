@@ -1,0 +1,296 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "required": [
+        "scene_name",
+        "objects",
+        "background_color",
+        "camera",
+        "lights"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "scene_name": {
+            "type": "string",
+            "minLength": 0
+        },
+        "objects": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+                "$ref": "#/$defs/object"
+            }
+        },
+        "background_color": {
+            "$ref": "#/$defs/color"
+        },
+        "camera": {
+            "$ref": "#/$defs/camera"
+        },
+        "lights": {
+            "type": "array",
+            "minItems": 0,
+            "items": {
+                "$ref": "#/$defs/light"
+            }
+        },
+        "misc": {
+            "$ref": "#/$defs/misc"
+        }
+    },
+    "$defs": {
+        "materialRef": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "required": ["preset"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "preset": {
+                            "type": "string"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "required": ["path"],
+                    "additionalProperties": false,
+                    "properties": {
+                        "path": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        }
+                    }
+                }
+            ]
+        },
+        "vec3": {
+            "type": "object",
+            "required": [
+                "x",
+                "y",
+                "z"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
+                },
+                "z": {
+                    "type": "number"
+                }
+            }
+        },
+        "color": {
+            "type": "object",
+            "required": [
+                "r",
+                "g",
+                "b"
+            ],
+            "additionalProperties": {
+                "a": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                }
+            },
+            "properties": {
+                "r": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "g": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "b": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                }
+            }
+        },
+        "object": {
+            "type": "object",
+            "required": [
+                "name",
+                "path",
+                "scale",
+                "rotation",
+                "translation"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "scale": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "rotation": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "translation": {
+                    "$ref": "#/$defs/vec3"
+                }
+            }
+        },
+        "camera": {
+            "type": "object",
+            "required": [
+                "position",
+                "look_at",
+                "up",
+                "pane_distance",
+                "pane_width",
+                "resolution"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "position": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "look_at": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "up": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "pane_distance": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "pane_width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "resolution": {
+                    "type": "object",
+                    "required": [
+                        "x",
+                        "y"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "x": {
+                            "type": "integer",
+                            "minimum": 1
+                        },
+                        "y": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                }
+            }
+        },
+        "light": {
+            "type": "object",
+            "required": [
+                "name",
+                "type",
+                "luminosity",
+                "position",
+                "color"
+            ],
+            "additionalProperties": {
+                "rotation": {
+                    "$ref": "#/$defs/vec3"
+                }
+            },
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "ambient",
+                        "point",
+                        "directional"
+                    ]
+                },
+                "luminosity": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "position": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "color": {
+                    "$ref": "#/$defs/color"
+                }
+            }
+        },
+        "sphere": {
+            "type": "object",
+            "required": [
+                "center",
+                "radius",
+                "color",
+                "name",
+                "scale",
+                "translation",
+                "rotation"
+            ],
+            "properties": {
+                "center": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "radius": {
+                    "type": "number"
+                },
+                "material": {
+                    "$ref": "#/$defs/materialRef",
+                    "default": { "preset": "default" }
+                },
+                "color": {
+                    "$ref": "#/$defs/color"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scale": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "translation": {
+                    "$ref": "#/$defs/vec3"
+                },
+                "rotation": {
+                    "$ref": "#/$defs/vec3"
+                }
+            },
+            "additionalProperties": false
+        },
+        "misc": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+                "spheres": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/$defs/sphere"
+                    }
+                },
+                "ray_samples": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                },
+                "hash_color": {
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

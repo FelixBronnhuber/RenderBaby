@@ -1,42 +1,10 @@
 use std::ffi::OsStr;
-use std::fs;
-use std::path::Path;
-
-#[derive(Debug)]
-pub enum OBJParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-
-impl std::fmt::Display for OBJParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OBJParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            OBJParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            OBJParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            OBJParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for OBJParseError {}
-impl From<std::io::Error> for OBJParseError {
-    fn from(e: std::io::Error) -> Self {
-        OBJParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for OBJParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        OBJParseError::ParseInteger(e)
-    }
-}
-
-impl From<std::num::ParseFloatError> for OBJParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        OBJParseError::ParseFloat(e)
-    }
-}
+use log::error;
+use scene_objects::material::Material;
+use scene_objects::mesh::Mesh;
+use crate::data_plane::scene_io::mtl_parser::load_mtl;
+use crate::data_plane::scene_io::texture_loader::TextureCache;
+use crate::included_files::AutoPath;
 
 #[derive(Debug)]
 pub struct FaceLine {
@@ -53,17 +21,17 @@ pub struct OBJParser {
     pub faces: Vec<FaceLine>,                 //f
     pub normals: Option<Vec<f32>>,            //vn
     pub texture_coordinate: Option<Vec<f32>>, //vt
-    pub material_path: Option<Vec<String>>,
+    pub material_path: Option<Vec<String>>,   // consider using Vec<PathBuf> instead!
 }
 impl OBJParser {
     #[allow(dead_code)]
-    pub fn parse(paths: String) -> Result<OBJParser, OBJParseError> {
-        let mut path = Path::new(paths.as_str());
-        let data = fs::read_to_string(path)?;
+    pub fn parse(path: AutoPath) -> anyhow::Result<OBJParser> {
+        let data = path.contents()?;
+        let directory_path = path.get_popped().unwrap();
+
         if data.is_empty() {
-            return Err(OBJParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("OBJ file is empty!"));
         }
-        let lineiter = data.lines();
 
         let mut v_numarr = Vec::with_capacity(30);
 
@@ -75,9 +43,8 @@ impl OBJParser {
         let mut mtl_path: Vec<String> = Vec::with_capacity(2);
 
         let mut currentmaterial = String::new();
-        path = path.parent().unwrap_or_else(|| Path::new(""));
 
-        lineiter.for_each(|l| {
+        for l in data.lines() {
             match l.split_once(" ") {
                 Some(("vn", vn)) => {
                     let vec = vn.split_whitespace().collect::<Vec<&str>>();
@@ -131,14 +98,17 @@ impl OBJParser {
                 Some(("usemtl", usemtl)) => {
                     currentmaterial = usemtl.trim().to_string();
                 }
-                Some(("mtllib", mtllib)) => {
-                    mtl_path.push(path.join(mtllib.trim()).to_string_lossy().to_string())
-                }
+                Some(("mtllib", mtllib)) => match directory_path.get_joined(mtllib.trim()) {
+                    Some(path) => mtl_path.push(path.path_buf().to_string_lossy().to_string()),
+                    None => error!("Could not find mtllib file: {}", mtllib.trim()),
+                },
 
                 _ => {}
             }
-        });
+        }
+
         let filename = path
+            .path()
             .file_name()
             .unwrap_or(OsStr::new(" "))
             .to_string_lossy()
@@ -164,4 +134,119 @@ impl OBJParser {
             },
         })
     }
+}
+
+pub struct ObjLoadResult {
+    pub mesh: Mesh,
+}
+
+pub fn load_obj(
+    auto_path: AutoPath,
+    texture_cache: &mut TextureCache,
+) -> anyhow::Result<ObjLoadResult> {
+    let objs = OBJParser::parse(auto_path.clone())?;
+
+    let mut materials: Vec<Material> = Vec::new();
+    let mut material_name_list: Vec<String> = Vec::new();
+    let parent_dir = auto_path.get_popped().unwrap();
+
+    if let Some(mtl_paths) = objs.material_path.clone() {
+        for rel in mtl_paths {
+            let mtl_path = AutoPath::get_absolute_or_join(&rel, &parent_dir)?;
+            match load_mtl(mtl_path.clone()) {
+                Ok(mats) => {
+                    material_name_list.extend(mats.iter().map(|m| m.name.clone()));
+                    materials.extend(mats.into_iter());
+                }
+                Err(_e) => {}
+            }
+        }
+    }
+
+    for m in &materials {
+        #[allow(clippy::collapsible_if)]
+        if let Some(tex_path_str) = &m.texture_path {
+            if let Ok(ap) = AutoPath::try_from(tex_path_str.clone()) {
+                let _ = texture_cache.load(ap);
+            }
+        }
+    }
+
+    let mut new_vertices = Vec::with_capacity(objs.faces.len() * 9);
+    let mut new_tris = Vec::with_capacity(objs.faces.len() * 3);
+    let mut new_uvs = Vec::with_capacity(objs.faces.len() * 6);
+    let mut material_index = Vec::with_capacity(objs.faces.len());
+
+    let mut vertex_count: u32 = 0;
+    for face in objs.faces {
+        let mat_idx = material_name_list
+            .iter()
+            .position(|n| n == &face.material_name)
+            .unwrap_or(0);
+
+        let leng = face.v.len();
+        for i in 1..(leng - 1) {
+            let v_indices = [0usize, i, i + 1];
+
+            for &idx in &v_indices {
+                let v_idx = face.v[idx] as usize - 1;
+                if v_idx * 3 + 2 < objs.vertices.len() {
+                    new_vertices.push(objs.vertices[v_idx * 3]);
+                    new_vertices.push(objs.vertices[v_idx * 3 + 1]);
+                    new_vertices.push(objs.vertices[v_idx * 3 + 2]);
+                } else {
+                    new_vertices.extend_from_slice(&[0.0, 0.0, 0.0]);
+                }
+
+                if !face.vt.is_empty() && idx < face.vt.len() {
+                    let vt_val = face.vt[idx] as usize;
+                    if vt_val > 0 {
+                        let vt_idx = vt_val - 1;
+                        if let Some(tex_coords) = &objs.texture_coordinate {
+                            if vt_idx * 2 + 1 < tex_coords.len() {
+                                new_uvs.push(tex_coords[vt_idx * 2]);
+                                new_uvs.push(tex_coords[vt_idx * 2 + 1]);
+                            } else {
+                                new_uvs.extend_from_slice(&[0.0, 0.0]);
+                            }
+                        } else {
+                            new_uvs.extend_from_slice(&[0.0, 0.0]);
+                        }
+                    } else {
+                        new_uvs.extend_from_slice(&[0.0, 0.0]);
+                    }
+                } else {
+                    new_uvs.extend_from_slice(&[0.0, 0.0]);
+                }
+
+                new_tris.push(vertex_count);
+                vertex_count += 1;
+            }
+            material_index.push(mat_idx);
+        }
+    }
+
+    let mesh = Mesh::new(
+        new_vertices,
+        new_tris,
+        if new_uvs.is_empty() {
+            None
+        } else {
+            Some(new_uvs)
+        },
+        if materials.is_empty() {
+            None
+        } else {
+            Some(materials.clone())
+        },
+        if material_index.is_empty() {
+            None
+        } else {
+            Some(material_index)
+        },
+        Some(objs.name.clone()),
+        Some(auto_path.path_buf()),
+    )?;
+
+    Ok(ObjLoadResult { mesh })
 }

@@ -1,22 +1,24 @@
 mod compute_plane;
 mod control_plane;
 mod data_plane;
+mod included_files;
 
-use std::env;
-use crate::control_plane::cli::CliApp;
-use crate::control_plane::gui::app::App;
+use control_plane::modes;
 
+/// Runs the application.
+///
+/// Set the log-level manually with RUST_LOG:
+/// RUST_LOG=debug|info|warn|error
 fn main() {
-    /* for testing without setting env vars yourself: */
-    if env::var("RUST_LOG").is_err() {
-        unsafe { env::set_var("RUST_LOG", "info") }
+    // default is info
+    if std::env::var("RUST_LOG").is_err() {
+        unsafe {
+            std::env::set_var("RUST_LOG", "info");
+        }
     }
+
     log_buffer::get_builder().init();
 
-    if let Some(cli) = CliApp::parse() {
-        cli.run();
-    } else {
-        let app = App::new();
-        app.show();
-    }
+    let app = modes::get_app();
+    app.show();
 }

@@ -9,6 +9,10 @@ on:
     branches:
       - master
       - 'sprint-[0-9]*'
+    paths-ignore:
+      - '**/*.md'
+      - 'ci/**/*.sh'
+      - '.gitignore'
 
 jobs:
   build-test-lint:
@@ -39,14 +43,16 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy
-        run: cargo clippy -- -D warnings
+      - name: Build
+        run: cargo build
 
       - name: Run Tests
-        run: cargo test --all --verbose
+        env:
+          RENDERBABY_HEADLESS: true
+        run: cargo test --workspace --verbose
 
-      - name: Build
-        run: cargo build --release
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Build Docs
         run: cargo doc --no-deps --document-private-items

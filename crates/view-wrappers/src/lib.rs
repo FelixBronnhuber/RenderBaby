@@ -1,9 +1,11 @@
+//! Simple wrappers around views that can be opened
 pub mod egui_view;
 
-pub type EventResult = anyhow::Result<Box<dyn std::any::Any + Send>>;
-pub type EventHandler<E> = dyn FnMut(E) -> EventResult + Send + 'static;
+/// Trait for wrappers around views that can be opened
+pub trait ViewWrapper: Sized + 'static {
+    /// Creates a new instance of the [`ViewWrapper`]. Does not take any arguments.
+    fn new() -> Self;
 
-pub trait ViewWrapper<E, P>: Sized + 'static {
-    fn new(pipeline: P, handler: Box<EventHandler<E>>) -> Self;
+    /// Opens the view.
     fn open(self);
 }

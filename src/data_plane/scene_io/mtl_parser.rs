@@ -1,37 +1,7 @@
-use std::fs;
-#[derive(Debug)]
-pub enum MTLParseError {
-    Path(std::io::Error),
-    FileRead(String),
-    ParseInteger(std::num::ParseIntError),
-    ParseFloat(std::num::ParseFloatError),
-}
-impl std::fmt::Display for MTLParseError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            MTLParseError::Path(error) => write!(f, "invalid file path: {}", error),
-            MTLParseError::FileRead(e) => write!(f, "file read error: {}", e),
-            MTLParseError::ParseInteger(e) => write!(f, "invalid integer error: {}", e),
-            MTLParseError::ParseFloat(e) => write!(f, "invalid float error: {}", e),
-        }
-    }
-}
-impl std::error::Error for MTLParseError {}
-impl From<std::io::Error> for MTLParseError {
-    fn from(e: std::io::Error) -> Self {
-        MTLParseError::Path(e)
-    }
-}
-impl From<std::num::ParseIntError> for MTLParseError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        MTLParseError::ParseInteger(e)
-    }
-}
-impl From<std::num::ParseFloatError> for MTLParseError {
-    fn from(e: std::num::ParseFloatError) -> Self {
-        MTLParseError::ParseFloat(e)
-    }
-}
+use anyhow::anyhow;
+use scene_objects::material::Material;
+use crate::included_files::AutoPath;
+
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct MTLParser {
@@ -39,24 +9,27 @@ pub struct MTLParser {
     pub ka: Vec<f32>,
     pub kd: Vec<f32>,
     pub ks: Vec<f32>,
-    pub d: f32, //transparency
+    pub ke: Vec<f32>,
+    pub d: f32,
     pub ns: f32,
     pub illum: u32,
     pub map_kd: Option<String>,
     pub bump: Option<String>,
 }
+
 impl MTLParser {
-    pub fn parse(path: &str) -> Result<Vec<MTLParser>, MTLParseError> {
-        let data = fs::read_to_string(path)?;
+    pub fn parse(path: AutoPath) -> anyhow::Result<Vec<MTLParser>> {
+        let data = path.contents()?;
         if data.is_empty() {
-            return Err(MTLParseError::FileRead("empty file".to_string()));
+            return Err(anyhow::Error::msg("MTL file is empty!"));
         }
 
-        let mut returnmats = Vec::new();
+        let mut return_mats = Vec::new();
         let mut name: String = String::with_capacity(2);
         let mut ka: Vec<f32> = Vec::with_capacity(10);
         let mut kd: Vec<f32> = Vec::with_capacity(10);
         let mut ks: Vec<f32> = Vec::with_capacity(10);
+        let mut ke: Vec<f32> = Vec::with_capacity(10);
         let mut d: f32 = 0.0;
         let mut ns: f32 = 0.0;
         let mut illum: u32 = 0;
@@ -69,12 +42,13 @@ impl MTLParser {
                 let line = l.trim();
                 if line.starts_with("newmtl") {
                     if !name.is_empty() {
-                        returnmats.push({
+                        return_mats.push({
                             MTLParser {
                                 name: name.clone(),
                                 ka: ka.clone(),
                                 kd: kd.clone(),
                                 ks: ks.clone(),
+                                ke: ke.clone(),
                                 d,
                                 ns,
                                 illum,
@@ -87,6 +61,7 @@ impl MTLParser {
                     ka.clear();
                     kd.clear();
                     ks.clear();
+                    ke.clear();
                     d = 0.0;
                     illum = 0;
                     ns = 0.0;
@@ -113,6 +88,13 @@ impl MTLParser {
                     let temp = temp.split_whitespace().collect::<Vec<&str>>();
                     for i in temp {
                         ks.push(i.parse::<f32>()?);
+                    }
+                }
+                if line.starts_with("Ke") {
+                    let temp = line.replace("Ke", "").trim().to_string();
+                    let temp = temp.split_whitespace().collect::<Vec<&str>>();
+                    for i in temp {
+                        ke.push(i.parse::<f32>()?);
                     }
                 }
                 if line.starts_with("d") {
@@ -152,12 +134,13 @@ impl MTLParser {
                 }
             }
         }
-        returnmats.push({
+        return_mats.push({
             MTLParser {
                 name: name.clone(),
                 ka: ka.clone(),
                 kd: kd.clone(),
                 ks: ks.clone(),
+                ke: ke.clone(),
                 d,
                 ns,
                 illum,
@@ -165,6 +148,51 @@ impl MTLParser {
                 bump: bump.clone(),
             }
         });
-        Ok(returnmats)
+        Ok(return_mats)
+    }
+
+    pub fn to_material(&self, auto_path: AutoPath, auto_parent: Option<AutoPath>) -> Material {
+        let texture_path = self.map_kd.as_ref().map(|name| match &auto_parent {
+            Some(p) => p
+                .get_joined(name)
+                .map(|joined| joined.to_string())
+                .unwrap_or_else(|| name.clone()),
+            None => name.clone(),
+        });
+
+        Material::new(
+            self.name.clone(),
+            self.ka.iter().map(|a| *a as f64).collect(),
+            self.kd.iter().map(|a| *a as f64).collect(),
+            self.ks.iter().map(|a| *a as f64).collect(),
+            self.ke.iter().map(|a| *a as f64).collect(),
+            self.ns as f64,
+            self.d as f64,
+            texture_path,
+            Some(auto_path.to_string()),
+        )
+    }
+}
+
+pub fn load_mtl(auto_path: AutoPath) -> anyhow::Result<Vec<Material>> {
+    let materials = MTLParser::parse(auto_path.clone())?;
+    let parent = auto_path.get_popped();
+    let result = materials
+        .into_iter()
+        .map(|mat| mat.to_material(auto_path.clone(), parent.clone()))
+        .collect();
+    Ok(result)
+}
+
+pub fn load_mtl_with_name(path: AutoPath, name: String) -> anyhow::Result<Material> {
+    let materials = MTLParser::parse(path.clone())?;
+    let parent = path.get_popped();
+    match materials.into_iter().find(|mat| mat.name == name) {
+        Some(mat) => Ok(mat.to_material(path.clone(), parent.clone())),
+        None => Err(anyhow!(
+            "Material with name {} not found in file {}",
+            name,
+            path
+        )),
     }
 }
