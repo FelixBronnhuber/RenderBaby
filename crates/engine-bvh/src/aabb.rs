@@ -1,15 +1,16 @@
 //! Axis-Aligned Bounding Box (AABB) utilities.
 use glam::Vec3;
 
+/// An axis-aligned bounding box defined by minimum and maximum corners.
+///
+/// This structure is commonly used for spatial partitioning,
+/// collision detection, and acceleration structures such as BVHs.
 #[derive(Clone, Copy, Debug)]
 pub struct AABB {
     pub min: Vec3,
     pub max: Vec3,
 }
-/// An axis-aligned bounding box defined by minimum and maximum corners.
-///
-/// This structure is commonly used for spatial partitioning,
-/// collision detection, and acceleration structures such as BVHs.
+
 impl AABB {
     /// Creates an empty bounding box.
     ///
