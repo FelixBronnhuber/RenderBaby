@@ -242,12 +242,10 @@ impl Viewable for ProxyCamera {
     fn ui(&mut self, ui: &mut Ui, scene: &mut Self::RealSceneObject) -> bool {
         let mut changed = false;
 
-        // TODO: Get the fov limits from somewhere central as consts.
         if ui
             .add(egui::Slider::new(&mut self.pane_width, 0.1..=100.0).text("Pane Width"))
             .changed()
         {
-            // TODO MICHAEL:
             scene
                 .lock()
                 .unwrap()
@@ -260,7 +258,6 @@ impl Viewable for ProxyCamera {
             .add(egui::Slider::new(&mut self.pane_distance, 0.1..=100.0).text("Pane Distance"))
             .changed()
         {
-            // TODO MICHAEL:
             scene
                 .lock()
                 .unwrap()
@@ -272,12 +269,9 @@ impl Viewable for ProxyCamera {
         ui.horizontal(|ui| {
             ui.label("Width:");
             if ui
-                .add(
-                    egui::DragValue::new(&mut self.resolution[0]), //.range(ImageResolution::MIN[0]..=ImageResolution::MAX[0]),
-                )
+                .add(egui::DragValue::new(&mut self.resolution[0]).range(1..=Self::MAX_WIDTH))
                 .changed()
             {
-                // TODO MICHAEL:
                 scene
                     .lock()
                     .unwrap()
@@ -293,12 +287,9 @@ impl Viewable for ProxyCamera {
         ui.horizontal(|ui| {
             ui.label("Height:");
             if ui
-                .add(
-                    egui::DragValue::new(&mut self.resolution[1]), //.range(ImageResolution::MIN[1]..=ImageResolution::MAX[1]),
-                )
+                .add(egui::DragValue::new(&mut self.resolution[1]).range(1..=Self::MAX_HEIGHT))
                 .changed()
             {
-                // TODO MICHAEL:
                 scene
                     .lock()
                     .unwrap()
@@ -314,7 +305,6 @@ impl Viewable for ProxyCamera {
 
         ui.label("Camera Origin:");
         if vec3_ui(ui, &mut self.position) {
-            // TODO MICHAEL:
             scene
                 .lock()
                 .unwrap()
@@ -325,7 +315,6 @@ impl Viewable for ProxyCamera {
 
         ui.label("Camera Look At Point:");
         if vec3_ui(ui, &mut self.look_at) {
-            // TODO MICHAEL:
             scene
                 .lock()
                 .unwrap()
@@ -440,7 +429,11 @@ impl Viewable for ProxySphere {
         let mut changed = false;
         ui.label("Radius:");
         if ui
-            .add(egui::DragValue::new(&mut self.radius).speed(0.1))
+            .add(
+                egui::DragValue::new(&mut self.radius)
+                    .speed(0.1)
+                    .range(0.1..=1_000.0),
+            )
             .changed()
         {
             sphere.set_radius(self.radius);
