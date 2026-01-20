@@ -14,7 +14,8 @@
 //! ## Usage Example
 //!
 //! ```rust
-//!
+//! use your_crate::{triangle::GPUTriangle, aabb::AABB, bvh::BVH};
+//! use glam::Vec3;
 //! // Create a triangle
 //! let tri = GPUTriangle {
 //!     v0: Vec3::new(0.0, 0.0, 0.0),
