@@ -29,9 +29,8 @@ enum Mode {
 struct ModeArg {
     #[command(subcommand)]
     pub mode: Option<Mode>,
-    #[arg(long = "no-debug", help = "Disable debug mode.")]
-    // TODO: change to "debug" default to false in release mode!!!
-    pub no_debug: bool,
+    #[arg(long = "debug", help = "Enable debug mode.")]
+    pub debug: bool,
 }
 
 pub fn get_app() -> Box<dyn App> {
@@ -46,7 +45,7 @@ pub fn get_app() -> Box<dyn App> {
 
     // Set debug mode statically
     DEBUG_MODE
-        .set(!mode_arg.no_debug)
+        .set(mode_arg.debug)
         .expect("Failed to set debug mode.");
     info!(
         "Debug mode is {}",
