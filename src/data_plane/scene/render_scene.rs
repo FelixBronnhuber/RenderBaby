@@ -458,16 +458,14 @@ impl Scene {
         self.name = name.clone();
         info!("{self}: Renamed to {name} from {old_name}");
     }
-
+    /// ## Returns
+    /// Background color rgb as array of f32
     pub fn get_background_color(&self) -> Color {
-        //! ## Returns
-        //! Background color rgb as array of f32
         self.render_params.sky_color
     }
-
+    /// ## Parameters
+    /// New background color as array of f32
     pub fn set_background_color(&mut self, color: Color) {
-        //! ## Parameters
-        //! New background color as array of f32
         self.render_params.sky_color = color;
         info!(
             "Scene {self}: set background color to [{}, {}, {}]",
@@ -507,15 +505,14 @@ impl Scene {
         self.render_params.checkerboard_enabled = enabled;
         info!("Scene {self}: set checkerboard enabled  to {}", enabled);
     }
+    /// ## Returns
+    /// checkerboard colors as pair of [f32;3]
     pub fn get_checkerboard_colors(&self) -> (Color, Color) {
-        //! ## Returns
-        //! checkerboard colors as pair of [f32;3]
         self.render_params.checkerboard_colors
     }
-
+    /// ## Parameters
+    /// 'colors': pair of [f32;3] representing rgb colors
     pub fn set_checkerboared_colors(&mut self, colors: (Color, Color)) {
-        //! ## Parameters
-        //! 'colors': pair of [f32;3] represesnting rgb colors
         self.render_params.checkerboard_colors = colors;
         info!("Scene {self}: set ground enabled  to {:?}", colors);
     }
