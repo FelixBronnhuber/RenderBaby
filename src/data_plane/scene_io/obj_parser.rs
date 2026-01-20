@@ -189,7 +189,7 @@ pub fn load_obj(
             let v_indices = [0usize, i, i + 1];
 
             for &idx in &v_indices {
-                let v_idx = face.v[idx] as usize - 1;
+                let v_idx = face.v[idx] as usize;
                 if v_idx * 3 + 2 < objs.vertices.len() {
                     new_vertices.push(objs.vertices[v_idx * 3]);
                     new_vertices.push(objs.vertices[v_idx * 3 + 1]);
