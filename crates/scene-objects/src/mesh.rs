@@ -226,7 +226,6 @@ impl GeometricObject for Mesh {
     /// Rotates the points around the centroid
     /// ## Parameter
     /// 'vec': Rotation: Euler angles in degree (Z, Y, X) = yaw, pitch, roll
-
     fn rotate(&mut self, vec: glam::Vec3) {
         debug!("Mesh {}: rotate relative {:?}", self.name, vec);
 
