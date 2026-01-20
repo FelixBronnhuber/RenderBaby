@@ -78,8 +78,8 @@ impl GpuWrapper {
     /// # Arguments
     ///
     /// * `rc` - The initial render configuration. Must contain `Change::Create` for all required fields.
-    /// * `path` - The path to the shader source file.
-    pub fn new(rc: RenderConfig, path: &str) -> Result<Self> {
+    /// * `shader_source` - The source code of the shader.
+    pub fn new(rc: RenderConfig, shader_source: &str) -> Result<Self> {
         let gpu = GpuDevice::new()?;
         let initial_uniforms = match rc.uniforms {
             Change::Create(u) | Change::Update(u) => u,
@@ -90,7 +90,7 @@ impl GpuWrapper {
         let buffers = GpuBuffers::new(&rc, &gpu.device, &prh);
         let layout = BindGroupLayout::new(&gpu.device);
         let groups = BindGroup::new(&gpu.device, &buffers, &layout.bind_group_layout);
-        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, path);
+        let pipeline = ComputePipeline::new(&gpu.device, &layout.bind_group_layout, shader_source);
         Ok(Self {
             buffer_wrapper: buffers,
             bind_group_layout_wrapper: layout,
