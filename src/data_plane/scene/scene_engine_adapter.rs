@@ -101,10 +101,10 @@ fn camera_to_render_uniforms(
         render_param.ground_height, //Replace with correct values from GUI
         render_param.ground_enabled,
         render_param.checkerboard_enabled,
-        render_param.sky_color,
+        render_param.sky_color.into(),
         render_param.max_depth,
-        render_param.checkerboard_colors.0,
-        render_param.checkerboard_colors.1,
+        render_param.checkerboard_colors.0.into(),
+        render_param.checkerboard_colors.1.into(),
     )
     .with_color_hash(color_hash_enabled);
     Ok(uniforms)
