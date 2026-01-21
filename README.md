@@ -1,5 +1,7 @@
 # RenderBaby
 
+![image](renderbaby_poster.jpg)
+
 [![Documentation][doc-img]][doc-url]
 
 [doc-img]: https://img.shields.io/badge/renderbaby-cargo--docs-blue?style=for-the-badge&logo=github
